@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-paper: #fdf6e7;
+    --text-ink: #2c1d11;
+    --cordel-wood: #8b4513;
+    --cordel-terracotta: #d2691e;
+    --cordel-gold: #e67e22;
+    --cordel-border: #4a2e1b;
+  }
+
+  body {
+    background-color: var(--bg-paper);
+    color: var(--text-ink);
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, .font-cordel {
+    font-family: 'Cinzel', serif;
+  }
+
+  .font-woodcut {
+    font-family: 'Special Elite', monospace;
+  }
+}
+
+/* Texture papier Cordel subtile */
+.paper-texture {
+  background-color: #fdf6e7;
+  background-image: radial-gradient(#e2d5bd 0.75px, transparent 0.75px), radial-gradient(#e2d5bd 0.75px, #fdf6e7 0.75px);
+  background-size: 30px 30px;
+  background-position: 0 0, 15px 15px;
+}
+
+/* Bordure style gravure Xilogravura */
+.xilo-border {
+  border: 3px solid var(--cordel-border);
+  box-shadow: 4px 4px 0px 0px var(--cordel-border);
+}

@@ -1,0 +1,100 @@
+{
+  "version": "1.0.0",
+  "universes": [
+    {
+      "id": "maracatu",
+      "name": "Maracatu de Baque Virado",
+      "subtitle": "Culture & Percussions du Pernambouc",
+      "tagline": "Restaurez la force du Baque Virado, de la transmission rythmique à la gestion globale du Bloco.",
+      "status": "active",
+      "badge": "Actif",
+      "theme": {
+        "name": "Cordel & Xilogravura",
+        "description": "Esthétique artisanale inspirée de la littérature de Cordel et des gravures sur bois du Nordeste brésilien.",
+        "primaryColor": "#8b4513",
+        "secondaryColor": "#d2691e",
+        "accentColor": "#e67e22",
+        "backgroundColor": "#fdf6e7",
+        "paperTexture": true
+      },
+      "instruments": [
+        "Alfaia (Tambour)",
+        "Caixa de Guerra (Caisse claire)",
+        "Gonguê (Cloche métallique)",
+        "Agbê / Shekere",
+        "Mineiro (Secoueur)",
+        "Voix / Toadas (Puxador & Coro)"
+      ],
+      "applications": [
+        {
+          "id": "sequenceur",
+          "name": "O Girador - Séquenceur",
+          "description": "Séquenceur web interactif avec Roda circulaire concentrique, micro-timing, Toadas et mode Song.",
+          "repo": "https://github.com/julianbiblocq/o-girador",
+          "badge": "Disponible",
+          "url": "https://sequenceur.ogirador.app"
+        },
+        {
+          "id": "manager",
+          "name": "O Girador - Manager & Vitrine",
+          "description": "Plateforme complète de gestion d'association Bloco, agenda, trésorerie, forum Varal et site vitrine public.",
+          "repo": "https://github.com/JulianBiblocq/O-Girador-manager",
+          "badge": "Disponible",
+          "url": "https://manager.ogirador.app"
+        }
+      ]
+    },
+    {
+      "id": "capoeira",
+      "name": "Capoeira Regional & Angola",
+      "subtitle": "Art Martial, Musique & Roda",
+      "tagline": "L'art de la ginga, les toques de Berimbau et la poésie de la Roda à portée de main.",
+      "status": "coming_soon",
+      "badge": "Bientôt",
+      "teaser": {
+        "title": "Bientôt dans l'Écosystème",
+        "description": "Un univers dédié à la Roda de Capoeira : apprentissage des toques de Berimbau (Gunga, Médio, Viola), Pandeiro, Atabaque, et gestion du carnet de chants et de batizados.",
+        "plannedRelease": "Q4 2026",
+        "features": [
+          "Studio interactif Toques de Berimbau",
+          "Carnet de Chants, Ladainhas & Chulas",
+          "Gestion des diplômes, cordes & événements de Batizado"
+        ]
+      },
+      "theme": {
+        "name": "Malandragem & Bahia Gold",
+        "primaryColor": "#1a4314",
+        "secondaryColor": "#eab308",
+        "accentColor": "#ca8a04",
+        "backgroundColor": "#fefce8",
+        "paperTexture": false
+      }
+    },
+    {
+      "id": "samba",
+      "name": "Samba de Enredo & Batucada",
+      "subtitle": "Rythmes & Défilés du Brésil",
+      "tagline": "La puissance de la Batucada de Rio et Salvador réunie dans un studio virtuel.",
+      "status": "coming_soon",
+      "badge": "Bientôt",
+      "teaser": {
+        "title": "Bientôt dans l'Écosystème",
+        "description": "Entraînez et organisez votre Batucada : repiques, surdos (1a, 2a, 3a), tamborims, cuícas, et coordination des défilés et répétitions de section.",
+        "plannedRelease": "Q1 2027",
+        "features": [
+          "Séquenceur Multi-Tamborim & Breaks de Batucada",
+          "Gestionnaire de Pupitres & Repétitions par section",
+          "Partitions interactives et export PDF"
+        ]
+      },
+      "theme": {
+        "name": "Carnaval Tropical",
+        "primaryColor": "#15803d",
+        "secondaryColor": "#7e22ce",
+        "accentColor": "#f59e0b",
+        "backgroundColor": "#f0fdf4",
+        "paperTexture": false
+      }
+    }
+  ]
+}

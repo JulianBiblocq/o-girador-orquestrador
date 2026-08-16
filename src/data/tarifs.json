@@ -1,0 +1,125 @@
+{
+  "version": "1.0.0",
+  "billingConfig": {
+    "defaultBillingCycle": "annual",
+    "availableCycles": [
+      {
+        "id": "annual",
+        "label": "Facturation Annuelle",
+        "badge": "2 mois offerts (~20% d'économie)"
+      },
+      {
+        "id": "monthly",
+        "label": "Facturation Mensuelle",
+        "badge": "Sans engagement"
+      }
+    ],
+    "currency": "EUR",
+    "currencySymbol": "€"
+  },
+  "plans": [
+    {
+      "id": "decouverte",
+      "name": "Découverte / Initiation",
+      "tagline": "Pour explorer et pratiquer individuellement",
+      "badge": "Gratuit",
+      "highlighted": false,
+      "pricing": {
+        "monthly": 0,
+        "annual": 0
+      },
+      "targetAudience": "Passionnés, élèves & curieux",
+      "features": [
+        "Accès gratuit au Séquenceur interactif (Maracatu)",
+        "Bibliothèque de Presets de rythmes traditionnels",
+        "Export audio (.webm) et fichiers JSON local",
+        "Accès en lecture au Hub Écosystème"
+      ],
+      "ctaText": "Commencer gratuitement"
+    },
+    {
+      "id": "essentiel",
+      "name": "Mestre Praticant",
+      "tagline": "Pour les enseignants et musiciens créateurs",
+      "badge": "Populaire Solo",
+      "highlighted": false,
+      "pricing": {
+        "monthly": 6.99,
+        "annual": 59.99
+      },
+      "pricingMonthlyEquivalent": 4.99,
+      "targetAudience": "Mestres, profs de percussions & solistes",
+      "features": [
+        "Tous les avantages de la formule Découverte",
+        "Sauvegarde Cloud illimitée des arrangements",
+        "Créateur de Toadas personnalisées (Syllabes Karaoké)",
+        "Export Haute Définition & partitions imprimables",
+        "Support prioritaire par email"
+      ],
+      "ctaText": "Essayer le plan Mestre"
+    },
+    {
+      "id": "association",
+      "name": "Bloco & Association",
+      "tagline": "Solution complète pour la gestion d'un groupe",
+      "badge": "Recommandé Bloco",
+      "highlighted": true,
+      "pricing": {
+        "monthly": 19.99,
+        "annual": 179.99
+      },
+      "pricingMonthlyEquivalent": 14.99,
+      "targetAudience": "Blocos de Maracatu & associations jusqu'à 100 membres",
+      "features": [
+        "Accès complet à O Girador Manager & Site Vitrine",
+        "Gestion des membres, cotisations & suivi trésorerie",
+        "Agenda, convocations & gestion des présences aux répés/concerts",
+        "Varal d'annonces, Forum interne & Trombinoscope",
+        "Gestion de l'inventaire matériel (Alfaia, Caisses...)",
+        "Jusqu'à 5 comptes Administrateurs"
+      ],
+      "ctaText": "Démarrer pour votre Bloco"
+    },
+    {
+      "id": "ecosysteme",
+      "name": "Écosystème Mestre Full",
+      "tagline": "Pour les grandes structures & multi-univers",
+      "badge": "Multi-Groupes",
+      "highlighted": false,
+      "pricing": {
+        "monthly": 34.99,
+        "annual": 299.99
+      },
+      "pricingMonthlyEquivalent": 24.99,
+      "targetAudience": "Fédérations, Écoles de percussion & Multi-Blocos",
+      "features": [
+        "Tous les avantages du plan Bloco & Association",
+        "Déblocage de tous les univers (Maracatu, Capoeira, Samba)",
+        "Domaine personnalisé pour le site vitrine",
+        "Statistiques avancées & rapports financiers exportables",
+        "Support dédié 7j/7 et accompagnement au déploiement"
+      ],
+      "ctaText": "Contacter l'équipe"
+    }
+  ],
+  "individualApps": [
+    {
+      "id": "sequenceur-solo",
+      "appName": "O Girador - Séquenceur Standalone",
+      "description": "Utilisation du Séquenceur autonome sans les outils de gestion d'association",
+      "pricing": {
+        "monthly": 3.99,
+        "annual": 34.99
+      }
+    },
+    {
+      "id": "manager-solo",
+      "appName": "O Girador - Manager Standalone",
+      "description": "Utilisation de la suite de gestion d'association et vitrine uniquement",
+      "pricing": {
+        "monthly": 14.99,
+        "annual": 129.99
+      }
+    }
+  ]
+}

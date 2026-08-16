@@ -1,0 +1,119 @@
+{
+  "version": "1.0.0",
+  "categories": [
+    {
+      "id": "sequenceur",
+      "appName": "O Girador - Séquenceur",
+      "description": "Tutoriels vidéo pour maîtriser la création de rythmes et l'utilisation du Séquenceur.",
+      "badge": "Séquenceur",
+      "tutorials": [
+        {
+          "id": "tuto-seq-01",
+          "title": "Prise en main de la Roda circulaire & de la Baguette rotative",
+          "duration": "03:45",
+          "level": "Débutant",
+          "thumbnail": "/assets/tutos/thumb-roda.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-roda",
+          "summary": "Découvrez comment utiliser la vue en Roda concentrique pour visualiser l'activation des frappes de chaque instrument en temps réel.",
+          "tags": ["Roda", "Interface", "Pulsation", "Débutant"]
+        },
+        {
+          "id": "tuto-seq-02",
+          "title": "Maîtriser le Micro-timing et le Swing Maracatu",
+          "duration": "05:20",
+          "level": "Intermédiaire",
+          "thumbnail": "/assets/tutos/thumb-swing.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-swing",
+          "summary": "Apprenez à régler le micro-décalage par pas pour insuffler le balancement 'gingado' authentique du Baque Virado aux caisses de maracatu.",
+          "tags": ["Micro-timing", "Swing", "Caixa", "Baque Virado"]
+        },
+        {
+          "id": "tuto-seq-03",
+          "title": "Créer un arrangement complet en Mode Song",
+          "duration": "08:15",
+          "level": "Avancé",
+          "thumbnail": "/assets/tutos/thumb-songmode.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-songmode",
+          "summary": "Structurez votre morceau mesure par mesure, en définissant des signatures rythmiques indépendantes et des rampes d'accélération de tempo.",
+          "tags": ["Mode Song", "Arrangement", "BPM", "Rampes"]
+        },
+        {
+          "id": "tuto-seq-04",
+          "title": "Écrire une Toada et utiliser la Syllabe Karaoké",
+          "duration": "04:50",
+          "level": "Tous niveaux",
+          "thumbnail": "/assets/tutos/thumb-toada.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-toada",
+          "summary": "Saisissez les paroles de chant (Puxador et Coro) pour générer automatiquement le défilement karaoké synchronisé avec la musique.",
+          "tags": ["Toada", "Karaoké", "Chant", "Puxador"]
+        }
+      ]
+    },
+    {
+      "id": "manager",
+      "appName": "O Girador - Manager",
+      "description": "Tutoriels vidéo pour administrer votre Bloco et animer votre communauté.",
+      "badge": "Manager",
+      "tutorials": [
+        {
+          "id": "tuto-man-01",
+          "title": "Configurer la Vitrine Publique de son Bloco",
+          "duration": "04:30",
+          "level": "Débutant",
+          "thumbnail": "/assets/tutos/thumb-vitrine.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-vitrine",
+          "summary": "Personnalisez la page publique de votre association avec le thème Cordel, la bio, les photos et les liens sociaux.",
+          "tags": ["Vitrine", "Thème Cordel", "Communication", "Profil"]
+        },
+        {
+          "id": "tuto-man-02",
+          "title": "Planifier des répétitions et gérer les présences",
+          "duration": "06:10",
+          "level": "Débutant",
+          "thumbnail": "/assets/tutos/thumb-agenda.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-agenda",
+          "summary": "Créez des répétitions et concerts sur l'agenda, envoyez des notifications d'appel et consultez la liste des présents.",
+          "tags": ["Agenda", "Présences", "Répétition", "Convocations"]
+        },
+        {
+          "id": "tuto-man-03",
+          "title": "Suivi de la trésorerie et relance des cotisations",
+          "duration": "07:05",
+          "level": "Intermédiaire",
+          "thumbnail": "/assets/tutos/thumb-treasury.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-treasury",
+          "summary": "Suivez les entrées/sorties de caisse du bloco, gérez l'état de paiement des cotisations et éditez des justificatifs kilométriques.",
+          "tags": ["Trésorerie", "Cotisations", "Finances", "Frais"]
+        },
+        {
+          "id": "tuto-man-04",
+          "title": "Utiliser le Varal d'Annonces et le Forum",
+          "duration": "05:15",
+          "level": "Tous niveaux",
+          "thumbnail": "/assets/tutos/thumb-forum.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-forum",
+          "summary": "Animez le forum de discussion interne, épinglez les annonces importantes sur le Varal virtuel et partagez des documents.",
+          "tags": ["Forum", "Varal", "Annonces", "Communauté"]
+        }
+      ]
+    },
+    {
+      "id": "hub",
+      "appName": "Hub Central Écosystème",
+      "description": "Tutoriels sur l'utilisation du Hub Central et la navigation multi-applications.",
+      "badge": "Hub Central",
+      "tutorials": [
+        {
+          "id": "tuto-hub-01",
+          "title": "Présentation du Hub Central et des Univers",
+          "duration": "02:50",
+          "level": "Débutant",
+          "thumbnail": "/assets/tutos/thumb-hub.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-hub",
+          "summary": "Découvrez comment naviguer entre les différents univers (Maracatu, Capoeira, Samba) et basculer instantanément du Séquenceur au Manager.",
+          "tags": ["Hub", "Navigation", "Écosystème", "Univers"]
+        }
+      ]
+    }
+  ]
+}
