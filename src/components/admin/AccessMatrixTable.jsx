@@ -21,6 +21,7 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
               <th className="p-3 text-center bg-[#6e370f]">🥁 Séquenceur</th>
               <th className="p-3 text-center bg-[#6e370f]">📋 Manager</th>
               <th className="p-3 text-center bg-[#6e370f]">🌐 Vitrine</th>
+              <th className="p-3 text-center bg-[#6e370f]">👣 Dançador</th>
               <th className="p-3 text-center border-l-2 border-[#fdf6e7]">Maracatu</th>
               <th className="p-3 text-center">Capoeira</th>
               <th className="p-3 text-center">Samba</th>
@@ -49,6 +50,12 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
                 <td className="p-3 text-center bg-amber-50/50">
                   <button onClick={() => onToggleApp(assoc, 'vitrine')} className="cursor-pointer inline-block">
                     {assoc.appAccess?.vitrine ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
+                  </button>
+                </td>
+
+                <td className="p-3 text-center bg-amber-50/50">
+                  <button onClick={() => onToggleApp(assoc, 'dancador')} className="cursor-pointer inline-block">
+                    {assoc.appAccess?.dancador ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
                   </button>
                 </td>
 

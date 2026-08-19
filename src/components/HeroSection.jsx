@@ -49,7 +49,7 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 max-w-3xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-6 max-w-4xl mx-auto">
           <div className="p-4 bg-white/70 rounded-lg xilo-border text-center">
             <div className="text-xl font-black text-[#8b4513] font-cordel">{t('hero.metrics.sequenceur')}</div>
             <div className="text-xs text-gray-700 mt-1">{t('hero.metrics.sequenceurSub')}</div>
@@ -61,6 +61,10 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
           <div className="p-4 bg-white/70 rounded-lg xilo-border text-center">
             <div className="text-xl font-black text-[#b91c1c] font-cordel">{t('hero.metrics.vitrine')}</div>
             <div className="text-xs text-gray-700 mt-1">{t('hero.metrics.vitrineSub')}</div>
+          </div>
+          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center">
+            <div className="text-xl font-black text-[#7f1d1d] font-cordel">{t('hero.metrics.dancador')}</div>
+            <div className="text-xs text-gray-700 mt-1">{t('hero.metrics.dancadorSub')}</div>
           </div>
         </div>
 

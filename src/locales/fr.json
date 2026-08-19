@@ -1,15 +1,16 @@
 {
   "header": {
     "title": "O GIRADOR",
-    "subtitle": "Écosystème",
+    "subtitle": "Orquestrador",
     "tagline": "Le Hub Central des Percussions Brésiliennes",
     "universeLabel": "Univers",
     "changeUniverse": "Changer d'Univers Culturel",
     "nav": {
       "home": "Accueil",
-      "triptyque": "Le Triptyque",
+      "triptyque": "Le Quadriptyque",
       "tarifs": "Tarifs & Synergie",
       "tutos": "Tutoriels",
+      "boutique": "Boutique & Add-ons",
       "creator": "Créateur",
       "admin": "Back-Office /admin",
       "login": "Connexion"
@@ -19,8 +20,8 @@
     "badge": "Le Hub Central — Univers",
     "title": "L'Écosystème Numérique de la",
     "titleHighlight": "Percussion Brésilienne",
-    "subtitle": "Un triptyque d'applications interconnectées pour composer sur le Séquenceur interactif, administrer votre Bloco avec le Manager, et rayonner grâce à votre Vitrine publique.",
-    "exploreTriptyque": "Explorer le Triptyque",
+    "subtitle": "Une suite d'applications interconnectées pour composer sur le Sequenciador, chorégraphier avec le Dançador, administrer votre Bloco avec le Gestor, et rayonner grâce au Mostrador.",
+    "exploreTriptyque": "Explorer la Suite",
     "discoverTarifs": "Découvrir les Tarifs",
     "watchDemos": "Voir les démos vidéo",
     "metrics": {
@@ -29,16 +30,18 @@
       "manager": "📋 Manager Bloco",
       "managerSub": "Agenda, Trésorerie & Varal",
       "vitrine": "🌟 Vitrine Publique",
-      "vitrineSub": "Identité Cordel & Recrutement"
+      "vitrineSub": "Identité Cordel & Recrutement",
+      "dancador": "👣 Séquenceur de Danse",
+      "dancadorSub": "Chorégraphies & Formations"
     }
   },
   "triptyque": {
     "badge": "Le Coeur de l'Écosystème",
-    "title": "Le Triptyque O Girador",
-    "subtitle": "Trois piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
+    "title": "La Suite O Girador",
+    "subtitle": "Quatre piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
     "sequenceur": {
       "badge": "Studio & Rythmes",
-      "title": "O Girador — Séquenceur",
+      "title": "O Girador-Sequenciador",
       "description": "Le séquenceur interactif de rythmes de Maracatu dans votre navigateur. Simulez un bloco complet avec la Roda circulaire.",
       "feat1": "Roda Circulaire & Baguette rotative : Visualisation en temps réel du cercle de jeu.",
       "feat2": "Sculpture sonore pas-à-pas : Micro-timing, swing Maracatu et contrôle du decay.",
@@ -48,7 +51,7 @@
     },
     "manager": {
       "badge": "Gestion d'Association",
-      "title": "O Girador — Manager",
+      "title": "O Girador-Gestor",
       "description": "La suite administrative dédiée aux responsables de Bloco : gérez les membres, les répétitions et les finances sereinement.",
       "feat1": "Agenda & Convocations : Gestion des présences aux concerts et répétitions.",
       "feat2": "Trésorerie & Cotisations : Remboursements kilométriques et suivi des règlements.",
@@ -58,13 +61,22 @@
     },
     "vitrine": {
       "badge": "Rayonnement Public",
-      "title": "O Girador — Vitrine",
+      "title": "O Girador-Mostrador",
       "description": "Le site web public clé en main pour votre association : faites rayonner votre Bloco et attirez de nouveaux adhérents.",
       "feat1": "Identité Cordel Personnalisée : Affichez l'histoire et les couleurs de votre groupe.",
       "feat2": "Calendrier des Prestations : Dates de concerts ouvertes au grand public.",
       "feat3": "Formulaire de Contact & Adhésion : Inscription directe des nouveaux percussionnistes.",
       "feat4": "Galerie Médias & Toadas : Écoute des extraits sonores et vidéos de concerts.",
       "note": "Intégration directe Manager"
+    },
+    "dancador": {
+      "badge": "Nouveau",
+      "title": "O Girador-Dançador",
+      "description": "Outil pédagogique et séquenceur de pas de danse pour construire vos chorégraphies, gérer les placements et préparer vos événements.",
+      "feat1": "Séquenceur de Pas : Construisez et apprenez une chorégraphie complète pas à pas.",
+      "feat2": "Formations Modulables : Concevez les déplacements (en ligne, en rond) avec le bloc et les mestres.",
+      "feat3": "Vidéos Pédagogiques : Les mestres partagent leurs pas synchronisés aux rythmes du Sequenciador.",
+      "feat4": "Programmes & Événements : Préparez le déroulé d'une répétition ou d'une prestation (lié au Gestor)."
     }
   },
   "tarifs": {
@@ -77,12 +89,12 @@
     "monthlyBadge": "Sans engagement",
     "synergy": {
       "badge": "La Puissance de la Synergie",
-      "title": "Pourquoi associer le Manager & la Vitrine Publique ?",
-      "description": "Fini la double saisie ! Lorsque vous créez une répétition publique, un concert ou un événement sur l'Agenda du Manager, les informations sont automatiquement publiées et synchronisées sur votre Vitrine Publique.",
+      "title": "Pourquoi associer Gestor, Mostrador & Dançador ?",
+      "description": "Fini la double saisie ! Lorsque vous créez une répétition ou un événement sur l'Agenda du Gestor, les informations sont automatiquement publiées sur votre Mostrador et peuvent servir de base de préparation dans le Dançador.",
       "feat1Title": "Centralisation Unique",
-      "feat1Text": "Une seule base de données Firebase pour la gestion interne et la visibilité externe.",
+      "feat1Text": "Une seule base de données Firebase pour la gestion interne, la préparation chorégraphique et la visibilité externe.",
       "feat2Title": "Recrutement & Adhésions",
-      "feat2Text": "Les formulaires d'adhésion de la Vitrine alimentent directement le Trombinoscope du Manager.",
+      "feat2Text": "Les formulaires d'adhésion du Mostrador alimentent directement le Trombinoscope du Gestor.",
       "boxTitle": "Duo Gagnant Bloco",
       "boxText": "Inclus dans les offres Bloco & Association et Écosystème Mestre.",
       "demoBtn": "Demander une démo Assos"

@@ -120,6 +120,15 @@
         "monthly": 14.99,
         "annual": 129.99
       }
+    },
+    {
+      "id": "dancador-solo",
+      "appName": "O Girador - Dançador Standalone",
+      "description": "Utilisation du studio chorégraphique interactif autonome",
+      "pricing": {
+        "monthly": 5.99,
+        "annual": 49.99
+      }
     }
   ]
 }

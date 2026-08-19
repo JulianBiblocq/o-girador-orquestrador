@@ -3,9 +3,10 @@
   "categories": [
     {
       "id": "sequenceur",
-      "appName": "O Girador - Séquenceur",
-      "description": "Tutoriels vidéo pour maîtriser la création de rythmes et l'utilisation du Séquenceur.",
-      "badge": "Séquenceur",
+      "targetApp": "sequenceur",
+      "appName": "O Girador - Sequenciador",
+      "description": "Tutoriels vidéo pour maîtriser la création de rythmes et l'utilisation du Sequenciador.",
+      "badge": "Sequenciador",
       "tutorials": [
         {
           "id": "tuto-seq-01",
@@ -51,9 +52,10 @@
     },
     {
       "id": "manager",
-      "appName": "O Girador - Manager",
+      "targetApp": "manager",
+      "appName": "O Girador - Gestor",
       "description": "Tutoriels vidéo pour administrer votre Bloco et animer votre communauté.",
-      "badge": "Manager",
+      "badge": "Gestor",
       "tutorials": [
         {
           "id": "tuto-man-01",
@@ -99,9 +101,10 @@
     },
     {
       "id": "hub",
-      "appName": "Hub Central Écosystème",
-      "description": "Tutoriels sur l'utilisation du Hub Central et la navigation multi-applications.",
-      "badge": "Hub Central",
+      "targetApp": "vitrine",
+      "appName": "O Girador - Mostrador (Vitrine)",
+      "description": "Tutoriels sur l'utilisation de la Vitrine publique et du Hub Central.",
+      "badge": "Mostrador",
       "tutorials": [
         {
           "id": "tuto-hub-01",
@@ -112,6 +115,25 @@
           "videoUrl": "https://www.youtube.com/embed/demo-hub",
           "summary": "Découvrez comment naviguer entre les différents univers (Maracatu, Capoeira, Samba) et basculer instantanément du Séquenceur au Manager.",
           "tags": ["Hub", "Navigation", "Écosystème", "Univers"]
+        }
+      ]
+    },
+    {
+      "id": "dancador",
+      "targetApp": "dancador",
+      "appName": "O Girador - Dançador",
+      "description": "Tutoriels vidéo pour maîtriser le studio chorégraphique interactif.",
+      "badge": "Dançador",
+      "tutorials": [
+        {
+          "id": "tuto-dan-01",
+          "title": "Créer sa première chorégraphie",
+          "duration": "04:15",
+          "level": "Débutant",
+          "thumbnail": "/assets/tutos/thumb-dancador.jpg",
+          "videoUrl": "https://www.youtube.com/embed/demo-dancador",
+          "summary": "Découvrez comment placer vos danseurs, créer des déplacements et synchroniser les mouvements sur la musique.",
+          "tags": ["Dançador", "Chorégraphie", "Débutant", "Danse"]
         }
       ]
     }

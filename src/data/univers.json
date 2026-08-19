@@ -41,6 +41,14 @@
           "repo": "https://github.com/JulianBiblocq/O-Girador-manager",
           "badge": "Disponible",
           "url": "https://manager.ogirador.app"
+        },
+        {
+          "id": "dancador",
+          "name": "O Girador - Dançador",
+          "description": "Studio chorégraphique interactif pour concevoir, animer et partager vos formations de danse et défilés.",
+          "repo": "https://github.com/JulianBiblocq/o-girador-dancador",
+          "badge": "Nouveau",
+          "url": "https://dancador.ogirador.app"
         }
       ]
     },
@@ -68,7 +76,16 @@
         "accentColor": "#ca8a04",
         "backgroundColor": "#fefce8",
         "paperTexture": false
-      }
+      },
+      "applications": [
+        {
+          "id": "dancador",
+          "name": "O Girador - Dançador",
+          "description": "Studio chorégraphique interactif pour la roda et la maculelê.",
+          "badge": "Nouveau",
+          "url": "https://dancador.ogirador.app"
+        }
+      ]
     },
     {
       "id": "samba",
@@ -94,7 +111,16 @@
         "accentColor": "#f59e0b",
         "backgroundColor": "#f0fdf4",
         "paperTexture": false
-      }
+      },
+      "applications": [
+        {
+          "id": "dancador",
+          "name": "O Girador - Dançador",
+          "description": "Studio chorégraphique interactif pour préparer les défilés et les chorégraphies des passistas.",
+          "badge": "Nouveau",
+          "url": "https://dancador.ogirador.app"
+        }
+      ]
     }
   ]
 }

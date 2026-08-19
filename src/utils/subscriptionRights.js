@@ -110,6 +110,7 @@ export function getAccessRights(group) {
   const hasSequenceurAccess = Boolean(group.appAccess?.sequenceur);
   const hasManagerAccess = Boolean(group.appAccess?.manager);
   const hasVitrineAccess = Boolean(group.appAccess?.vitrine);
+  const hasDancadorAccess = Boolean(group.appAccess?.dancador);
 
   // Soft Lock : Si l'abonnement est expiré, le Manager passe en lecture seule et les créations sont bloquées
   const isReadOnlyManager = isExpired || !hasManagerAccess;
@@ -138,7 +139,9 @@ export function getAccessRights(group) {
     hasSequenceurAccess,
     hasManagerAccess,
     hasVitrineAccess,
+    hasDancadorAccess,
     universeAccess: group.universeAccess || { maracatu: true, capoeira: false, samba: false },
+    unlockedPacks: group.unlockedPacks || [],
     softLockBanner
   };
 }

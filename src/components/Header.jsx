@@ -63,7 +63,7 @@ export default function Header({
                 className="flex items-center gap-2 bg-[#f4e8cf] hover:bg-[#ebd8b3] text-[#4a2e1b] px-3 py-1.5 rounded-lg border-2 border-[#8b4513]/40 font-semibold text-xs transition-all cursor-pointer shadow-sm"
               >
                 <Compass className="w-3.5 h-3.5 text-[#8b4513]" />
-                <span>{t('header.universeLabel')} : <strong>{currentUniverseObj.name}</strong></span>
+                <span><strong>{currentUniverseObj.name}</strong></span>
                 <ChevronDown className={`w-3.5 h-3.5 text-[#8b4513] transition-transform ${universeDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -100,29 +100,31 @@ export default function Header({
           </div>
 
           {/* Desktop Navigation Links (≥ 1024px / lg) */}
-          <nav className="hidden lg:flex items-center gap-4 text-xs font-semibold text-[#4a2e1b]">
-            <button 
-              onClick={() => onNavigate('home')}
-              className={`hover:text-[#d2691e] transition-colors cursor-pointer ${activeView === 'home' ? 'text-[#8b4513] font-bold border-b-2 border-[#8b4513] pb-1' : ''}`}
-            >
-              {t('header.nav.home')}
-            </button>
-            <a href="#triptyque" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e]">
-              {t('header.nav.triptyque')}
+          <nav className="hidden lg:flex items-center gap-5 text-[13px] font-bold text-[#4a2e1b]">
+            <a href="#triptyque" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e] transition-colors">
+              Applications
             </a>
-            <a href="#tarifs" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e]">
-              {t('header.nav.tarifs')}
-            </a>
-            <button onClick={() => onNavigate('tutos')} className="hover:text-[#d2691e] flex items-center gap-1 cursor-pointer">
-              <PlayCircle className="w-3.5 h-3.5 text-[#8b4513]" />
-              <span>{t('header.nav.tutos')}</span>
-            </button>
-            <button 
-              onClick={() => onNavigate('a-propos')}
-              className="px-3 py-1 bg-[#8b4513] text-[#fdf6e7] rounded font-bold text-xs hover:bg-[#6e370f] flex items-center gap-1 shadow cursor-pointer transition-colors"
+            <a 
+              href="#boutique"
+              onClick={() => activeView !== 'home' && onNavigate('home')}
+              className="hover:text-[#e67e22] transition-colors cursor-pointer flex items-center gap-1"
             >
-              <User className="w-3.5 h-3.5" />
-              <span>{t('header.nav.creator')}</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Boutique</span>
+            </a>
+            <a href="#tarifs" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e] transition-colors">
+              Tarifs
+            </a>
+
+            {/* Separator */}
+            <div className="w-px h-4 bg-[#8b4513]/30 mx-1"></div>
+
+            {/* Secondary Actions (Icons only) */}
+            <button onClick={() => onNavigate('tutos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.tutos')}>
+              <PlayCircle className="w-4 h-4 text-[#8b4513]" />
+            </button>
+            <button onClick={() => onNavigate('a-propos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.creator')}>
+              <User className="w-4 h-4 text-[#8b4513]" />
             </button>
           </nav>
 
@@ -228,7 +230,7 @@ export default function Header({
                     onClick={() => { if (activeView !== 'home') onNavigate('home'); setMobileMenuOpen(false); }}
                     className="text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#4a2e1b] hover:bg-[#f4e8cf] transition-colors"
                   >
-                    {t('header.nav.triptyque')} (Découvrir l'Écosystème)
+                    {t('header.nav.triptyque')} (Nos 4 Applications)
                   </a>
                   <a
                     href="#tarifs"
@@ -264,6 +266,14 @@ export default function Header({
                     <span>{t('header.nav.tutos')} (Tutoriels Vidéos)</span>
                     <PlayCircle className="w-4 h-4 text-[#8b4513]" />
                   </button>
+                  <a
+                    href="#boutique"
+                    onClick={() => { if (activeView !== 'home') onNavigate('home'); setMobileMenuOpen(false); }}
+                    className="text-left px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-[#4a2e1b] hover:bg-[#f4e8cf]"
+                  >
+                    <span>{t('header.nav.boutique') || 'Boutique'}</span>
+                    <Sparkles className="w-4 h-4 text-[#e67e22]" />
+                  </a>
                 </nav>
               </div>
 

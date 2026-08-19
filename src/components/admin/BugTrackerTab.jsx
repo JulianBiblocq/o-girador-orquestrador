@@ -130,7 +130,12 @@ export default function BugTrackerTab() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 capitalize">{bug.appId}</div>
+                    <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                      <span className="capitalize">{bug.appId}</span>
+                      {bug.appId === 'dancador' && (
+                        <span className="px-2 py-0.5 rounded text-[9px] uppercase font-bold bg-purple-100 text-purple-700">Dançador</span>
+                      )}
+                    </div>
                     <div className="text-xs text-gray-500">{bug.groupId}</div>
                   </td>
                   <td className="px-6 py-4">

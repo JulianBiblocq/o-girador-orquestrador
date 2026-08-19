@@ -1,0 +1,60 @@
+{
+  "packs": [
+    {
+      "id": "pack-seq-bases",
+      "name": "Pack Bases du Maracatu Nação",
+      "description": "Les 10 rythmes fondamentaux du Maracatu Nação pour bien démarrer.",
+      "price": 15.00,
+      "targetApp": "sequenceur",
+      "features": ["10 rythmes fondamentaux", "Partition interactive", "Tempo ajustable"]
+    },
+    {
+      "id": "pack-seq-masterclass",
+      "name": "Pack Masterclass Mestre",
+      "description": "Ses créations, breaks et viradas signature avec ses commentaires audios explicatifs.",
+      "price": 40.00,
+      "targetApp": "sequenceur",
+      "features": ["Créations originales", "Breaks & Viradas", "Commentaires audio du Mestre"]
+    },
+    {
+      "id": "pack-seq-samba",
+      "name": "Pack Samba-Reggae / Batucada",
+      "description": "Pour ouvrir votre Séquenceur à d'autres styles brésiliens !",
+      "price": 25.00,
+      "targetApp": "sequenceur",
+      "features": ["Rythmes Samba-Reggae", "Rythmes Batucada", "Nouveaux instruments"]
+    },
+    {
+      "id": "pack-dan-orixas",
+      "name": "Pack Orixás - Mouvements de base",
+      "description": "Vidéos détourées et séquençage audio pour l'apprentissage des pas de base des Orixás.",
+      "price": 30.00,
+      "targetApp": "dancador",
+      "features": ["Vidéos détourées", "Synchronisation audio", "Mouvements de base"]
+    },
+    {
+      "id": "pack-dan-defile",
+      "name": "Pack Chorégraphie - Défilé de rue",
+      "description": "Chorégraphie complète créée par une prof renommée, prête à être apprise par les élèves.",
+      "price": 50.00,
+      "targetApp": "dancador",
+      "features": ["Chorégraphie complète", "Formations de rue", "Vue élèves et vue Mestre"]
+    },
+    {
+      "id": "pack-man-encyclo",
+      "name": "Pack Encyclopédie du Pernambouc",
+      "description": "100 fiches prêtes à l'emploi avec QCM intégrés sur l'histoire, la cuisine et la géographie.",
+      "price": 20.00,
+      "targetApp": "manager",
+      "features": ["100 Fiches culturelles", "QCM intégrés", "Suivi des scores"]
+    },
+    {
+      "id": "pack-man-lutherie",
+      "name": "Pack Tutoriels Lutherie Premium",
+      "description": "Vidéos pro de fabrication d'Alfaias et de maillage d'Agbê.",
+      "price": 25.00,
+      "targetApp": "manager",
+      "features": ["Tutos Fabrication Alfaias", "Tutos Maillage Agbê", "Ressources PDF"]
+    }
+  ]
+}

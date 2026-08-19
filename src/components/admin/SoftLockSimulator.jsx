@@ -19,7 +19,8 @@ export default function SoftLockSimulator() {
     appAccess: {
       sequenceur: true,
       manager: true,
-      vitrine: true
+      vitrine: true,
+      dancador: true
     },
     universeAccess: {
       maracatu: true,
@@ -145,7 +146,7 @@ export default function SoftLockSimulator() {
       )}
 
       {/* Rights Matrix Flags Output */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 pt-2">
         
         <div className="bg-[#fdf6e7] p-4 rounded-lg border border-[#8b4513]/30">
           <span className="text-[10px] uppercase font-bold text-[#8b4513] block mb-1">Mode Manager</span>
@@ -202,6 +203,21 @@ export default function SoftLockSimulator() {
             ) : (
               <span className="text-amber-800 font-bold text-xs flex items-center gap-1">
                 ⚡ Gratuit / Local uniquement
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-[#fdf6e7] p-4 rounded-lg border border-[#8b4513]/30">
+          <span className="text-[10px] uppercase font-bold text-[#8b4513] block mb-1">Niveau Dançador</span>
+          <div className="flex items-center gap-2">
+            {rights.hasDancadorAccess ? (
+              <span className="text-emerald-700 font-bold text-xs flex items-center gap-1">
+                <Sparkles className="w-4 h-4" /> Studio Débloqué
+              </span>
+            ) : (
+              <span className="text-amber-800 font-bold text-xs flex items-center gap-1">
+                <Lock className="w-4 h-4" /> Non Accessible
               </span>
             )}
           </div>

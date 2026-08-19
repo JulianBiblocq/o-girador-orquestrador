@@ -11,6 +11,8 @@ import BugTrackerTab from './BugTrackerTab';
 import AnalyticsTab from './AnalyticsTab';
 import TicketsTab from './TicketsTab';
 import ReviewsTab from './ReviewsTab';
+import PacksManagerTab from './PacksManagerTab';
+import CatalogueManagerTab from './CatalogueManagerTab';
 
 export default function AdminDashboard() {
   const { associations, reload, addOrUpdateAssociation, removeAssociation } = useSubscriptions();
@@ -54,6 +56,19 @@ export default function AdminDashboard() {
     const updated = {
       ...assoc,
       universeAccess: { ...assoc.universeAccess, [uniKey]: !assoc.universeAccess?.[uniKey] }
+    };
+    await addOrUpdateAssociation(updated);
+  };
+
+  const handleQuickTogglePack = async (assoc, packId) => {
+    const currentPacks = assoc.unlockedPacks || [];
+    const newPacks = currentPacks.includes(packId)
+      ? currentPacks.filter(p => p !== packId)
+      : [...currentPacks, packId];
+      
+    const updated = {
+      ...assoc,
+      unlockedPacks: newPacks
     };
     await addOrUpdateAssociation(updated);
   };
@@ -125,6 +140,22 @@ export default function AdminDashboard() {
             📬 Tickets
           </button>
           <button
+            onClick={() => setActiveTab('packs')}
+            className={`px-5 py-3 font-bold text-xs sm:text-sm rounded-t-lg transition-all cursor-pointer ${
+              activeTab === 'packs' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-lg' : 'bg-[#f4e8cf] text-[#4a2e1b]'
+            }`}
+          >
+            📦 Droits Add-ons
+          </button>
+          <button
+            onClick={() => setActiveTab('catalogue')}
+            className={`px-5 py-3 font-bold text-xs sm:text-sm rounded-t-lg transition-all cursor-pointer ${
+              activeTab === 'catalogue' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-lg' : 'bg-[#f4e8cf] text-[#4a2e1b]'
+            }`}
+          >
+            🛒 Éditeur Boutique
+          </button>
+          <button
             onClick={() => setActiveTab('bug-tracker')}
             className={`px-5 py-3 font-bold text-xs sm:text-sm rounded-t-lg transition-all cursor-pointer ${
               activeTab === 'bug-tracker' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-lg' : 'bg-[#f4e8cf] text-[#4a2e1b]'
@@ -175,6 +206,17 @@ export default function AdminDashboard() {
 
         {activeTab === 'tickets' && (
           <TicketsTab />
+        )}
+
+        {activeTab === 'packs' && (
+          <PacksManagerTab 
+            associations={associations} 
+            onTogglePack={handleQuickTogglePack} 
+          />
+        )}
+
+        {activeTab === 'catalogue' && (
+          <CatalogueManagerTab />
         )}
 
         {activeTab === 'bug-tracker' && (

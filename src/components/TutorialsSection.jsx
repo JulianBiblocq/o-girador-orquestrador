@@ -2,6 +2,49 @@ import React, { useState } from 'react';
 import { PlayCircle, Clock, Tag, X, Sparkles, Video } from 'lucide-react';
 import tutosData from '../data/tutos.json';
 
+const APP_COLORS = {
+  sequenceur: {
+    bg: 'bg-[#2c1d11]',
+    text: 'text-[#fdf6e7]',
+    border: 'border-[#2c1d11]',
+    borderAlpha: 'border-[#2c1d11]/30',
+    borderAlphaLight: 'border-[#2c1d11]/20',
+    hoverBg: 'group-hover:bg-[#2c1d11]',
+    hoverText: 'group-hover:text-[#2c1d11]',
+    textHighlight: 'text-[#2c1d11]',
+  },
+  manager: {
+    bg: 'bg-[#8b4513]',
+    text: 'text-[#fdf6e7]',
+    border: 'border-[#8b4513]',
+    borderAlpha: 'border-[#8b4513]/30',
+    borderAlphaLight: 'border-[#8b4513]/20',
+    hoverBg: 'group-hover:bg-[#8b4513]',
+    hoverText: 'group-hover:text-[#8b4513]',
+    textHighlight: 'text-[#8b4513]',
+  },
+  vitrine: {
+    bg: 'bg-[#d2691e]',
+    text: 'text-white',
+    border: 'border-[#d2691e]',
+    borderAlpha: 'border-[#d2691e]/30',
+    borderAlphaLight: 'border-[#d2691e]/20',
+    hoverBg: 'group-hover:bg-[#d2691e]',
+    hoverText: 'group-hover:text-[#d2691e]',
+    textHighlight: 'text-[#d2691e]',
+  },
+  dancador: {
+    bg: 'bg-[#991b1b]',
+    text: 'text-white',
+    border: 'border-[#991b1b]',
+    borderAlpha: 'border-[#991b1b]/30',
+    borderAlphaLight: 'border-[#991b1b]/20',
+    hoverBg: 'group-hover:bg-[#991b1b]',
+    hoverText: 'group-hover:text-[#991b1b]',
+    textHighlight: 'text-[#991b1b]',
+  }
+};
+
 export default function TutorialsSection() {
   const [selectedTutorial, setSelectedTutorial] = useState(null);
 
@@ -25,16 +68,18 @@ export default function TutorialsSection() {
 
         {/* Categories list */}
         <div className="space-y-12">
-          {tutosData.categories.map((cat) => (
+          {tutosData.categories.map((cat) => {
+            const colors = APP_COLORS[cat.targetApp] || APP_COLORS.manager;
+            return (
             <div key={cat.id} className="space-y-4">
-              <div className="flex items-center justify-between border-b-2 border-[#8b4513]/30 pb-3">
+              <div className={`flex items-center justify-between border-b-2 ${colors.borderAlpha} pb-3`}>
                 <div>
                   <h3 className="text-xl sm:text-2xl font-bold text-[#4a2e1b] font-cordel">
                     {cat.appName}
                   </h3>
                   <p className="text-xs text-gray-600">{cat.description}</p>
                 </div>
-                <span className="text-xs bg-[#8b4513] text-[#fdf6e7] px-3 py-1 rounded font-bold uppercase">
+                <span className={`text-xs ${colors.bg} ${colors.text} px-3 py-1 rounded font-bold uppercase`}>
                   {cat.tutorials.length} tutoriels
                 </span>
               </div>
@@ -43,12 +88,12 @@ export default function TutorialsSection() {
                 {cat.tutorials.map((tut) => (
                   <div
                     key={tut.id}
-                    onClick={() => setSelectedTutorial(tut)}
+                    onClick={() => setSelectedTutorial({ ...tut, colors })}
                     className="bg-[#fdf6e7] border-2 border-[#4a2e1b] rounded-xl p-4 flex flex-col justify-between hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
                   >
                     <div>
                       {/* Fake Thumbnail / Play Overlay */}
-                      <div className="w-full h-36 bg-[#4a2e1b] rounded-lg mb-3 flex items-center justify-center relative overflow-hidden group-hover:bg-[#8b4513] transition-colors">
+                      <div className={`w-full h-36 ${colors.bg} rounded-lg mb-3 flex items-center justify-center relative overflow-hidden ${colors.hoverBg} transition-colors`}>
                         <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white group-hover:scale-110 transition-transform">
                           <PlayCircle className="w-8 h-8 text-amber-300" />
                         </div>
@@ -57,7 +102,7 @@ export default function TutorialsSection() {
                         </span>
                       </div>
 
-                      <h4 className="font-bold text-[#4a2e1b] text-sm font-cordel mb-2 line-clamp-2 group-hover:text-[#8b4513] transition-colors">
+                      <h4 className={`font-bold text-[#4a2e1b] text-sm font-cordel mb-2 line-clamp-2 ${colors.hoverText} transition-colors`}>
                         {tut.title}
                       </h4>
                       <p className="text-xs text-gray-700 line-clamp-3 mb-4 leading-relaxed">
@@ -65,9 +110,9 @@ export default function TutorialsSection() {
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-[#8b4513]/20 flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-[#8b4513]">{tut.level}</span>
-                      <span className="text-[#8b4513] group-hover:underline font-bold flex items-center gap-1">
+                    <div className={`pt-3 border-t ${colors.borderAlphaLight} flex items-center justify-between text-[11px]`}>
+                      <span className={`font-semibold ${colors.textHighlight}`}>{tut.level}</span>
+                      <span className={`${colors.textHighlight} group-hover:underline font-bold flex items-center gap-1`}>
                         Regarder →
                       </span>
                     </div>
@@ -75,7 +120,8 @@ export default function TutorialsSection() {
                 ))}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
       </div>
@@ -107,7 +153,7 @@ export default function TutorialsSection() {
 
             <div className="flex flex-wrap gap-2 pt-2">
               {selectedTutorial.tags?.map((t, i) => (
-                <span key={i} className="text-[10px] bg-[#8b4513] text-[#fdf6e7] px-2 py-0.5 rounded font-semibold">
+                <span key={i} className={`text-[10px] ${selectedTutorial.colors?.bg || 'bg-[#8b4513]'} ${selectedTutorial.colors?.text || 'text-[#fdf6e7]'} px-2 py-0.5 rounded font-semibold`}>
                   #{t}
                 </span>
               ))}

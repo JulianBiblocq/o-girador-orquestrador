@@ -12,6 +12,7 @@ import AdminLoginModal from './components/AdminLoginModal';
 import Footer from './components/Footer';
 import UniverseModal from './components/UniverseModal';
 import CheckoutFlow from './components/checkout/CheckoutFlow';
+import AddonsStore from './components/addons/AddonsStore';
 import { Loader2 } from 'lucide-react';
 
 // Lazy loading pour le panneau d'administration lourd (/admin)
@@ -66,6 +67,7 @@ function AppContent() {
           <HeroSection activeUniverse={activeUniverse} onNavigate={handleNavigate} />
           <TriptychSection />
           <PricingSynergySection onSelectPlan={(plan) => { setActivePlan(plan); handleNavigate('checkout'); }} />
+          <AddonsStore onNavigate={handleNavigate} />
           <TutorialsSection />
           <NewsletterSection activeUniverse={activeUniverse} />
         </main>
