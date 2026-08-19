@@ -121,14 +121,11 @@ export default function Header({
             <button onClick={() => onNavigate('tutos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.tutos')}>
               <PlayCircle className="w-4 h-4 text-[#8b4513]" />
             </button>
-            <button onClick={() => onNavigate('a-propos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.creator')}>
-              <User className="w-4 h-4 text-[#8b4513]" />
-            </button>
             <a 
               href="https://manager.o-girador.com" 
               target="_blank" 
               rel="noreferrer" 
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4a2e1b] text-[#fdf6e7] rounded-lg text-xs font-bold hover:bg-[#2c1d11] transition-colors"
+              className="hidden flex items-center gap-1.5 px-3 py-1.5 bg-[#4a2e1b] text-[#fdf6e7] rounded-lg text-xs font-bold hover:bg-[#2c1d11] transition-colors"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Login</span>
@@ -246,15 +243,6 @@ export default function Header({
                   >
                     {t('header.nav.tarifs')} (Tarifs & Accès)
                   </a>
-                  <button
-                    onClick={() => { onNavigate('a-propos'); setMobileMenuOpen(false); }}
-                    className={`text-left px-3.5 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-between cursor-pointer ${
-                      activeView === 'a-propos' ? 'bg-[#8b4513] text-[#fdf6e7] shadow' : 'text-[#4a2e1b] hover:bg-[#f4e8cf]'
-                    }`}
-                  >
-                    <span>{t('header.nav.creator')} (À propos du Créateur)</span>
-                    <User className="w-4 h-4" />
-                  </button>
                 </nav>
               </div>
 

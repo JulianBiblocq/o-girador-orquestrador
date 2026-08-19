@@ -97,7 +97,10 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
         {/* Bottom bar */}
         <div className="border-t border-amber-900/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-amber-300/60">
           <div>
-            © {new Date().getFullYear()} O Girador Orquestrador — Conçu pour la culture des percussions brésiliennes par Julian Biblocq.
+            © {new Date().getFullYear()} O Girador Orquestrador — Conçu pour la culture populaire brésilienne par{' '}
+            <button onClick={() => onNavigate('a-propos')} className="hover:text-amber-400 hover:underline transition-colors font-semibold cursor-pointer">
+              Julian Biblocq
+            </button>
           </div>
 
           <div className="flex items-center gap-4">
