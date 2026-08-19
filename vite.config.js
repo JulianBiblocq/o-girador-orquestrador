@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Base relative pour la compatibilité avec GitHub Pages (/o-girador-orquestrador/ ou domaine personnalisé)
-  base: '/o-girador-orquestrador/',
+  // Base relative pour la compatibilité avec GitHub Pages (modifiée pour domaine personnalisé)
+  base: '/',
   plugins: [react(), tailwindcss()],
   server: {
     port: 3000,
