@@ -52,7 +52,7 @@ export default function NewsletterSection({ activeUniverse }) {
         
         <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#4a2e1b] text-amber-300 text-xs font-bold uppercase tracking-wider rounded border border-amber-400/40">
           <Sparkles className="w-3.5 h-3.5" />
-          Restez Connecté au Baque Virado
+          Restez dans la ronde
         </div>
 
         <h2 className="text-2xl sm:text-4xl font-black font-cordel text-white">
@@ -60,7 +60,7 @@ export default function NewsletterSection({ activeUniverse }) {
         </h2>
 
         <p className="text-xs sm:text-sm text-amber-100/90 max-w-xl mx-auto leading-relaxed">
-          Recevez les nouveaux toadas, les mises à jour du Séquenceur, les fiches conseils pour Bloco et les annonces des prochains univers (Capoeira & Samba).
+          Recevez les dernières mises à jour, les nouveaux add-ons et nos fiches conseils.
         </p>
 
         {success ? (
@@ -119,7 +119,8 @@ export default function NewsletterSection({ activeUniverse }) {
             )}
 
             <p className="text-[11px] text-amber-200/70 italic">
-              Pas de spam, désinscription en un clic à tout moment. Vos données sont sécurisées.
+              Pas de spam, désinscription en un clic à tout moment. Vos données sont sécurisées. <br />
+              Une question ? Écrivez-nous à <a href="mailto:contact@o-girador.com" className="underline hover:text-amber-100">contact@o-girador.com</a>.
             </p>
           </form>
         )}

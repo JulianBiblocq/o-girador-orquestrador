@@ -19,15 +19,13 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
           {/* Brand col */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-2">
-              <div className="w-9 h-9 bg-[#8b4513] text-[#fdf6e7] rounded-lg flex items-center justify-center font-bold text-lg border border-amber-500">
-                🥁
-              </div>
+              <img src="/logo_rond.png" alt="Logo O Girador" className="w-9 h-9 rounded-full border border-amber-500 object-cover" />
               <span className="font-extrabold text-lg text-white font-cordel">
-                O GIRADOR
+                O GIRADOR ORQUESTRADOR
               </span>
             </div>
             <p className="text-xs text-amber-200/70 leading-relaxed">
-              Le Hub Central de convergence entre le Séquenceur, le Manager d'Association, la Vitrine Publique et la culture populaire brésilienne.
+              Le hub central de convergence entre Sequenciador, Organizador, Mostrador, Dançador et la culture populaire brésilienne.
             </p>
           </div>
 
@@ -39,22 +37,22 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
             <ul className="space-y-2 text-xs text-amber-100/80">
               <li>
                 <a href="#triptyque" className="hover:text-white transition-colors">
-                  Le Séquenceur (BaqueMix)
+                  O Girador Sequenciador
                 </a>
               </li>
               <li>
                 <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Manager
+                  O Girador Organizador
                 </a>
               </li>
               <li>
                 <a href="#triptyque" className="hover:text-white transition-colors">
-                  Vitrine Publique Bloco
+                  O Girador Mostrador
                 </a>
               </li>
               <li>
-                <a href="#tarifs" className="hover:text-white transition-colors">
-                  Grille Tarifaire & HelloAsso
+                <a href="#triptyque" className="hover:text-white transition-colors">
+                  O Girador Dançador
                 </a>
               </li>
             </ul>
@@ -91,22 +89,6 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
               >
                 À propos du Créateur (/a-propos)
               </button>
-              <a
-                href="https://github.com/julianbiblocq/o-girador"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
-              >
-                <Github className="w-3.5 h-3.5" /> Dépôt GitHub Séquenceur
-              </a>
-              <a
-                href="https://github.com/JulianBiblocq/O-Girador-manager"
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
-              >
-                <Github className="w-3.5 h-3.5" /> Dépôt GitHub Manager
-              </a>
             </div>
           </div>
 
@@ -115,7 +97,7 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
         {/* Bottom bar */}
         <div className="border-t border-amber-900/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-amber-300/60">
           <div>
-            © {new Date().getFullYear()} O Girador Écosystème — Conçu pour la culture du Maracatu de Baque Virado.
+            © {new Date().getFullYear()} O Girador Orquestrador — Conçu pour la culture des percussions brésiliennes par Julian Biblocq.
           </div>
 
           <div className="flex items-center gap-4">

@@ -4,10 +4,20 @@ import tarifsData from '../data/tarifs.json';
 import PricingCard from './ui/PricingCard';
 import SynergySpotlight from './ui/SynergySpotlight';
 import { useLanguage } from '../hooks/useLanguage';
+import { fetchPricingPlans } from '../services/cmsService';
+import { useEffect } from 'react';
 
 export default function PricingSynergySection({ onSelectPlan }) {
   const { t } = useLanguage();
   const [billingCycle, setBillingCycle] = useState(tarifsData.billingConfig.defaultBillingCycle);
+  const [cmsPlans, setCmsPlans] = useState([]);
+
+  useEffect(() => {
+    fetchPricingPlans().then(p => {
+      if (p && p.length > 0) setCmsPlans(p);
+      else setCmsPlans(tarifsData.plans);
+    });
+  }, []);
 
   return (
     <section id="tarifs" className="py-16 sm:py-20 paper-texture border-b-2 border-[#4a2e1b]">
@@ -55,7 +65,7 @@ export default function PricingSynergySection({ onSelectPlan }) {
 
         {/* Grid of Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
-          {tarifsData.plans.map((plan) => (
+          {cmsPlans.map((plan) => (
             <PricingCard 
               key={plan.id} 
               plan={plan} 

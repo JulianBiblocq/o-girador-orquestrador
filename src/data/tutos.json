@@ -53,13 +53,13 @@
     {
       "id": "manager",
       "targetApp": "manager",
-      "appName": "O Girador - Gestor",
+      "appName": "O Girador - Organizador",
       "description": "Tutoriels vidéo pour administrer votre Bloco et animer votre communauté.",
-      "badge": "Gestor",
+      "badge": "Organizador",
       "tutorials": [
         {
           "id": "tuto-man-01",
-          "title": "Configurer la Vitrine Publique de son Bloco",
+          "title": "Configurer le Mostrador de son Bloco",
           "duration": "04:30",
           "level": "Débutant",
           "thumbnail": "/assets/tutos/thumb-vitrine.jpg",
@@ -102,8 +102,8 @@
     {
       "id": "hub",
       "targetApp": "vitrine",
-      "appName": "O Girador - Mostrador (Vitrine)",
-      "description": "Tutoriels sur l'utilisation de la Vitrine publique et du Hub Central.",
+      "appName": "O Girador - Mostrador",
+      "description": "Tutoriels sur l'utilisation du Mostrador et du Hub Central.",
       "badge": "Mostrador",
       "tutorials": [
         {

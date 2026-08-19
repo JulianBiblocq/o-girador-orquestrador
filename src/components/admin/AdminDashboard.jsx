@@ -13,6 +13,7 @@ import TicketsTab from './TicketsTab';
 import ReviewsTab from './ReviewsTab';
 import PacksManagerTab from './PacksManagerTab';
 import CatalogueManagerTab from './CatalogueManagerTab';
+import CmsManagerTab from './CmsManagerTab';
 
 export default function AdminDashboard() {
   const { associations, reload, addOrUpdateAssociation, removeAssociation } = useSubscriptions();
@@ -164,6 +165,14 @@ export default function AdminDashboard() {
             {t('admin.tabs.bugs') || '🚨 Crashs Auto'}
           </button>
           <button
+            onClick={() => setActiveTab('cms')}
+            className={`px-5 py-3 font-bold text-xs sm:text-sm rounded-t-lg transition-all cursor-pointer ${
+              activeTab === 'cms' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-lg' : 'bg-[#f4e8cf] text-[#4a2e1b]'
+            }`}
+          >
+            📝 Contenu Public
+          </button>
+          <button
             onClick={() => setActiveTab('reviews')}
             className={`px-5 py-3 font-bold text-xs sm:text-sm rounded-t-lg transition-all cursor-pointer ${
               activeTab === 'reviews' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-lg' : 'bg-[#f4e8cf] text-[#4a2e1b]'
@@ -229,6 +238,10 @@ export default function AdminDashboard() {
 
         {activeTab === 'analytics' && (
           <AnalyticsTab />
+        )}
+
+        {activeTab === 'cms' && (
+          <CmsManagerTab />
         )}
 
         {/* Modal */}

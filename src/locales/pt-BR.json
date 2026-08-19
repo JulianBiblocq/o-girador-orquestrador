@@ -2,7 +2,7 @@
   "header": {
     "title": "O GIRADOR",
     "subtitle": "Orquestrador",
-    "tagline": "O Hub Central da Percussão Brasileira",
+    "tagline": "O Ecossistema Digital da Percussão Brasileira",
     "universeLabel": "Universo",
     "changeUniverse": "Mudar de Universo Cultural",
     "nav": {
@@ -17,21 +17,21 @@
     }
   },
   "hero": {
-    "badge": "O Hub Central — Universo",
+    "badge": "Universo",
     "title": "O Ecossistema Digital da",
     "titleHighlight": "Percussão Brasileira",
-    "subtitle": "Um conjunto de aplicações interconectadas para compor no Sequenciador, coreografar com o Dançador, administrar seu Bloco com o Gestor e brilhar com o Mostrador.",
+    "subtitle": "Um conjunto de aplicações interconectadas para compor no Sequenciador, coreografar com o Dançador, administrar seu Bloco com o Organizador e brilhar com o Mostrador.",
     "exploreTriptyque": "Explorar a Suíte",
     "discoverTarifs": "Ver Planos e Preços",
     "watchDemos": "Assistir Vídeos Demonstrativos",
     "metrics": {
-      "sequenceur": "🥁 Sequenciador Roda",
+      "sequenceur": "🥁 Sequenciador",
       "sequenceurSub": "Micro-timing, Tone.js & Toadas",
-      "manager": "📋 Manager Bloco",
+      "manager": "📋 Organizador",
       "managerSub": "Agenda, Tesouraria & Varal",
-      "vitrine": "🌟 Vitrine Pública",
+      "vitrine": "🌟 Mostrador",
       "vitrineSub": "Identidade Cordel & Recrutamento",
-      "dancador": "👣 Sequenciador de Dança",
+      "dancador": "👣 Dançador",
       "dancadorSub": "Coreografias & Formações"
     }
   },
@@ -51,7 +51,7 @@
     },
     "manager": {
       "badge": "Gestão de Associação",
-      "title": "O Girador-Gestor",
+      "title": "O Girador-Organizador",
       "description": "A suíte administrativa dedicada aos mestres e diretores de Bloco: gerencie membros, ensaios e finanças com tranquilidade.",
       "feat1": "Agenda & Convocações: Controle de presença em shows e ensaios.",
       "feat2": "Tesouraria & Mensalidades: Reembolsos de transporte e acompanhamento de pagamentos.",
@@ -76,11 +76,11 @@
       "feat1": "Sequenciador de Passos: Construa e aprenda uma coreografia completa passo a passo.",
       "feat2": "Formações Modulares: Crie os deslocamentos (em linha, em roda) com a bateria e os mestres.",
       "feat3": "Vídeos Pedagógicos: Os mestres compartilham seus passos sincronizados aos ritmos do Sequenciador.",
-      "feat4": "Programas & Eventos: Prepare o roteiro de um ensaio ou de uma apresentação (integrado ao Gestor)."
+      "feat4": "Programas & Eventos: Prepare o roteiro de um ensaio ou de uma apresentação (integrado ao Organizador)."
     }
   },
   "tarifs": {
-    "badge": "Preços Transparentes & Apoio a Grupos",
+    "badge": "Planos para Todas as Vontades",
     "title": "Um Plano Adaptado a Cada Prática",
     "subtitle": "Do praticante individual ao grande Bloco de Maracatu, aproveite as ferramentas do ecossistema com condições acessíveis.",
     "annual": "Faturamento Anual",
@@ -89,12 +89,16 @@
     "monthlyBadge": "Sem fidelidade",
     "synergy": {
       "badge": "A Força da Sinergia",
-      "title": "Por que integrar Gestor, Mostrador & Dançador?",
-      "description": "Chega de retrabalho! Quando você cria um ensaio ou show na Agenda do Gestor, as informações são publicadas automaticamente no seu Mostrador e podem servir de base de preparação no Dançador.",
-      "feat1Title": "Centralização Única",
-      "feat1Text": "Um único banco de dados Firebase para gestão interna, preparação coreográfica e visibilidade externa.",
-      "feat2Title": "Recrutamento & Inscrições",
-      "feat2Text": "Os formulários de inscrição do Mostrador alimentam diretamente o cadastro do Gestor.",
+      "title": "Por que integrar Sequenciador, Organizador, Dançador & Mostrador?",
+      "description": "As aplicações estão em perfeita simbiose: prepare suas playlists de ensaio no Sequenciador, coreografe-as no Dançador, utilize-as para criar quizzes no Organizador e publique automaticamente as datas dos shows no Mostrador sem retrabalho!",
+      "feat1Title": "Sincronização de Agendas",
+      "feat1Text": "Uma data adicionada no Organizador é publicada automaticamente no Mostrador.",
+      "feat2Title": "Playlists & Quizzes Pedagógicos",
+      "feat2Text": "Exporte suas playlists do Sequenciador e Dançador para gerar quizzes (QCM) no Organizador.",
+      "feat3Title": "Recrutamento & Inscrições",
+      "feat3Text": "Os formulários do Mostrador alimentam diretamente o cadastro de membros do Organizador.",
+      "feat4Title": "Preparação Coreográfica",
+      "feat4Text": "O banco de dados unificado conecta os ritmos (Sequenciador) aos passos (Dançador) para uma preparação ideal.",
       "boxTitle": "Dupla Vencedora para seu Bloco",
       "boxText": "Incluso nos planos Bloco & Associação e Ecossistema Mestre.",
       "demoBtn": "Solicitar Demonstração para Grupos"

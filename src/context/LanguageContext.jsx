@@ -11,11 +11,20 @@ const LanguageContext = createContext(null);
 
 export function LanguageProvider({ children }) {
   const [language, setLanguage] = useState(() => {
-    return localStorage.getItem('ogirador_lang') || 'fr';
+    const savedLang = localStorage.getItem('ogirador_lang');
+    if (savedLang) return savedLang;
+    
+    // Auto-détection de la langue du navigateur
+    const browserLang = typeof window !== 'undefined' ? (navigator.language || navigator.userLanguage) : 'fr';
+    if (browserLang && browserLang.toLowerCase().startsWith('pt')) {
+      return 'pt-BR';
+    }
+    return 'fr';
   });
 
   useEffect(() => {
     localStorage.setItem('ogirador_lang', language);
+    document.documentElement.lang = language === 'pt-BR' ? 'pt-BR' : 'fr';
   }, [language]);
 
   /**

@@ -4,7 +4,7 @@ import { fetchPacks, savePack, deletePack } from '../../services/packsService';
 
 const APP_TARGETS = [
   { id: 'sequenceur', label: 'Sequenciador (Audio)' },
-  { id: 'manager', label: 'Gestor (Manager)' },
+  { id: 'manager', label: 'Organizador' },
   { id: 'dancador', label: 'Dançador (Chorégraphie)' },
   { id: 'vitrine', label: 'Mostrador (Vitrine)' }
 ];

@@ -237,7 +237,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
               
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">🥁 Séquenceur</span>
+                  <span className="font-semibold text-gray-800">🥁 Sequenciador</span>
                   <button
                     type="button"
                     onClick={() => toggleApp('sequenceur')}
@@ -252,7 +252,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">📋 Manager Bloco</span>
+                  <span className="font-semibold text-gray-800">📋 Organizador</span>
                   <button
                     type="button"
                     onClick={() => toggleApp('manager')}
@@ -267,13 +267,28 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">🌐 Vitrine Publique</span>
+                  <span className="font-semibold text-gray-800">🌐 Mostrador</span>
                   <button
                     type="button"
                     onClick={() => toggleApp('vitrine')}
                     className="cursor-pointer"
                   >
                     {formData.appAccess.vitrine ? (
+                      <ToggleRight className="w-7 h-7 text-green-700" />
+                    ) : (
+                      <ToggleLeft className="w-7 h-7 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
+                  <span className="font-semibold text-gray-800">👣 Dançador</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleApp('dancador')}
+                    className="cursor-pointer"
+                  >
+                    {formData.appAccess.dancador ? (
                       <ToggleRight className="w-7 h-7 text-green-700" />
                     ) : (
                       <ToggleLeft className="w-7 h-7 text-gray-400" />

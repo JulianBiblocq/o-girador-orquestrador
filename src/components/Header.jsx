@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Menu, X, ChevronDown, Compass, PlayCircle, User, Sparkles } from 'lucide-react';
+import { Menu, X, ChevronDown, Compass, PlayCircle, User, Sparkles, LogIn } from 'lucide-react';
 import universData from '../data/univers.json';
 import { useLanguage } from '../hooks/useLanguage';
-import LanguageSwitcher from './ui/LanguageSwitcher';
 
 export default function Header({ 
   activeUniverse, 
@@ -36,9 +35,11 @@ export default function Header({
               - Tablet (768-1023px) & Desktop (>=1024px): Icon + Title + Subtitle badge + Tagline
           */}
           <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('home')}>
-            <div className="w-10 h-10 sm:w-11 sm:h-11 bg-[#8b4513] text-[#fdf6e7] rounded-lg flex items-center justify-center font-bold text-lg sm:text-xl xilo-border transition-transform hover:scale-105 shrink-0">
-              🥁
-            </div>
+            <img 
+              src="/logo_rond.png" 
+              alt="Logo O Girador" 
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-[#8b4513] shadow-sm transition-transform hover:scale-105 shrink-0 object-cover"
+            />
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="font-extrabold text-base sm:text-xl text-[#4a2e1b] tracking-wider font-cordel">
@@ -54,7 +55,7 @@ export default function Header({
             </div>
           </div>
 
-          {/* Center/Right Action Bar: Universe Selector & Language Switcher */}
+          {/* Center/Right Action Bar: Universe Selector */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Universe Selector (Visible on Tablet >=768px & Desktop >=1024px) */}
             <div className="relative hidden md:block">
@@ -94,9 +95,6 @@ export default function Header({
                 </div>
               )}
             </div>
-
-            {/* Language Switcher (Visible on Smartphone, Tablet, and Desktop) */}
-            <LanguageSwitcher />
           </div>
 
           {/* Desktop Navigation Links (≥ 1024px / lg) */}
@@ -126,6 +124,15 @@ export default function Header({
             <button onClick={() => onNavigate('a-propos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.creator')}>
               <User className="w-4 h-4 text-[#8b4513]" />
             </button>
+            <a 
+              href="https://manager.o-girador.com" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4a2e1b] text-[#fdf6e7] rounded-lg text-xs font-bold hover:bg-[#2c1d11] transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Login</span>
+            </a>
           </nav>
 
           {/* Burger Button ☰ (Visible on Smartphone & Tablet < 1024px / lg:hidden) */}

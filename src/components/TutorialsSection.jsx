@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlayCircle, Clock, Tag, X, Sparkles, Video } from 'lucide-react';
+import { PlayCircle, Clock, Tag, X, Sparkles, Video, ChevronDown, ChevronUp } from 'lucide-react';
 import tutosData from '../data/tutos.json';
 
 const APP_COLORS = {
@@ -47,6 +47,7 @@ const APP_COLORS = {
 
 export default function TutorialsSection() {
   const [selectedTutorial, setSelectedTutorial] = useState(null);
+  const [activeAccordion, setActiveAccordion] = useState(tutosData.categories[0]?.id);
 
   return (
     <section id="tutoriels" className="py-16 sm:py-24 bg-white/70 border-b-2 border-[#4a2e1b]">
@@ -72,53 +73,65 @@ export default function TutorialsSection() {
             const colors = APP_COLORS[cat.targetApp] || APP_COLORS.manager;
             return (
             <div key={cat.id} className="space-y-4">
-              <div className={`flex items-center justify-between border-b-2 ${colors.borderAlpha} pb-3`}>
+              <div 
+                className={`flex items-center justify-between border-2 ${colors.borderAlpha} p-4 rounded-xl cursor-pointer ${colors.hoverBg} transition-colors bg-white/50 group`}
+                onClick={() => setActiveAccordion(activeAccordion === cat.id ? null : cat.id)}
+              >
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-[#4a2e1b] font-cordel">
+                  <h3 className={`text-xl sm:text-2xl font-bold ${colors.textHighlight} font-cordel flex items-center gap-2`}>
                     {cat.appName}
                   </h3>
-                  <p className="text-xs text-gray-600">{cat.description}</p>
+                  <p className="text-xs text-gray-600 mt-1">{cat.description}</p>
                 </div>
-                <span className={`text-xs ${colors.bg} ${colors.text} px-3 py-1 rounded font-bold uppercase`}>
-                  {cat.tutorials.length} tutoriels
-                </span>
+                <div className="flex items-center gap-4">
+                  <span className={`text-xs ${colors.bg} ${colors.text} px-3 py-1 rounded font-bold uppercase hidden sm:inline-block`}>
+                    {cat.tutorials.length} tutoriels
+                  </span>
+                  {activeAccordion === cat.id ? (
+                    <ChevronUp className={`w-6 h-6 ${colors.textHighlight}`} />
+                  ) : (
+                    <ChevronDown className={`w-6 h-6 ${colors.textHighlight} opacity-50 group-hover:opacity-100 transition-opacity`} />
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {cat.tutorials.map((tut) => (
-                  <div
-                    key={tut.id}
-                    onClick={() => setSelectedTutorial({ ...tut, colors })}
-                    className="bg-[#fdf6e7] border-2 border-[#4a2e1b] rounded-xl p-4 flex flex-col justify-between hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
-                  >
-                    <div>
-                      {/* Fake Thumbnail / Play Overlay */}
-                      <div className={`w-full h-36 ${colors.bg} rounded-lg mb-3 flex items-center justify-center relative overflow-hidden ${colors.hoverBg} transition-colors`}>
-                        <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white group-hover:scale-110 transition-transform">
-                          <PlayCircle className="w-8 h-8 text-amber-300" />
+              {activeAccordion === cat.id && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-2 animate-fade-in">
+                  {cat.tutorials.map((tut) => (
+                    <div
+                      key={tut.id}
+                      onClick={() => setSelectedTutorial({ ...tut, colors })}
+                      className="bg-[#fdf6e7] border-2 border-[#4a2e1b] rounded-xl p-4 flex flex-col justify-between hover:shadow-xl transition-all cursor-pointer group hover:-translate-y-1"
+                    >
+                      <div>
+                        {/* Fake Thumbnail / Play Overlay */}
+                        <div className={`w-full h-32 ${colors.bg} rounded-lg mb-3 flex items-center justify-center relative overflow-hidden ${colors.hoverBg} transition-colors`}>
+                          <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white group-hover:scale-110 transition-transform">
+                            <PlayCircle className="w-8 h-8 text-amber-300" />
+                          </div>
+                          <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded font-mono">
+                            {tut.duration}
+                          </span>
                         </div>
-                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded font-mono">
-                          {tut.duration}
-                        </span>
+
+                        <h4 className={`font-bold text-[#4a2e1b] text-sm font-cordel mb-2 line-clamp-2 ${colors.hoverText} transition-colors`}>
+                          {tut.title}
+                        </h4>
+                        <p className="text-xs text-gray-700 line-clamp-3 mb-4 leading-relaxed">
+                          {tut.summary}
+                        </p>
                       </div>
 
-                      <h4 className={`font-bold text-[#4a2e1b] text-sm font-cordel mb-2 line-clamp-2 ${colors.hoverText} transition-colors`}>
-                        {tut.title}
-                      </h4>
-                      <p className="text-xs text-gray-700 line-clamp-3 mb-4 leading-relaxed">
-                        {tut.summary}
-                      </p>
+                      <div className={`pt-3 border-t ${colors.borderAlphaLight} flex items-center justify-between text-[11px]`}>
+                        <span className={`font-semibold ${colors.textHighlight}`}>{tut.level}</span>
+                        <span className={`${colors.textHighlight} group-hover:underline font-bold flex items-center gap-1`}>
+                          Regarder →
+                        </span>
+                      </div>
                     </div>
-
-                    <div className={`pt-3 border-t ${colors.borderAlphaLight} flex items-center justify-between text-[11px]`}>
-                      <span className={`font-semibold ${colors.textHighlight}`}>{tut.level}</span>
-                      <span className={`${colors.textHighlight} group-hover:underline font-bold flex items-center gap-1`}>
-                        Regarder →
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
             );
           })}
