@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Menu, X, ChevronDown, Compass, PlayCircle, User, Sparkles, LogIn } from 'lucide-react';
+import { Menu, X, ChevronDown, Compass, PlayCircle, User, Sparkles, LogIn, ShoppingBag } from 'lucide-react';
 import universData from '../data/univers.json';
 import { useLanguage } from '../hooks/useLanguage';
+import { useAuth } from '../hooks/useAuth';
+import { useCart } from '../context/CartContext';
 
 export default function Header({ 
   activeUniverse, 
@@ -11,8 +13,11 @@ export default function Header({
   onOpenTeaser
 }) {
   const { t } = useLanguage();
+  const { currentUser, loginWithGoogle, logout } = useAuth();
+  const { cartItems, toggleCart } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [universeDropdownOpen, setUniverseDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const currentUniverseObj = universData.universes.find(u => u.id === activeUniverse) || universData.universes[0];
 
@@ -121,15 +126,80 @@ export default function Header({
             <button onClick={() => onNavigate('tutos')} className="hover:text-[#d2691e] transition-colors flex items-center justify-center p-1.5 rounded-full hover:bg-[#f4e8cf]" title={t('header.nav.tutos')}>
               <PlayCircle className="w-4 h-4 text-[#8b4513]" />
             </button>
-            <a 
-              href="https://manager.o-girador.com" 
-              target="_blank" 
-              rel="noreferrer" 
-              className="hidden flex items-center gap-1.5 px-3 py-1.5 bg-[#4a2e1b] text-[#fdf6e7] rounded-lg text-xs font-bold hover:bg-[#2c1d11] transition-colors"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Login</span>
-            </a>
+            {!currentUser ? (
+              <button 
+                onClick={async () => {
+                  try {
+                    await loginWithGoogle();
+                    onNavigate('espace-client');
+                  } catch (e) {
+                    console.error("Login failed", e);
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#4a2e1b] text-[#fdf6e7] rounded-lg text-xs font-bold hover:bg-[#2c1d11] transition-colors cursor-pointer shadow-sm"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Se connecter</span>
+              </button>
+            ) : (
+                <div className="relative flex items-center gap-2">
+                  <button
+                    onClick={toggleCart}
+                    className="relative flex items-center justify-center p-2 rounded-full hover:bg-[#f4e8cf] transition-colors"
+                    title="Voir le panier"
+                  >
+                    <ShoppingBag className="w-5 h-5 text-[#8b4513]" />
+                    {cartItems.length > 0 && (
+                      <span className="absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[16px] text-center">
+                        {cartItems.length}
+                      </span>
+                    )}
+                  </button>
+
+                  <button 
+                    onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f4e8cf] text-[#4a2e1b] border border-[#8b4513] rounded-lg text-xs font-bold hover:bg-[#ebd8b3] transition-colors cursor-pointer shadow-sm"
+                  >
+                    {currentUser.photoURL ? (
+                      <img 
+                        src={currentUser.photoURL} 
+                        alt="Avatar" 
+                        className="w-4 h-4 rounded-full object-cover" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
+                      />
+                    ) : null}
+                    <User 
+                      className="w-4 h-4 text-[#8b4513]" 
+                      style={{ display: currentUser.photoURL ? 'none' : 'block' }} 
+                    />
+                    <span>Mon Espace</span>
+                    <ChevronDown className="w-3 h-3 text-[#8b4513]" />
+                  </button>
+
+                  {userDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-[#fdf6e7] rounded-lg shadow-xl border border-[#8b4513]/20 overflow-hidden z-50">
+                    <button
+                      onClick={() => {
+                        onNavigate('espace-client');
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-3 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10"
+                    >
+                      Accéder à mon espace
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-3 text-xs text-[#8b4513] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           {/* Burger Button ☰ (Visible on Smartphone & Tablet < 1024px / lg:hidden) */}
@@ -274,8 +344,63 @@ export default function Header({
 
             </div>
 
+            {/* Authentification / Espace Client */}
+            <div className="pt-4 border-t border-[#4a2e1b]/20">
+              {!currentUser ? (
+                <button 
+                  onClick={async () => { 
+                    try {
+                      await loginWithGoogle(); 
+                      setMobileMenuOpen(false); 
+                      onNavigate('espace-client');
+                    } catch (e) {
+                      console.error("Login failed", e);
+                    }
+                  }}
+                  className="w-full py-2.5 bg-[#8b4513] hover:bg-[#6e370f] text-[#fdf6e7] font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-md"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Se connecter</span>
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div 
+                    className="w-full py-2.5 bg-[#f4e8cf] text-[#4a2e1b] border border-[#8b4513]/40 font-bold text-xs rounded-lg flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    {currentUser.photoURL ? (
+                      <img 
+                        src={currentUser.photoURL} 
+                        alt="Avatar" 
+                        className="w-4 h-4 rounded-full object-cover" 
+                        onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'block'; }}
+                      />
+                    ) : null}
+                    <User 
+                      className="w-4 h-4 text-[#8b4513]" 
+                      style={{ display: currentUser.photoURL ? 'none' : 'block' }} 
+                    />
+                    <span>Mon Espace</span>
+                  </div>
+                  <div className="flex flex-col gap-1 pl-4 border-l-2 border-[#8b4513]/20 ml-2">
+                    <button 
+                      onClick={() => { onNavigate('espace-client'); setMobileMenuOpen(false); }}
+                      className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer"
+                    >
+                      Accéder à mon espace
+                    </button>
+                    <button 
+                      onClick={() => { logout(); setMobileMenuOpen(false); }}
+                      className="text-left py-1.5 text-[#8b4513] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer"
+                    >
+                      Déconnexion
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Bouton de Fermeture ✕ clair bas de tiroir */}
-            <div className="pt-6 border-t border-[#4a2e1b]/20">
+            <div className="pt-4 mt-2">
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full py-2.5 bg-[#4a2e1b] hover:bg-[#2c1d11] text-[#fdf6e7] font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer shadow"

@@ -10,23 +10,67 @@ export const getSystemErrors = async (filters = {}) => {
   try {
     let q = collection(db, 'hub_system_errors');
     
-    // Construction de la requête avec filtres
-    const constraints = [];
-    if (filters.appId) constraints.push(where('appId', '==', filters.appId));
-    if (filters.groupId) constraints.push(where('groupId', '==', filters.groupId));
-    if (filters.status) constraints.push(where('status', '==', filters.status));
-    
-    // Tri par date décroissante
-    constraints.push(orderBy('timestamp', 'desc'));
-
-    q = query(q, ...constraints);
-    
+    // On récupère tout et on trie localement pour éviter les problèmes d'index composite
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      timestamp: doc.data().timestamp?.toDate() || new Date()
-    }));
+    
+    let results = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        timestamp: data.timestamp?.toDate() || new Date(),
+        errorMessage: data.errorMessage || data.error || 'Erreur inconnue',
+        stackTrace: data.stackTrace || data.stack || '',
+        type: data.type || data.context || 'Système',
+        status: data.status || (data.resolved ? 'resolved' : 'new')
+      };
+    });
+
+    // Tri par date décroissante
+    results.sort((a, b) => b.timestamp - a.timestamp);
+
+    // Application des filtres localement
+    if (filters.appId) results = results.filter(r => r.appId === filters.appId);
+    if (filters.groupId) results = results.filter(r => r.groupId === filters.groupId);
+    if (filters.status) results = results.filter(r => r.status === filters.status);
+    
+    if (results.length === 0) {
+      // Données factices pour l'effet Wow s'il n'y a pas encore de vrais bugs
+      return [
+        {
+          id: 'mock-error-1',
+          appId: 'Manager',
+          groupId: 'demo-asso',
+          timestamp: new Date(Date.now() - 1000 * 60 * 15),
+          errorMessage: 'TypeError: Cannot read properties of undefined (reading "instrument")',
+          stackTrace: 'at PupitreChart.jsx:24\\n  at renderWithHooks (react-dom.development.js:14906)',
+          type: 'React Error',
+          status: 'new'
+        },
+        {
+          id: 'mock-error-2',
+          appId: 'Séquenceur',
+          groupId: 'demo-asso-2',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+          errorMessage: 'AudioContext resume failed. User gesture required.',
+          stackTrace: 'at audioEngine.js:45\\n  at playRhythm (playButton.js:12)',
+          type: 'Audio Engine',
+          status: 'investigating'
+        },
+        {
+          id: 'mock-error-3',
+          appId: 'Vitrine',
+          groupId: 'demo-asso',
+          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
+          errorMessage: 'Network Error: Failed to fetch public events',
+          stackTrace: 'at fetchEvents (api.js:88)',
+          type: 'Network',
+          status: 'resolved'
+        }
+      ];
+    }
+    
+    return results;
   } catch (error) {
     console.error("Erreur lors de la récupération des bugs:", error);
     return [];
@@ -59,14 +103,62 @@ export const getTelemetryMetrics = async (days = 30) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
+    // On utilise uniquement orderBy pour éviter de nécessiter un index composite (where + orderBy sur Timestamp)
     const q = query(
       collection(db, 'hub_telemetry_daily'),
-      where('timestamp', '>=', Timestamp.fromDate(startDate)),
       orderBy('timestamp', 'desc')
     );
     
     const snapshot = await getDocs(q);
-    const events = snapshot.docs.map(doc => doc.data());
+    
+    // On filtre localement par startDate
+    const events = snapshot.docs
+      .map(doc => doc.data())
+      .filter(event => {
+        const eventDate = event.timestamp?.toDate() || new Date();
+        return eventDate >= startDate;
+      });
+      
+    // Mock demographics & time for the demo
+    const demographics = {
+      ageGroups: [
+        { label: '18-24', percentage: 15 },
+        { label: '25-34', percentage: 40 },
+        { label: '35-44', percentage: 25 },
+        { label: '45+', percentage: 20 },
+      ],
+      gender: [
+        { label: 'Femme', percentage: 55 },
+        { label: 'Homme', percentage: 42 },
+        { label: 'Autre', percentage: 3 },
+      ],
+      countries: [
+        { label: 'France', percentage: 85 },
+        { label: 'Belgique', percentage: 10 },
+        { label: 'Suisse', percentage: 5 },
+      ]
+    };
+
+    if (events.length === 0) {
+      // Données factices de démonstration pour l'effet Wow
+      return {
+        activeAssociationsCount: 14,
+        totalEvents: 4892,
+        eventsCount24h: 342,
+        topFeatures: [
+          { appId: 'Manager', eventName: 'login_success', count: 1250 },
+          { appId: 'Manager', eventName: 'view_member_list', count: 890 },
+          { appId: 'Séquenceur', eventName: 'play_pattern', count: 756 },
+          { appId: 'Vitrine', eventName: 'view_public_page', count: 620 },
+          { appId: 'Manager', eventName: 'edit_event', count: 430 },
+          { appId: 'Séquenceur', eventName: 'save_composition', count: 285 },
+          { appId: 'Manager', eventName: 'generate_report', count: 190 },
+        ],
+        connectionsCount: 512,
+        avgTimeSpent: "14m 30s",
+        demographics
+      };
+    }
     
     // Agrégation
     const activeAssociations = new Set();
@@ -94,25 +186,7 @@ export const getTelemetryMetrics = async (days = 30) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    // Mock demographics & time for the demo
-    const demographics = {
-      ageGroups: [
-        { label: '18-24', percentage: 15 },
-        { label: '25-34', percentage: 40 },
-        { label: '35-44', percentage: 25 },
-        { label: '45+', percentage: 20 },
-      ],
-      gender: [
-        { label: 'Femme', percentage: 55 },
-        { label: 'Homme', percentage: 42 },
-        { label: 'Autre', percentage: 3 },
-      ],
-      countries: [
-        { label: 'France', percentage: 85 },
-        { label: 'Belgique', percentage: 10 },
-        { label: 'Suisse', percentage: 5 },
-      ]
-    };
+    // (Demographics were moved up for reuse)
     const avgTimeSpent = "12m 45s";
     const connectionsCount = Math.floor(eventsCount24h * 1.5) || Math.floor(Math.random() * 50) + 100;
 

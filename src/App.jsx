@@ -13,6 +13,8 @@ import Footer from './components/Footer';
 import UniverseModal from './components/UniverseModal';
 import CheckoutFlow from './components/checkout/CheckoutFlow';
 import AddonsStore from './components/addons/AddonsStore';
+import EspaceClient from './components/espace-client/EspaceClient';
+import CartDrawer from './components/shop/CartDrawer';
 import { Loader2 } from 'lucide-react';
 
 // Lazy loading pour le panneau d'administration lourd (/admin)
@@ -26,8 +28,10 @@ function AppContent() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
 
   useEffect(() => {
-    if (window.location.pathname === '/admin' || window.location.hash === '#admin') {
+    if (window.location.pathname === '/admin' || window.location.hash.startsWith('#admin')) {
       setActiveView('admin');
+    } else if (window.location.hash.startsWith('#espace-client')) {
+      setActiveView('espace-client');
     }
   }, []);
 
@@ -43,7 +47,9 @@ function AppContent() {
     setActiveView(view);
     if (view === 'admin') {
       window.location.hash = 'admin';
-    } else if (window.location.hash === '#admin') {
+    } else if (view === 'espace-client') {
+      window.location.hash = 'espace-client';
+    } else if (window.location.hash === '#admin' || window.location.hash === '#espace-client') {
       window.location.hash = '';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -105,25 +111,37 @@ function AppContent() {
         </main>
       )}
 
+      {activeView === 'espace-client' && (
+        <main>
+          <EspaceClient onNavigateHome={() => handleNavigate('home')} />
+        </main>
+      )}
+
       {/* Footer */}
       <Footer onNavigate={handleNavigate} onOpenAdminModal={() => setAdminModalOpen(true)} />
 
-      {/* Modals */}
+      {/* Modals & Overlays */}
       {teaserModalUniverse && (
         <UniverseModal universe={teaserModalUniverse} onClose={() => setTeaserModalUniverse(null)} />
       )}
 
       <AdminLoginModal isOpen={adminModalOpen} onClose={() => setAdminModalOpen(false)} />
+      
+      <CartDrawer />
 
     </div>
   );
 }
 
+import { CartProvider } from './context/CartContext';
+
 export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <AppContent />
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
       </AuthProvider>
     </LanguageProvider>
   );

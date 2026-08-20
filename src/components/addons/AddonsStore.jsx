@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingCart, CheckCircle2, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { fetchPacks } from '../../services/packsService';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useCart } from '../../context/CartContext';
 
 const APP_COLORS = {
   sequenceur: {
@@ -40,6 +41,7 @@ const APP_COLORS = {
 
 export default function AddonsStore() {
   const { t } = useLanguage();
+  const { addToCart } = useCart();
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState(null);
@@ -150,7 +152,7 @@ export default function AddonsStore() {
                                 Détails
                               </button>
                               <button
-                                onClick={() => {}}
+                                onClick={() => addToCart({ id: pack.id, name: pack.name, price: pack.price, type: 'addon' })}
                                 className={`flex-1 py-2 px-3 font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-md ${colors.buttonBg}`}
                               >
                                 {pack.price === 0 ? 'Ajouter' : 'Acheter'}
@@ -231,15 +233,13 @@ export default function AddonsStore() {
                       <span className="block text-xs text-gray-500 uppercase font-bold mb-1">Prix total</span>
                       <span className="text-4xl font-black text-[#4a2e1b]">{selectedPack.price}€</span>
                     </div>
-                    <a
-                      href="https://www.helloasso.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`${selectedPack.colors.buttonBg} w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-xl hover:scale-105`}
+                    <button
+                      onClick={() => addToCart({ id: selectedPack.id, name: selectedPack.name, price: selectedPack.price, type: 'addon' })}
+                      className={`${selectedPack.colors.buttonBg} w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-xl hover:scale-105 cursor-pointer`}
                     >
                       <ShoppingCart className="w-5 h-5" />
-                      Procéder au paiement
-                    </a>
+                      Ajouter au panier
+                    </button>
                   </div>
                 </div>
               </div>
