@@ -9,6 +9,13 @@ const APP_TARGETS = [
   { id: 'vitrine', label: 'Mostrador (Vitrine)' }
 ];
 
+const UNIVERSES = [
+  { id: 'maracatu', label: 'Maracatu' },
+  { id: 'samba', label: 'Samba' },
+  { id: 'capoeira', label: 'Capoeira' },
+  { id: 'universal', label: 'Universel' }
+];
+
 export default function CatalogueManagerTab() {
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +46,8 @@ export default function CatalogueManagerTab() {
       description: '',
       price: 0,
       targetApp: 'sequenceur',
+      universeId: 'universal',
+      isUniversal: true,
       features: [''],
       jsonData: null,
       imageUrl: ''
@@ -143,8 +152,8 @@ export default function CatalogueManagerTab() {
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 space-y-5 border border-[#8b4513]/20">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="space-y-1.5 lg:col-span-1">
               <label className="text-xs font-bold text-[#8b4513] uppercase">Nom du pack</label>
               <input 
                 type="text" 
@@ -163,6 +172,25 @@ export default function CatalogueManagerTab() {
               >
                 {APP_TARGETS.map(app => (
                   <option key={app.id} value={app.id}>{app.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#8b4513] uppercase">Univers Cible</label>
+              <select 
+                value={editingPack.universeId || 'universal'}
+                onChange={e => {
+                  const val = e.target.value;
+                  setEditingPack({
+                    ...editingPack, 
+                    universeId: val,
+                    isUniversal: val === 'universal'
+                  });
+                }}
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-semibold"
+              >
+                {UNIVERSES.map(uni => (
+                  <option key={uni.id} value={uni.id}>{uni.label}</option>
                 ))}
               </select>
             </div>
@@ -333,7 +361,7 @@ export default function CatalogueManagerTab() {
             <thead>
               <tr className="bg-[#f4e8cf] text-[#8b4513] text-xs uppercase tracking-wider">
                 <th className="p-4 font-bold border-b border-[#8b4513]/20">Pack</th>
-                <th className="p-4 font-bold border-b border-[#8b4513]/20">Application</th>
+                <th className="p-4 font-bold border-b border-[#8b4513]/20">Cibles</th>
                 <th className="p-4 font-bold border-b border-[#8b4513]/20">Prix</th>
                 <th className="p-4 font-bold border-b border-[#8b4513]/20">Contenu</th>
                 <th className="p-4 font-bold border-b border-[#8b4513]/20 text-right">Actions</th>
@@ -352,9 +380,14 @@ export default function CatalogueManagerTab() {
                       <div className="text-xs text-gray-500 line-clamp-1">{pack.description}</div>
                     </td>
                     <td className="p-4">
-                      <span className="text-[10px] uppercase font-bold px-2 py-1 rounded bg-[#f4e8cf] text-[#8b4513]">
-                        {pack.targetApp}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className="text-[10px] uppercase font-bold px-2 py-1 rounded bg-[#f4e8cf] text-[#8b4513]">
+                          {pack.targetApp}
+                        </span>
+                        <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded ${pack.isUniversal || pack.universeId === 'universal' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                          {pack.isUniversal ? 'Universel' : (pack.universeId || 'N/A')}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-4 font-bold text-emerald-700">
                       {pack.price} €

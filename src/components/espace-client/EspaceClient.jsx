@@ -1,21 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../context/CartContext';
-import { User, Sparkles, CheckCircle2, LayoutDashboard, Settings, BarChart3, PackageOpen } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { db } from '../../services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
-import OnboardingWizard from './OnboardingWizard';
-import TabIdentity from './tabs/TabIdentity';
-import TabAnalytics from './tabs/TabAnalytics';
-import TabTools from './tabs/TabTools';
+import ImportConfirmModal from './ImportConfirmModal';
+import { Loader2 } from 'lucide-react';
+
+import MestreTopBar from './MestreTopBar';
+import MestreDashboard from './MestreDashboard';
+import SequencerView from './views/SequencerView';
+import DancadorView from './views/DancadorView';
+import OrganizadorView from './views/OrganizadorView';
+import VitrineView from './views/VitrineView';
+import AddonsStore from './views/AddonsStore';
+import TerreiroView from './views/TerreiroView';
+import ProfileView from './views/ProfileView';
 
 export default function EspaceClient({ onNavigateHome }) {
-  const { currentUser, userData, loading } = useAuth();
+  const { currentUser, userData, loading, isProvisioning, loginWithGoogle } = useAuth();
   const { clearCart } = useCart();
-  const [activeTab, setActiveTab] = useState('identity'); // 'identity', 'analytics', 'tools'
   const [successMessage, setSuccessMessage] = useState('');
   const [associationData, setAssociationData] = useState(null);
   const [loadingAssoc, setLoadingAssoc] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [hasRedirected, setHasRedirected] = useState(false);
+  
+  const [importParams, setImportParams] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   // Fetch de l'association en temps réel
   useEffect(() => {
@@ -47,52 +59,69 @@ export default function EspaceClient({ onNavigateHome }) {
     if (hasSuccess) {
       clearCart();
       setSuccessMessage('Paiement réussi ! Vos contenus ont été débloqués.');
-      setActiveTab('tools'); // On redirige vers les outils débloqués
       // Nettoyer l'URL sans recharger la page
       window.history.replaceState(null, '', window.location.pathname + '#espace-client');
     }
+
+    // Vérification de l'URL pour l'import de création
+    const searchParams = new URLSearchParams(window.location.search);
+    const importId = searchParams.get('import_id');
+    const type = searchParams.get('type');
+    
+    if (importId && type) {
+      setImportParams({ import_id: importId, type });
+      setShowImportModal(true);
+    }
   }, [clearCart]);
 
-  if (loading || loadingAssoc) {
+  // Redirection automatique vers le profil pour les nouveaux inscrits
+  useEffect(() => {
+    if (associationData && !hasRedirected) {
+      if (!associationData.name && !associationData.nom) {
+        setActiveTab('profile');
+      }
+      setHasRedirected(true);
+    }
+  }, [associationData, hasRedirected]);
+
+  if (loading || loadingAssoc || isProvisioning) {
     return (
-      <div className="pt-24 min-h-screen flex items-center justify-center">
-        <p className="text-amber-900 font-bold">Chargement de votre espace...</p>
+      <div className="pt-24 min-h-screen flex flex-col items-center justify-center gap-4">
+        {isProvisioning && <Loader2 className="w-8 h-8 text-[#8b4513] animate-spin" />}
+        <p className="text-amber-900 font-bold">
+          {isProvisioning ? "Création de votre espace en cours..." : "Chargement de votre espace..."}
+        </p>
       </div>
     );
   }
 
   if (!currentUser) {
     return (
-      <div className="pt-24 min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-amber-900 font-bold">Vous devez être connecté pour accéder à cet espace.</p>
+      <div className="pt-24 min-h-screen flex flex-col items-center justify-center gap-6 max-w-md mx-auto text-center px-4">
+        
+        <h2 className="text-2xl font-black text-[#4a2e1b] font-cordel">
+          Accès Restreint
+        </h2>
+        <p className="text-[#8b4513]">
+          {importParams 
+            ? "Créez votre compte gratuit ou connectez-vous pour utiliser ce morceau dans votre répertoire." 
+            : "Vous devez être connecté pour accéder à cet espace."}
+        </p>
+        <button 
+          onClick={loginWithGoogle}
+          className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors shadow-sm"
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
+          Continuer avec Google
+        </button>
         <button 
           onClick={onNavigateHome}
-          className="px-4 py-2 bg-[#8b4513] text-white rounded-lg hover:bg-[#6e370f] transition-colors cursor-pointer"
+          className="text-gray-500 hover:text-gray-800 text-sm font-bold mt-4"
         >
           Retour à l'accueil
         </button>
       </div>
     );
-  }
-
-  // Si l'onboarding n'est pas terminé, on affiche l'assistant de configuration
-  if (!associationData?.onboardingCompleted) {
-    return (
-      <div className="pt-24 min-h-screen bg-[#fdf6e7]">
-        <OnboardingWizard 
-          groupId={userData?.groupId} 
-          onComplete={() => setAssociationData(prev => ({ ...prev, onboardingCompleted: true }))} 
-        />
-      </div>
-    );
-  }
-
-  // Vérification de l'accès aux analyses (doit avoir 'manager', 'vitrine', ou un plan qui les contient)
-  const hasAnalyticsAccess = associationData?.ecosystemAccess?.hub !== false || associationData?.ecosystemAccess?.vitrine !== false;
-
-  // Sécurité : si l'utilisateur est sur l'onglet analyses mais n'y a plus accès
-  if (activeTab === 'analytics' && !hasAnalyticsAccess) {
-    setActiveTab('tools');
   }
 
   return (
@@ -109,71 +138,69 @@ export default function EspaceClient({ onNavigateHome }) {
         </div>
       )}
 
-      {/* Tabs Header */}
-      <div className="flex flex-wrap gap-2 relative z-10 -mb-[1px]">
-        <button
-          onClick={() => setActiveTab('identity')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-bold uppercase tracking-wider text-sm transition-colors ${
-            activeTab === 'identity' 
-              ? 'bg-white text-[#8b4513] border-t-4 border-x border-[#8b4513] border-x-amber-900/10 border-b-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
-              : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-white border-t-4 border-transparent border-b border-b-amber-900/10'
-          }`}
-        >
-          <Settings className="w-4 h-4" />
-          Identité
-        </button>
-        
-        {hasAnalyticsAccess && (
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-bold uppercase tracking-wider text-sm transition-colors ${
-              activeTab === 'analytics' 
-                ? 'bg-white text-[#8b4513] border-t-4 border-x border-[#8b4513] border-x-amber-900/10 border-b-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
-                : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-white border-t-4 border-transparent border-b border-b-amber-900/10'
-            }`}
-          >
-            <BarChart3 className="w-4 h-4" />
-            Analyses
-          </button>
-        )}
-        
-        <button
-          onClick={() => setActiveTab('tools')}
-          className={`flex items-center gap-2 px-6 py-3 rounded-t-xl font-bold uppercase tracking-wider text-sm transition-colors ${
-            activeTab === 'tools' 
-              ? 'bg-white text-[#8b4513] border-t-4 border-x border-[#8b4513] border-x-amber-900/10 border-b-0 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]'
-              : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-white border-t-4 border-transparent border-b border-b-amber-900/10'
-          }`}
-        >
-          <PackageOpen className="w-4 h-4" />
-          Mes Outils
-        </button>
-      </div>
+      {/* Welcome message for new users */}
+      {associationData && !associationData.name && !associationData.nom && activeTab === 'profile' && !successMessage && (
+        <div className="mb-6 bg-[#d2691e]/10 border-l-4 border-[#d2691e] p-4 rounded-r-lg flex items-start gap-3 shadow-sm">
+          <CheckCircle2 className="w-5 h-5 text-[#8b4513] shrink-0 mt-0.5" />
+          <div>
+            <h3 className="text-[#8b4513] font-bold text-sm uppercase tracking-wider">Bienvenue à bord !</h3>
+            <p className="text-[#8b4513]/80 text-sm">Votre espace Mestre a été créé avec succès. Pour finaliser votre inscription, veuillez renseigner le nom de votre association.</p>
+          </div>
+        </div>
+      )}
 
-      {/* Main Content Area */}
-      <div className="bg-white rounded-b-2xl rounded-tr-2xl shadow-xl border border-amber-900/10 p-4 sm:p-8 relative z-0">
-        
-        {activeTab === 'identity' && (
-          <TabIdentity 
-            associationData={associationData} 
-            groupId={userData?.groupId}
-          />
-        )}
+      {/* App Switcher (Top Bar de la Tour de Contrôle) */}
+      <MestreTopBar 
+        associationData={associationData} 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+      />
 
-        {activeTab === 'analytics' && hasAnalyticsAccess && (
-          <TabAnalytics 
+      <ImportConfirmModal 
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          // Nettoyer l'URL
+          window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        }}
+        importParams={importParams}
+        associationData={associationData}
+        onSuccess={() => {
+          setSuccessMessage('Création importée avec succès dans votre répertoire !');
+        }}
+      />
+
+      {/* Main Content Area (Cockpit Mestre) */}
+      <div className="bg-transparent mt-2">
+        {activeTab === 'dashboard' && (
+          <MestreDashboard 
             associationData={associationData} 
             userData={userData} 
+            onNavigateHome={onNavigateHome}
+            setActiveTab={setActiveTab}
           />
         )}
-
-        {activeTab === 'tools' && (
-          <TabTools 
-            associationData={associationData} 
-            userData={userData} 
-          />
+        {activeTab === 'sequenceur' && (
+          <SequencerView userData={userData} onBack={() => setActiveTab('dashboard')} />
         )}
-
+        {activeTab === 'dancador' && (
+          <DancadorView userData={userData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'manager' && (
+          <OrganizadorView userData={userData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'vitrine' && (
+          <VitrineView userData={userData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'boutique' && (
+          <AddonsStore associationData={associationData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'terreiro' && (
+          <TerreiroView associationData={associationData} userData={userData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'profile' && (
+          <ProfileView associationData={associationData} userData={userData} onBack={() => setActiveTab('dashboard')} />
+        )}
       </div>
     </div>
   );

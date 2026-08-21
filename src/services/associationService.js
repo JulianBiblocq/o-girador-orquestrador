@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Mock initial data for demonstration & offline fallback
@@ -97,6 +97,39 @@ export async function fetchAssociations() {
   // Save initial fallback data
   localStorage.setItem('ogirador_associations', JSON.stringify(INITIAL_DEMO_GROUPS));
   return INITIAL_DEMO_GROUPS;
+}
+
+export function subscribeToAssociations(callback) {
+  try {
+    const q = collection(db, 'associations');
+    return onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs.map(docSnap => ({
+          id: docSnap.id,
+          ...docSnap.data()
+        }));
+        callback(data);
+      } else {
+        const localData = localStorage.getItem('ogirador_associations');
+        if (localData) {
+          try {
+            callback(JSON.parse(localData));
+          } catch(e) {}
+        } else {
+          localStorage.setItem('ogirador_associations', JSON.stringify(INITIAL_DEMO_GROUPS));
+          callback(INITIAL_DEMO_GROUPS);
+        }
+      }
+    }, (err) => {
+      console.warn("Firestore subscribe fallback:", err);
+      const localData = localStorage.getItem('ogirador_associations');
+      callback(localData ? JSON.parse(localData) : INITIAL_DEMO_GROUPS);
+    });
+  } catch (err) {
+    const localData = localStorage.getItem('ogirador_associations');
+    callback(localData ? JSON.parse(localData) : INITIAL_DEMO_GROUPS);
+    return () => {};
+  }
 }
 
 export async function saveAssociation(groupData) {

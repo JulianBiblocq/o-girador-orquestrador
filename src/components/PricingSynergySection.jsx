@@ -78,6 +78,21 @@ export default function PricingSynergySection({ onSelectPlan }) {
         {/* Synergy Spotlight Card */}
         <SynergySpotlight />
 
+        {/* Petit Plus Boutique */}
+        <div className="bg-[#fdf6e7] border-2 border-amber-500/30 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6 shadow-lg">
+          <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+            <Zap className="w-8 h-8 text-amber-600" />
+          </div>
+          <div>
+            <h4 className="text-xl font-bold font-cordel text-[#4a2e1b] mb-2">
+              💡 Le petit plus : La Boutique d'Add-ons
+            </h4>
+            <p className="text-sm text-[#8b4513] leading-relaxed">
+              <strong>Personnalisez votre écosystème à la carte !</strong> Depuis O Girador Orquestrador, accédez à notre Boutique d'Add-ons pour enrichir vos outils : achetez de nouveaux <em>Packs Rythmes</em> (par des Mestres reconnus), des <em>Packs Culture</em> (QCM & Histoire) ou des <em>Packs Chorégraphies</em> pour faire grandir votre répertoire.
+            </p>
+          </div>
+        </div>
+
       </div>
     </section>
   );

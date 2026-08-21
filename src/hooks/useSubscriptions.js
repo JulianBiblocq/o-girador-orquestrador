@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchAssociations, saveAssociation, deleteAssociation } from '../services/associationService';
+import { useState, useEffect } from 'react';
+import { saveAssociation, deleteAssociation, subscribeToAssociations } from '../services/associationService';
 
 /**
  * Hook personnalisé de gestion des abonnements et des structures d'associations (SOC)
@@ -8,38 +8,27 @@ export function useSubscriptions() {
   const [associations, setAssociations] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
+  useEffect(() => {
     setLoading(true);
-    try {
-      const list = await fetchAssociations();
-      setAssociations(list);
-    } catch (err) {
-      console.error("Erreur chargement abonnements :", err);
-    } finally {
+    const unsubscribe = subscribeToAssociations((data) => {
+      setAssociations(data);
       setLoading(false);
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const addOrUpdateAssociation = async (formData) => {
-    const newList = await saveAssociation(formData);
-    setAssociations(newList);
-    return newList;
+    return await saveAssociation(formData);
   };
 
   const removeAssociation = async (id) => {
-    const newList = await deleteAssociation(id);
-    setAssociations(newList);
-    return newList;
+    return await deleteAssociation(id);
   };
 
   return {
     associations,
     loading,
-    reload: loadData,
+    reload: () => {}, // No longer needed
     addOrUpdateAssociation,
     removeAssociation
   };

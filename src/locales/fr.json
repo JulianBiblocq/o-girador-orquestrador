@@ -32,51 +32,69 @@
       "vitrine": "🌟 Mostrador",
       "vitrineSub": "Identité Cordel & Recrutement",
       "dancador": "👣 Dançador",
-      "dancadorSub": "Chorégraphies & Formations"
+      "dancadorSub": "Chorégraphies & Formations",
+      "terreiro": "🎛️ Orquestrador",
+      "terreiroSub": "Hub Global & Administration"
     }
   },
   "triptyque": {
-    "badge": "Le Coeur de l'Écosystème",
-    "title": "La Suite O Girador",
-    "subtitle": "Quatre piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
+    "badge": "Fiches Détaillées",
+    "title": "Les Applications de l'Écosystème",
+    "subtitle": "Cinq piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
     "sequenceur": {
-      "badge": "Studio & Rythmes",
-      "title": "O Girador-Sequenciador",
-      "description": "Le séquenceur interactif de rythmes de Maracatu dans votre navigateur. Simulez un bloco complet avec la Roda circulaire.",
-      "feat1": "Roda Circulaire & Baguette rotative : Visualisation en temps réel du cercle de jeu.",
-      "feat2": "Sculpture sonore pas-à-pas : Micro-timing, swing Maracatu et contrôle du decay.",
-      "feat3": "Toadas & Syllabes Karaoké : Suivi dynamique des textes pour Puxador & Coro.",
-      "feat4": "Mode Song & Rampes BPM : Accélérations fluides d'un compasso à l'autre.",
-      "repo": "Dépôt Séquenceur"
-    },
-    "manager": {
-      "badge": "Gestion d'Association",
-      "title": "O Girador-Organizador",
-      "description": "La suite administrative dédiée aux responsables de Bloco : gérez les membres, les répétitions et les finances sereinement.",
-      "feat1": "Agenda & Convocations : Gestion des présences aux concerts et répétitions.",
-      "feat2": "Trésorerie & Cotisations : Remboursements kilométriques et suivi des règlements.",
-      "feat3": "Varal d'Annonces & Forum : Espace communautaires et trombinoscope du groupe.",
-      "feat4": "Gestion du Matériel : Parc d'instruments (Alfaias, Caisses, Gonguês) et prêts.",
-      "repo": "Dépôt Manager"
-    },
-    "vitrine": {
-      "badge": "Rayonnement Public",
-      "title": "O Girador-Mostrador",
-      "description": "Le site web public clé en main pour votre association : faites rayonner votre Bloco et attirez de nouveaux adhérents.",
-      "feat1": "Identité Cordel Personnalisée : Affichez l'histoire et les couleurs de votre groupe.",
-      "feat2": "Calendrier des Prestations : Dates de concerts ouvertes au grand public.",
-      "feat3": "Formulaire de Contact & Adhésion : Inscription directe des nouveaux percussionnistes.",
-      "feat4": "Galerie Médias & Toadas : Écoute des extraits sonores et vidéos de concerts.",
-      "note": "Intégration directe Manager"
+      "badge": "Studio de création",
+      "title": "O Girador Séquenciador",
+      "description": "Le cœur musical de l'écosystème, conçu pour la composition, le micro-timing et l'authenticité des rythmes.",
+      "feat1": "Moteur Audio Haute Fidélité : Séquenceur linéaire stable (Web Audio API & Tone.js) sans désynchronisation.",
+      "feat2": "Algorithme de Balanço : Système mécanique exclusif reproduisant le \"gingado\" et le balanço traditionnel du Baque Virado.",
+      "feat3": "Contrôle Dynamique Chirurgical : Réglage par pas du volume, de la résonance (decay) et du micro-décalage temporel pour chaque frappe.",
+      "feat4": "Roda Interactive : Visualisation dynamique en cercle concentrique simulant le placement physique des instruments.",
+      "feat5": "Dynamiques Avancées : Rampes de tempo (aceleração/arrasto), signatures rythmiques multiples et automations de volume.",
+      "feat6": "Toada (Karaoké) : Génération de pistes vocales avec séparation visuelle du Puxador et du Coro.",
+      "feat7": "Utilitaires Pro : Enregistrement audio en temps réel (.webm), export/import JSON et bibliothèque de rythmes traditionnels intégrée.",
+      "repo": "Code Source"
     },
     "dancador": {
-      "badge": "Nouveau",
-      "title": "O Girador-Dançador",
-      "description": "Outil pédagogique et séquenceur de pas de danse pour construire vos chorégraphies, gérer les placements et préparer vos événements.",
-      "feat1": "Séquenceur de Pas : Construisez et apprenez une chorégraphie complète pas à pas.",
-      "feat2": "Formations Modulables : Concevez les déplacements (en ligne, en rond) avec le bloc et les mestres.",
-      "feat3": "Vidéos Pédagogiques : Les mestres partagent leurs pas synchronisés aux rythmes du Sequenciador.",
-      "feat4": "Programmes & Événements : Préparez le déroulé d'une répétition ou d'une prestation (lié à l'Organizador)."
+      "badge": "Studio de chorégraphie",
+      "title": "O Girador Dançador",
+      "description": "L'outil visuel pour synchroniser, enseigner et archiver les pas de danse.",
+      "feat1": "Timeline Chorégraphique : Composition multi-pistes pour placer et synchroniser les pas de chaque rôle sur la musique.",
+      "feat2": "Lecteur d'Apprentissage : Mode miroir, ralenti (jusqu'à 0.25x) et boucle A-B pour l'enseignement.",
+      "feat3": "Captation Intelligente : Studio vidéo mobile avec recadrage automatique et mode \"fantôme\" pour superposer les mouvements.",
+      "feat4": "Beat Tracker : Pulsation visuelle calée automatiquement sur le tempo du Séquenciador.",
+      "feat5": "Dictionnaire Personnalisé : Classement des pas par niveau pour constituer la bibliothèque officielle de l'association."
+    },
+    "manager": {
+      "badge": "Le centre de commandement",
+      "title": "O Girador Organizador",
+      "description": "L'ERP sur-mesure pour gérer la vie, la logistique et les finances d'un groupe ou d'une association.",
+      "feat1": "Ressources Humaines : Trombinoscope, gestion des membres par pupitre, et suivi des présences/absences sur l'agenda centralisé.",
+      "feat2": "Espaces Personnels : Chaque membre accède à son agenda, ses emprunts et son suivi pédagogique depuis son mobile.",
+      "feat3": "Direction Artistique (Le Varal) : Bibliothèque partagée pour les partitions, plans de scène interactifs, QCM d'évaluation et setlists.",
+      "feat4": "Logistique & Matériel : Inventaire des instruments (suivi des réparations des alfaias, caixas, etc.), gestion du vestiaire (mensurations) et commandes groupées.",
+      "feat5": "CRM & Trésorerie : Bilan financier par événement, notes de frais, pipeline de dates de concerts (Kanban) et suivi des cotisations.",
+      "feat6": "Communication : \"Porte-Voix\" interne (forum par canaux) et annonces officielles du Mestre.",
+      "repo": "Code Source"
+    },
+    "vitrine": {
+      "badge": "Rayonnement public",
+      "title": "O Girador Mostrador",
+      "description": "Le site internet généré automatiquement, sans aucun effort de double saisie.",
+      "feat1": "Synchronisation Automatique : La vitrine s'alimente directement depuis les données du Manager (agenda public, photos, présentation).",
+      "feat2": "Espace Pro : Mise à disposition instantanée des fiches techniques, plans de scène et riders pour les programmateurs.",
+      "feat3": "Recrutement : Formulaire de contact intégré pour les nouveaux membres et module d'inscription à la newsletter.",
+      "feat4": "Visibilité Accrue : Un site moderne qui valorise l'image de l'association.",
+      "note": "Intégration directe Manager"
+    },
+    "terreiro": {
+      "badge": "Le Hub Global",
+      "title": "O Girador Orquestrador",
+      "description": "L'espace global de l'administrateur pour piloter l'écosystème et interagir avec la communauté.",
+      "feat1": "Tableau de Bord Global : Vue synthétique des statistiques (membres, événements, créations audio/danse).",
+      "feat2": "Banque de Partage & Réseau : Annuaire des autres associations, partage public ou privé (P2P) de séquences, et mur d'échanges.",
+      "feat3": "Marché des Artisans : Annuaire qualitatif des luthiers et vendeurs de peaux avec codes promo exclusifs.",
+      "feat4": "Boutique d'Add-ons : Achat de packs rythmiques, packs culture, ou thèmes visuels.",
+      "note": "Connecté à l'écosystème"
     }
   },
   "tarifs": {

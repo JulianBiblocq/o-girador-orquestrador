@@ -32,6 +32,7 @@ export default function AssociationTable({
           <thead>
             <tr className="bg-[#4a2e1b] text-[#fdf6e7] font-cordel uppercase text-[11px]">
               <th className="p-3">Structure / Bloco</th>
+              <th className="p-3">Univers</th>
               <th className="p-3">Contact & Ville</th>
               <th className="p-3">Forfait</th>
               <th className="p-3">Expiration</th>
@@ -50,6 +51,12 @@ export default function AssociationTable({
                   <td className="p-3">
                     <div className="font-bold text-[#4a2e1b] text-sm font-cordel">{assoc.name || assoc.nom || 'Sans nom'}</div>
                     <div className="text-[10px] text-gray-500">{assoc.membersCount || 0} membres</div>
+                  </td>
+
+                  <td className="p-3">
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#f4e8cf] text-[#8b4513] border border-[#d4b895]">
+                      {assoc.universeId || 'N/A'}
+                    </span>
                   </td>
 
                   <td className="p-3">

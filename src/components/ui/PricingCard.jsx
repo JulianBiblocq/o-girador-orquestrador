@@ -49,7 +49,7 @@ export default function PricingCard({ plan, billingCycle, onSelect }) {
           Public visé : <span className="normal-case font-semibold text-[#2c1d11]">{plan.targetAudience}</span>
         </div>
 
-        <ul className="space-y-2.5 mb-8 text-xs text-[#2c1d11]">
+        <ul className="space-y-2.5 mb-6 text-xs text-[#2c1d11]">
           {plan.features.map((feat, idx) => (
             <li key={idx} className="flex items-start gap-2">
               <Check className="w-4 h-4 text-green-700 shrink-0 mt-0.5" />
@@ -57,6 +57,12 @@ export default function PricingCard({ plan, billingCycle, onSelect }) {
             </li>
           ))}
         </ul>
+
+        <div className="mb-6 text-center">
+          <a href="#triptyque" className="text-[11px] font-bold text-[#8b4513] hover:text-[#6e370f] underline underline-offset-2 transition-colors">
+            Voir tous les avantages en détails
+          </a>
+        </div>
       </div>
 
       <div>

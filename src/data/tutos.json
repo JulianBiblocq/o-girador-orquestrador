@@ -16,7 +16,12 @@
           "thumbnail": "/assets/tutos/thumb-roda.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-roda",
           "summary": "Découvrez comment utiliser la vue en Roda concentrique pour visualiser l'activation des frappes de chaque instrument en temps réel.",
-          "tags": ["Roda", "Interface", "Pulsation", "Débutant"]
+          "tags": [
+            "Roda",
+            "Interface",
+            "Pulsation",
+            "Débutant"
+          ]
         },
         {
           "id": "tuto-seq-02",
@@ -26,7 +31,12 @@
           "thumbnail": "/assets/tutos/thumb-swing.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-swing",
           "summary": "Apprenez à régler le micro-décalage par pas pour insuffler le balancement 'gingado' authentique du Baque Virado aux caisses de maracatu.",
-          "tags": ["Micro-timing", "Swing", "Caixa", "Baque Virado"]
+          "tags": [
+            "Micro-timing",
+            "Swing",
+            "Caixa",
+            "Baque Virado"
+          ]
         },
         {
           "id": "tuto-seq-03",
@@ -36,7 +46,12 @@
           "thumbnail": "/assets/tutos/thumb-songmode.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-songmode",
           "summary": "Structurez votre morceau mesure par mesure, en définissant des signatures rythmiques indépendantes et des rampes d'accélération de tempo.",
-          "tags": ["Mode Song", "Arrangement", "BPM", "Rampes"]
+          "tags": [
+            "Mode Song",
+            "Arrangement",
+            "BPM",
+            "Rampes"
+          ]
         },
         {
           "id": "tuto-seq-04",
@@ -46,9 +61,16 @@
           "thumbnail": "/assets/tutos/thumb-toada.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-toada",
           "summary": "Saisissez les paroles de chant (Puxador et Coro) pour générer automatiquement le défilement karaoké synchronisé avec la musique.",
-          "tags": ["Toada", "Karaoké", "Chant", "Puxador"]
+          "tags": [
+            "Toada",
+            "Karaoké",
+            "Chant",
+            "Puxador"
+          ]
         }
-      ]
+      ],
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
       "id": "manager",
@@ -65,7 +87,12 @@
           "thumbnail": "/assets/tutos/thumb-vitrine.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-vitrine",
           "summary": "Personnalisez la page publique de votre association avec le thème Cordel, la bio, les photos et les liens sociaux.",
-          "tags": ["Vitrine", "Thème Cordel", "Communication", "Profil"]
+          "tags": [
+            "Vitrine",
+            "Thème Cordel",
+            "Communication",
+            "Profil"
+          ]
         },
         {
           "id": "tuto-man-02",
@@ -75,7 +102,12 @@
           "thumbnail": "/assets/tutos/thumb-agenda.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-agenda",
           "summary": "Créez des répétitions et concerts sur l'agenda, envoyez des notifications d'appel et consultez la liste des présents.",
-          "tags": ["Agenda", "Présences", "Répétition", "Convocations"]
+          "tags": [
+            "Agenda",
+            "Présences",
+            "Répétition",
+            "Convocations"
+          ]
         },
         {
           "id": "tuto-man-03",
@@ -85,7 +117,12 @@
           "thumbnail": "/assets/tutos/thumb-treasury.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-treasury",
           "summary": "Suivez les entrées/sorties de caisse du bloco, gérez l'état de paiement des cotisations et éditez des justificatifs kilométriques.",
-          "tags": ["Trésorerie", "Cotisations", "Finances", "Frais"]
+          "tags": [
+            "Trésorerie",
+            "Cotisations",
+            "Finances",
+            "Frais"
+          ]
         },
         {
           "id": "tuto-man-04",
@@ -95,9 +132,16 @@
           "thumbnail": "/assets/tutos/thumb-forum.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-forum",
           "summary": "Animez le forum de discussion interne, épinglez les annonces importantes sur le Varal virtuel et partagez des documents.",
-          "tags": ["Forum", "Varal", "Annonces", "Communauté"]
+          "tags": [
+            "Forum",
+            "Varal",
+            "Annonces",
+            "Communauté"
+          ]
         }
-      ]
+      ],
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
       "id": "hub",
@@ -114,9 +158,16 @@
           "thumbnail": "/assets/tutos/thumb-hub.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-hub",
           "summary": "Découvrez comment naviguer entre les différents univers (Maracatu, Capoeira, Samba) et basculer instantanément du Séquenceur au Manager.",
-          "tags": ["Hub", "Navigation", "Écosystème", "Univers"]
+          "tags": [
+            "Hub",
+            "Navigation",
+            "Écosystème",
+            "Univers"
+          ]
         }
-      ]
+      ],
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
       "id": "dancador",
@@ -133,9 +184,16 @@
           "thumbnail": "/assets/tutos/thumb-dancador.jpg",
           "videoUrl": "https://www.youtube.com/embed/demo-dancador",
           "summary": "Découvrez comment placer vos danseurs, créer des déplacements et synchroniser les mouvements sur la musique.",
-          "tags": ["Dançador", "Chorégraphie", "Débutant", "Danse"]
+          "tags": [
+            "Dançador",
+            "Chorégraphie",
+            "Débutant",
+            "Danse"
+          ]
         }
-      ]
+      ],
+      "universeId": "maracatu",
+      "isUniversal": false
     }
   ]
 }

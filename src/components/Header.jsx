@@ -109,7 +109,13 @@ export default function Header({
             </a>
             <a 
               href="#boutique"
-              onClick={() => activeView !== 'home' && onNavigate('home')}
+              onClick={(e) => {
+                if (activeView !== 'home') {
+                  e.preventDefault();
+                  onNavigate('home');
+                  setTimeout(() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                }
+              }}
               className="hover:text-[#e67e22] transition-colors cursor-pointer flex items-center gap-1"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -333,7 +339,14 @@ export default function Header({
                   </button>
                   <a
                     href="#boutique"
-                    onClick={() => { if (activeView !== 'home') onNavigate('home'); setMobileMenuOpen(false); }}
+                    onClick={(e) => { 
+                      if (activeView !== 'home') {
+                        e.preventDefault();
+                        onNavigate('home'); 
+                        setTimeout(() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                      }
+                      setMobileMenuOpen(false); 
+                    }}
                     className="text-left px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-[#4a2e1b] hover:bg-[#f4e8cf]"
                   >
                     <span>{t('header.nav.boutique') || 'Boutique'}</span>

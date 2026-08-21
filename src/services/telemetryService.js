@@ -35,39 +35,7 @@ export const getSystemErrors = async (filters = {}) => {
     if (filters.status) results = results.filter(r => r.status === filters.status);
     
     if (results.length === 0) {
-      // Données factices pour l'effet Wow s'il n'y a pas encore de vrais bugs
-      return [
-        {
-          id: 'mock-error-1',
-          appId: 'Manager',
-          groupId: 'demo-asso',
-          timestamp: new Date(Date.now() - 1000 * 60 * 15),
-          errorMessage: 'TypeError: Cannot read properties of undefined (reading "instrument")',
-          stackTrace: 'at PupitreChart.jsx:24\\n  at renderWithHooks (react-dom.development.js:14906)',
-          type: 'React Error',
-          status: 'new'
-        },
-        {
-          id: 'mock-error-2',
-          appId: 'Séquenceur',
-          groupId: 'demo-asso-2',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-          errorMessage: 'AudioContext resume failed. User gesture required.',
-          stackTrace: 'at audioEngine.js:45\\n  at playRhythm (playButton.js:12)',
-          type: 'Audio Engine',
-          status: 'investigating'
-        },
-        {
-          id: 'mock-error-3',
-          appId: 'Vitrine',
-          groupId: 'demo-asso',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
-          errorMessage: 'Network Error: Failed to fetch public events',
-          stackTrace: 'at fetchEvents (api.js:88)',
-          type: 'Network',
-          status: 'resolved'
-        }
-      ];
+      return [];
     }
     
     return results;

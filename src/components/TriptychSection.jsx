@@ -21,11 +21,12 @@ export default function TriptychSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
-          <TriptychCard type="sequenceur" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
           <TriptychCard type="manager" />
           <TriptychCard type="vitrine" />
+          <TriptychCard type="sequenceur" />
           <TriptychCard type="dancador" />
+          <TriptychCard type="terreiro" />
         </div>
 
       </div>

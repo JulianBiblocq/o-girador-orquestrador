@@ -18,10 +18,30 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
           <thead>
             <tr className="bg-[#8b4513] text-[#fdf6e7] font-cordel uppercase text-[11px]">
               <th className="p-3">Structure</th>
-              <th className="p-3 text-center bg-[#6e370f]">🥁 Séquenceur</th>
-              <th className="p-3 text-center bg-[#6e370f]">📋 Manager</th>
-              <th className="p-3 text-center bg-[#6e370f]">🌐 Vitrine</th>
-              <th className="p-3 text-center bg-[#6e370f]">👣 Dançador</th>
+              <th className="p-3 text-center bg-[#6e370f]">
+                <div className="flex items-center justify-center gap-1.5">
+                  <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-4 h-4 object-contain drop-shadow-sm" />
+                  <span>Sequenciador</span>
+                </div>
+              </th>
+              <th className="p-3 text-center bg-[#6e370f]">
+                <div className="flex items-center justify-center gap-1.5">
+                  <img src="/logos/organizador.png" alt="Organizador" className="w-4 h-4 object-contain drop-shadow-sm" />
+                  <span>Organizador</span>
+                </div>
+              </th>
+              <th className="p-3 text-center bg-[#6e370f]">
+                <div className="flex items-center justify-center gap-1.5">
+                  <img src="/logos/mostrador.png" alt="Mostrador" className="w-4 h-4 object-contain drop-shadow-sm" />
+                  <span>Mostrador</span>
+                </div>
+              </th>
+              <th className="p-3 text-center bg-[#6e370f]">
+                <div className="flex items-center justify-center gap-1.5">
+                  <img src="/logos/dancador.png" alt="Dançador" className="w-4 h-4 object-contain drop-shadow-sm" />
+                  <span>Dançador</span>
+                </div>
+              </th>
               <th className="p-3 text-center border-l-2 border-[#fdf6e7]">Maracatu</th>
               <th className="p-3 text-center">Capoeira</th>
               <th className="p-3 text-center">Samba</th>

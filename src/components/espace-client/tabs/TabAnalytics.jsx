@@ -32,6 +32,7 @@ export default function TabAnalytics({ associationData, userData }) {
 
         usersSnap.docs.forEach(doc => {
           const user = doc.data();
+          if (!user) return;
           count++;
 
           // Détection du pupitre principal via le champ 'instrument'

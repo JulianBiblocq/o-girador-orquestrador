@@ -20,86 +20,90 @@
   "plans": [
     {
       "id": "decouverte",
-      "name": "Découverte / Initiation",
-      "tagline": "Pour explorer et pratiquer individuellement",
+      "name": "Formule \"Découverte\"",
+      "tagline": "La porte d'entrée pour les passionnés et les élèves, pour pratiquer en autonomie.",
       "badge": "Gratuit",
       "highlighted": false,
       "pricing": {
         "monthly": 0,
         "annual": 0
       },
-      "targetAudience": "Passionnés, élèves & curieux",
+      "targetAudience": "Passionnés & Élèves",
       "features": [
-        "Accès gratuit au Séquenceur interactif (Maracatu)",
-        "Bibliothèque de Presets de rythmes traditionnels",
-        "Export audio (.webm) et fichiers JSON local",
-        "Accès en lecture au Hub Écosystème"
+        "Séquenceur Essentiel : Jouez et testez les rythmes pré-enregistrés.",
+        "Immersion Totale : Visualisez la musique dans la Roda circulaire dynamique.",
+        "Toada Karaoké : Chantez avec le chœur grâce aux paroles synchronisées.",
+        "Note : Partage et fonctions avancées limités"
       ],
-      "ctaText": "Commencer gratuitement"
+      "ctaText": "Commencer gratuitement",
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
-      "id": "essentiel",
-      "name": "Mestre Praticant",
-      "tagline": "Pour les enseignants et musiciens créateurs",
-      "badge": "Populaire Solo",
+      "id": "createur",
+      "name": "Formule \"Créateur\"",
+      "tagline": "L'outil solo ultime pour les techniciens, directeurs musicaux et compositeurs.",
+      "badge": "Séquenceur Pro",
       "highlighted": false,
       "pricing": {
-        "monthly": 6.99,
-        "annual": 59.99
+        "monthly": 9.99,
+        "annual": 99.99
       },
-      "pricingMonthlyEquivalent": 4.99,
-      "targetAudience": "Mestres, profs de percussions & solistes",
+      "pricingMonthlyEquivalent": 8.33,
+      "targetAudience": "Mestres & Compositeurs",
       "features": [
-        "Tous les avantages de la formule Découverte",
-        "Sauvegarde Cloud illimitée des arrangements",
-        "Créateur de Toadas personnalisées (Syllabes Karaoké)",
-        "Export Haute Définition & partitions imprimables",
-        "Support prioritaire par email"
+        "Création Sans Limite : Composez et arrangez vos propres séquences de A à Z.",
+        "Balanço Authentique : Accédez au micro-timing chirurgical pour un groove traditionnel parfait.",
+        "Partage Débloqué : Exportez vos créations (.webm, JSON) et partagez vos liens avec vos musiciens.",
+        "Dynamiques Avancées : Contrôlez les rampes de tempo et les signatures multiples."
       ],
-      "ctaText": "Essayer le plan Mestre"
+      "ctaText": "Démarrer l'essai Créateur",
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
-      "id": "association",
-      "name": "Bloco & Association",
-      "tagline": "Solution complète pour la gestion d'un groupe",
-      "badge": "Recommandé Bloco",
+      "id": "gestion",
+      "name": "Gestion & Visibilité",
+      "tagline": "Le duo indispensable pour structurer votre association et automatiser votre administration.",
+      "badge": "Manager + Vitrine",
       "highlighted": true,
       "pricing": {
-        "monthly": 19.99,
-        "annual": 179.99
-      },
-      "pricingMonthlyEquivalent": 14.99,
-      "targetAudience": "Blocos de Maracatu & associations jusqu'à 100 membres",
-      "features": [
-        "Accès complet à O Girador Manager & Site Vitrine",
-        "Gestion des membres, cotisations & suivi trésorerie",
-        "Agenda, convocations & gestion des présences aux répés/concerts",
-        "Varal d'annonces, Forum interne & Trombinoscope",
-        "Gestion de l'inventaire matériel (Alfaia, Caisses...)",
-        "Jusqu'à 5 comptes Administrateurs"
-      ],
-      "ctaText": "Démarrer pour votre Bloco"
-    },
-    {
-      "id": "ecosysteme",
-      "name": "Écosystème Mestre Full",
-      "tagline": "Pour les grandes structures & multi-univers",
-      "badge": "Multi-Groupes",
-      "highlighted": false,
-      "pricing": {
-        "monthly": 34.99,
+        "monthly": 29.99,
         "annual": 299.99
       },
       "pricingMonthlyEquivalent": 24.99,
-      "targetAudience": "Fédérations, Écoles de percussion & Multi-Blocos",
+      "targetAudience": "Associations & Blocos",
       "features": [
-        "Tous les avantages du plan Bloco & Association",
-        "Déblocage de tous les univers (Maracatu, Capoeira, Samba)",
-        "Domaine personnalisé pour le site vitrine",
-        "Statistiques avancées & rapports financiers exportables",
-        "Support dédié 7j/7 et accompagnement au déploiement"
+        "Gestion Centralisée : Pilotez l'agenda, les présences, le matériel et la trésorerie.",
+        "Le Varal Pédagogique : Partagez vos documents, annonces et QCM avec vos membres.",
+        "Vitrine Publique Automatique : Votre site internet se met à jour tout seul pour attirer public et programmateurs.",
+        "Espace Membre Mobile : Chaque musicien gère sa vie dans le groupe depuis son téléphone.",
+        "Bonus : Inclut la formule \"Découverte\" du Séquenciador pour tous vos membres."
       ],
-      "ctaText": "Contacter l'équipe"
+      "ctaText": "Adopter pour votre Bloco",
+      "universeId": "maracatu",
+      "isUniversal": false
+    },
+    {
+      "id": "integrale",
+      "name": "Intégrale / Mestre",
+      "tagline": "L'arme absolue des grands collectifs : gestion, musique, danse et rayonnement réunis.",
+      "badge": "Écosystème Complet",
+      "highlighted": false,
+      "pricing": {
+        "monthly": 49.99,
+        "annual": 499.99
+      },
+      "pricingMonthlyEquivalent": 41.66,
+      "targetAudience": "Grands Collectifs & Fédérations",
+      "features": [
+        "La Suite Totale : Accès illimité au Manager et à la Vitrine.",
+        "Séquenceur Pro Inclus : Toute la puissance de création musicale débloquée pour l'association.",
+        "O Girador Dançador : Accès exclusif au studio de chorégraphie pour vos danseurs.",
+        "O Girador Orquestrador : Analysez vos effectifs, accédez au hub communautaire et aux avantages partenaires exclusifs."
+      ],
+      "ctaText": "Contacter l'équipe",
+      "isUniversal": true
     }
   ],
   "individualApps": [
@@ -110,7 +114,9 @@
       "pricing": {
         "monthly": 3.99,
         "annual": 34.99
-      }
+      },
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
       "id": "manager-solo",
@@ -119,7 +125,9 @@
       "pricing": {
         "monthly": 14.99,
         "annual": 129.99
-      }
+      },
+      "universeId": "maracatu",
+      "isUniversal": false
     },
     {
       "id": "dancador-solo",
@@ -128,7 +136,9 @@
       "pricing": {
         "monthly": 5.99,
         "annual": 49.99
-      }
+      },
+      "universeId": "maracatu",
+      "isUniversal": false
     }
   ]
 }

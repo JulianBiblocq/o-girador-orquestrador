@@ -77,10 +77,10 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
             </ul>
           </div>
 
-          {/* Open Source & Creator */}
+          {/* Ressources & Légal */}
           <div className="space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400 font-cordel">
-              Ressources & Créateur
+              Ressources & Légal
             </h4>
             <div className="space-y-2 text-xs text-amber-100/80">
               <button
@@ -88,6 +88,12 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
                 className="hover:text-white transition-colors font-bold text-left block cursor-pointer"
               >
                 À propos du Créateur (/a-propos)
+              </button>
+              <button
+                onClick={() => onNavigate('legal')}
+                className="hover:text-white transition-colors font-bold text-left block cursor-pointer"
+              >
+                Mentions Légales & CGU
               </button>
             </div>
           </div>

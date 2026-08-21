@@ -11,6 +11,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     membersCount: 20,
+    universeId: 'maracatu',
     appAccess: {
       sequenceur: true,
       manager: true,
@@ -35,6 +36,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         startDate: initialData.startDate || new Date().toISOString().split('T')[0],
         endDate: initialData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: initialData.membersCount ?? 20,
+        universeId: initialData.universeId || 'maracatu',
         appAccess: {
           sequenceur: Boolean(initialData.appAccess?.sequenceur ?? true),
           manager: Boolean(initialData.appAccess?.manager ?? true),
@@ -56,6 +58,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: 20,
+        universeId: 'maracatu',
         appAccess: {
           sequenceur: true,
           manager: true,
@@ -174,6 +177,21 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 className="w-full px-3 py-2 bg-white text-[#2c1d11] text-xs rounded border border-[#4a2e1b]"
               />
             </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-[#8b4513] uppercase mb-1">
+                Univers Principal
+              </label>
+              <select
+                value={formData.universeId}
+                onChange={e => setFormData({ ...formData, universeId: e.target.value })}
+                className="w-full px-3 py-2 bg-[#fdf6e7] text-xs font-bold text-[#4a2e1b] rounded border border-[#8b4513]"
+              >
+                <option value="maracatu">Maracatu</option>
+                <option value="samba">Samba</option>
+                <option value="capoeira">Capoeira</option>
+              </select>
+            </div>
           </div>
 
           {/* Subscription Dates & Plan */}
@@ -237,7 +255,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
               
               <div className="space-y-2 text-xs">
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">🥁 Sequenciador</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-5 h-5 object-contain drop-shadow-sm" />
+                    <span className="font-semibold text-gray-800">Sequenciador</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => toggleApp('sequenceur')}
@@ -252,7 +273,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">📋 Organizador</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/logos/organizador.png" alt="Organizador" className="w-5 h-5 object-contain drop-shadow-sm" />
+                    <span className="font-semibold text-gray-800">Organizador</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => toggleApp('manager')}
@@ -267,7 +291,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">🌐 Mostrador</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/logos/mostrador.png" alt="Mostrador" className="w-5 h-5 object-contain drop-shadow-sm" />
+                    <span className="font-semibold text-gray-800">Mostrador</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => toggleApp('vitrine')}
@@ -282,7 +309,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">👣 Dançador</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/logos/dancador.png" alt="Dançador" className="w-5 h-5 object-contain drop-shadow-sm" />
+                    <span className="font-semibold text-gray-800">Dançador</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => toggleApp('dancador')}

@@ -115,7 +115,7 @@ export default function CmsManagerTab() {
           
           {/* Sequenciador */}
           <div className="p-4 bg-[#fdf6e7] border-2 border-[#8b4513]/40 rounded-lg space-y-3">
-            <div className="text-center text-3xl">🥁</div>
+            <div className="flex justify-center"><img src="/logos/sequenciador.png" alt="Sequenciador" className="w-10 h-10 object-contain drop-shadow-md" /></div>
             <div>
               <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Titre</label>
               <input 
@@ -138,7 +138,7 @@ export default function CmsManagerTab() {
 
           {/* Organizador */}
           <div className="p-4 bg-[#fdf6e7] border-2 border-[#8b4513]/40 rounded-lg space-y-3">
-            <div className="text-center text-3xl">📋</div>
+            <div className="flex justify-center"><img src="/logos/organizador.png" alt="Organizador" className="w-10 h-10 object-contain drop-shadow-md" /></div>
             <div>
               <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Titre</label>
               <input 
@@ -161,7 +161,7 @@ export default function CmsManagerTab() {
 
           {/* Mostrador */}
           <div className="p-4 bg-[#fdf6e7] border-2 border-[#8b4513]/40 rounded-lg space-y-3">
-            <div className="text-center text-3xl">🌟</div>
+            <div className="flex justify-center"><img src="/logos/mostrador.png" alt="Mostrador" className="w-10 h-10 object-contain drop-shadow-md rounded-full" /></div>
             <div>
               <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Titre</label>
               <input 
@@ -184,7 +184,7 @@ export default function CmsManagerTab() {
 
           {/* Dançador */}
           <div className="p-4 bg-[#fdf6e7] border-2 border-[#8b4513]/40 rounded-lg space-y-3">
-            <div className="text-center text-3xl">👣</div>
+            <div className="flex justify-center"><img src="/logos/dancador.png" alt="Dançador" className="w-10 h-10 object-contain drop-shadow-md" /></div>
             <div>
               <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Titre</label>
               <input 

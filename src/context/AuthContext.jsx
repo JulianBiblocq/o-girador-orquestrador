@@ -16,6 +16,7 @@ export function AuthProvider({ children }) {
   const [userData, setUserData] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isProvisioning, setIsProvisioning] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -28,6 +29,7 @@ export function AuthProvider({ children }) {
           
           if (!userDocSnap.exists()) {
             // -- NOUVEL UTILISATEUR : PROVISIONING VIA CLOUD FUNCTION --
+            setIsProvisioning(true);
             try {
               const functions = getFunctions(app);
               const provisionNewMestre = httpsCallable(functions, 'provisionNewMestre');
@@ -49,6 +51,8 @@ export function AuthProvider({ children }) {
             } catch (err) {
               console.error("Erreur lors de l'appel à la Cloud Function provisionNewMestre:", err);
               setIsAdmin(false);
+            } finally {
+              setIsProvisioning(false);
             }
           } else {
             // -- UTILISATEUR EXISTANT --
@@ -91,6 +95,7 @@ export function AuthProvider({ children }) {
     userData,
     isAdmin,
     loading,
+    isProvisioning,
     login,
     loginWithGoogle,
     logout

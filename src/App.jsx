@@ -7,6 +7,7 @@ import TriptychSection from './components/TriptychSection';
 import PricingSynergySection from './components/PricingSynergySection';
 import CreatorSection from './components/CreatorSection';
 import TutorialsSection from './components/TutorialsSection';
+import PublicNetworkSection from './components/PublicNetworkSection';
 import NewsletterSection from './components/NewsletterSection';
 import AdminLoginModal from './components/AdminLoginModal';
 import Footer from './components/Footer';
@@ -15,6 +16,9 @@ import CheckoutFlow from './components/checkout/CheckoutFlow';
 import AddonsStore from './components/addons/AddonsStore';
 import EspaceClient from './components/espace-client/EspaceClient';
 import CartDrawer from './components/shop/CartDrawer';
+import PublicCatalogue from './components/PublicCatalogue';
+import LegalView from './components/LegalView';
+import FreeSignupView from './components/FreeSignupView';
 import { Loader2 } from 'lucide-react';
 
 // Lazy loading pour le panneau d'administration lourd (/admin)
@@ -32,6 +36,12 @@ function AppContent() {
       setActiveView('admin');
     } else if (window.location.hash.startsWith('#espace-client')) {
       setActiveView('espace-client');
+    } else if (window.location.hash.startsWith('#catalogue-public')) {
+      setActiveView('catalogue-public');
+    } else if (window.location.hash.startsWith('#legal')) {
+      setActiveView('legal');
+    } else if (window.location.hash.startsWith('#inscription-gratuite')) {
+      setActiveView('free-signup');
     }
   }, []);
 
@@ -49,7 +59,13 @@ function AppContent() {
       window.location.hash = 'admin';
     } else if (view === 'espace-client') {
       window.location.hash = 'espace-client';
-    } else if (window.location.hash === '#admin' || window.location.hash === '#espace-client') {
+    } else if (view === 'catalogue-public') {
+      window.location.hash = 'catalogue-public';
+    } else if (view === 'legal') {
+      window.location.hash = 'legal';
+    } else if (view === 'free-signup') {
+      window.location.hash = 'inscription-gratuite';
+    } else if (['#admin', '#espace-client', '#catalogue-public', '#legal', '#inscription-gratuite'].includes(window.location.hash)) {
       window.location.hash = '';
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -74,6 +90,7 @@ function AppContent() {
           <TriptychSection />
           <PricingSynergySection onSelectPlan={(plan) => { setActivePlan(plan); handleNavigate('checkout'); }} />
           <AddonsStore onNavigate={handleNavigate} />
+          <PublicNetworkSection onNavigate={handleNavigate} />
           <TutorialsSection />
           <NewsletterSection activeUniverse={activeUniverse} />
         </main>
@@ -114,6 +131,24 @@ function AppContent() {
       {activeView === 'espace-client' && (
         <main>
           <EspaceClient onNavigateHome={() => handleNavigate('home')} />
+        </main>
+      )}
+
+      {activeView === 'catalogue-public' && (
+        <main>
+          <PublicCatalogue onNavigateHome={() => handleNavigate('home')} />
+        </main>
+      )}
+
+      {activeView === 'legal' && (
+        <main>
+          <LegalView onNavigateHome={() => handleNavigate('home')} />
+        </main>
+      )}
+
+      {activeView === 'free-signup' && (
+        <main>
+          <FreeSignupView onNavigateHome={() => handleNavigate('home')} onNavigateToClient={() => handleNavigate('espace-client')} />
         </main>
       )}
 

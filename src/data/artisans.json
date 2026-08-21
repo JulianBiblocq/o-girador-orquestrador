@@ -1,0 +1,37 @@
+{
+  "artisans": [
+    {
+      "id": "art-001",
+      "name": "Mestre Zé - Luthier d'Alfaia",
+      "description": "Artisan passionné, fabricant de tambours traditionnels de Maracatu Nação. Des fûts en macacaúba réputés pour leur résonance profonde.",
+      "universeId": "maracatu",
+      "isUniversal": false,
+      "promoCode": "OGIRADOR10",
+      "discount": "-10%",
+      "website": "https://example.com/mestre-ze",
+      "tags": ["Luthier", "Alfaias", "Percussion"]
+    },
+    {
+      "id": "art-002",
+      "name": "Samba Rio Instrumentos",
+      "description": "L'excellence pour votre Bateria de Samba. Cuícas, Surdos, Tamborins et Repiniques de haute qualité professionnelle.",
+      "universeId": "samba",
+      "isUniversal": false,
+      "promoCode": "GIRA-SAMBA",
+      "discount": "Livraison gratuite",
+      "website": "https://example.com/samba-rio",
+      "tags": ["Instruments", "Cuíca", "Surdo"]
+    },
+    {
+      "id": "art-003",
+      "name": "Ginga Wear",
+      "description": "Vêtements de danse et de mouvement, parfaits pour la Capoeira, la danse contemporaine et l'expression corporelle.",
+      "universeId": "universal",
+      "isUniversal": true,
+      "promoCode": "GINGA15",
+      "discount": "-15%",
+      "website": "https://example.com/ginga-wear",
+      "tags": ["Vêtements", "Danse", "Accessoires"]
+    }
+  ]
+}
