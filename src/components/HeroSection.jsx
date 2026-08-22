@@ -67,31 +67,31 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 max-w-5xl mx-auto">
-          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start">
+          <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logos/organizador.png" alt="Organizador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#4a2e1b] font-cordel leading-tight">{getMetric('manager', 'hero.metrics.manager')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('managerSub', 'hero.metrics.managerSub')}</div>
-          </div>
-          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start">
+          </a>
+          <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logos/mostrador.png" alt="Mostrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full" />
             <div className="text-xl font-black text-[#d2691e] font-cordel leading-tight">{getMetric('vitrine', 'hero.metrics.vitrine')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('vitrineSub', 'hero.metrics.vitrineSub')}</div>
-          </div>
-          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start">
+          </a>
+          <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#18181b] font-cordel leading-tight">{getMetric('sequenceur', 'hero.metrics.sequenceur')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('sequenceurSub', 'hero.metrics.sequenceurSub')}</div>
-          </div>
-          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start">
+          </a>
+          <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logos/dancador.png" alt="Dançador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#991b1b] font-cordel leading-tight">{getMetric('dancador', 'hero.metrics.dancador')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('dancadorSub', 'hero.metrics.dancadorSub')}</div>
-          </div>
-          <div className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start">
+          </a>
+          <a href="https://o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logo_rond.png" alt="Orquestrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full border border-[#8b4513]/20" />
             <div className="text-xl font-black text-[#8b4513] font-cordel leading-tight">{getMetric('terreiro', 'hero.metrics.terreiro')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('terreiroSub', 'hero.metrics.terreiroSub')}</div>
-          </div>
+          </a>
         </div>
 
       </div>

@@ -193,6 +193,10 @@ export default function Header({
                     >
                       Accéder à mon espace
                     </button>
+                    <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Organizador</a>
+                    <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Mostrador (Vitrine)</a>
+                    <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Sequenciador</a>
+                    <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10">Dançador</a>
                     <button
                       onClick={() => {
                         logout();
@@ -397,10 +401,14 @@ export default function Header({
                   <div className="flex flex-col gap-1 pl-4 border-l-2 border-[#8b4513]/20 ml-2">
                     <button 
                       onClick={() => { onNavigate('espace-client'); setMobileMenuOpen(false); }}
-                      className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer"
+                      className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1"
                     >
                       Accéder à mon espace
                     </button>
+                    <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Organizador</a>
+                    <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Mostrador</a>
+                    <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Sequenciador</a>
+                    <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1">Dançador</a>
                     <button 
                       onClick={() => { logout(); setMobileMenuOpen(false); }}
                       className="text-left py-1.5 text-[#8b4513] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer"
