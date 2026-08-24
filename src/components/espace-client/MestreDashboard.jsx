@@ -42,7 +42,7 @@ export default function MestreDashboard({ associationData, userData, onNavigateH
 
         {/* ZONE 3 : Mon Abonnement & Boutique */}
         <div className="lg:col-span-1">
-          <SubscriptionPanel associationData={associationData} setActiveTab={setActiveTab} />
+          <SubscriptionPanel associationData={associationData} setActiveTab={setActiveTab} onNavigateHome={onNavigateHome} />
         </div>
 
       </div>

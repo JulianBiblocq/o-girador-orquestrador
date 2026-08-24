@@ -3,7 +3,7 @@ import { Store, Crown, Sparkles, ExternalLink, ChevronLeft, ChevronRight, Check,
 import tarifsData from '../../../data/tarifs.json';
 import universData from '../../../data/univers.json';
 
-export default function SubscriptionPanel({ associationData, setActiveTab }) {
+export default function SubscriptionPanel({ associationData, setActiveTab, onNavigateHome }) {
   const [loading, setLoading] = useState(true);
   const [activePlanIndex, setActivePlanIndex] = useState(0);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -61,9 +61,9 @@ export default function SubscriptionPanel({ associationData, setActiveTab }) {
   const isActive = currentSlideIndex === activePlanIndex;
 
   // Compute features to display
-  const activeFeatures = viewedPlan.features.filter(f => !f.startsWith('Tous les avantages')).slice(0, 3);
+  const activeFeatures = viewedPlan.features.filter(f => !f.startsWith('Tous les avantages'));
   const lockedFeaturesRaw = plans.slice(currentSlideIndex + 1).flatMap(p => p.features).filter(f => !f.startsWith('Tous les avantages'));
-  const lockedFeatures = [...new Set(lockedFeaturesRaw)].slice(0, Math.max(1, 4 - activeFeatures.length));
+  const lockedFeatures = [...new Set(lockedFeaturesRaw)].slice(0, 2);
 
   return (
     <div className="bg-gradient-to-br from-[#fdf6e7] to-white rounded-xl border border-[#d2691e]/20 shadow-sm p-6 w-full h-full flex flex-col justify-between relative overflow-hidden group">
@@ -114,17 +114,17 @@ export default function SubscriptionPanel({ associationData, setActiveTab }) {
         </div>
 
         {/* Feature List */}
-        <div className="space-y-2 mb-4 h-32 overflow-hidden flex flex-col justify-center">
+        <div className="space-y-2 mb-4 flex-1 overflow-y-auto min-h-[8rem] pr-1 scrollbar-thin scrollbar-thumb-amber-200 scrollbar-track-transparent">
           {activeFeatures.map((feat, idx) => (
             <div key={`active-${idx}`} className="flex items-start gap-2">
               <Check className="w-3.5 h-3.5 text-green-600 shrink-0 mt-0.5" />
-              <p className="text-xs text-gray-700 leading-tight line-clamp-2">{feat}</p>
+              <p className="text-xs text-gray-700 leading-tight">{feat}</p>
             </div>
           ))}
           {lockedFeatures.map((feat, idx) => (
             <div key={`locked-${idx}`} className="flex items-start gap-2 opacity-40">
               <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-gray-500 leading-tight line-clamp-2 line-through">{feat}</p>
+              <p className="text-xs text-gray-500 leading-tight line-through">{feat}</p>
             </div>
           ))}
         </div>
@@ -140,7 +140,12 @@ export default function SubscriptionPanel({ associationData, setActiveTab }) {
           </button>
         ) : currentSlideIndex > activePlanIndex ? (
           <button 
-            onClick={() => setActiveTab && setActiveTab('boutique')}
+            onClick={() => {
+              if (onNavigateHome) {
+                window.location.hash = 'tarifs';
+                onNavigateHome();
+              }
+            }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#d2691e] hover:bg-[#b05819] text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg"
           >
             <Sparkles className="w-4 h-4" />
