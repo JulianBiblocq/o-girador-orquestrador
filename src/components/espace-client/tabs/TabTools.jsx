@@ -29,9 +29,9 @@ export default function TabTools({ associationData, userData }) {
   };
 
   // --- PLANS & FORFAITS ---
-  const planOrder = ['decouverte', 'essentiel', 'association', 'ecosysteme'];
-  const activePlanId = planOrder.reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
-  planOrder.reverse(); // remettre dans l'ordre croissant
+  const planOrder = ['decouverte', 'createur', 'gestion', 'integrale'];
+  const activePlanId = [...planOrder].reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
+
 
   const [displayedPlanIndex, setDisplayedPlanIndex] = useState(planOrder.indexOf(activePlanId));
 
@@ -49,12 +49,12 @@ export default function TabTools({ associationData, userData }) {
   // Liste globale des avantages (du meilleur forfait) pour la comparaison
   const globalFeatures = [
     { label: "Séquenceur & Créateur de Toadas", minLevel: 'decouverte' },
-    { label: "Sauvegarde Cloud & Export HD", minLevel: 'essentiel' },
-    { label: "O Girador Manager (Gestion asso)", minLevel: 'association' },
-    { label: "Site Vitrine Public", minLevel: 'association' },
-    { label: "Gestion Agenda, Présences, Trésorerie", minLevel: 'association' },
-    { label: "Multi-univers culturels (Samba, Capoeira...)", minLevel: 'ecosysteme' },
-    { label: "Statistiques avancées & Domaine personnalisé", minLevel: 'ecosysteme' }
+    { label: "Sauvegarde Cloud & Export HD", minLevel: 'createur' },
+    { label: "O Girador Manager (Gestion asso)", minLevel: 'gestion' },
+    { label: "Site Vitrine Public", minLevel: 'gestion' },
+    { label: "Gestion Agenda, Présences, Trésorerie", minLevel: 'gestion' },
+    { label: "Multi-univers culturels (Samba, Capoeira...)", minLevel: 'integrale' },
+    { label: "Statistiques avancées & Domaine personnalisé", minLevel: 'integrale' }
   ];
 
   const hasFeature = (planId, minLevel) => {
@@ -64,30 +64,52 @@ export default function TabTools({ associationData, userData }) {
   };
 
   // --- DROITS APPLICATIONS ---
+  const hasPack = (packId) => {
+    if (associationData?.isAdmin || associationData?.role === 'admin') return true;
+    
+    let userMaxLevel = 1;
+    for (const p of unlockedIds) {
+      if (p.includes('integrale')) userMaxLevel = Math.max(userMaxLevel, 4);
+      else if (p.includes('gestion')) userMaxLevel = Math.max(userMaxLevel, 3);
+      else if (p.includes('createur')) userMaxLevel = Math.max(userMaxLevel, 2);
+    }
+    
+    let requiredLevel = 5;
+    if (packId === 'dancador' || packId === 'integrale') requiredLevel = 4;
+    if (packId === 'manager' || packId === 'vitrine' || packId === 'gestion') requiredLevel = 3;
+    if (packId === 'sequenceur' || packId === 'createur') requiredLevel = 2;
+
+    if (unlockedIds.some(p => p.includes(packId) || p.includes(`${packId}-solo`))) {
+      return true;
+    }
+
+    return userMaxLevel >= requiredLevel;
+  };
+
   const appsRights = [
     {
       id: 'sequenceur',
       label: 'Sequenciador',
       icon: <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: associationData?.ecosystemAccess?.sequenciador !== false
+      isOwned: hasPack('sequenceur')
     },
     {
       id: 'manager',
       label: 'Organizador',
       icon: <img src="/logos/organizador.png" alt="Organizador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: associationData?.ecosystemAccess?.hub !== false
+      isOwned: hasPack('manager')
     },
     {
       id: 'vitrine',
       label: 'Mostrador',
       icon: <img src="/logos/mostrador.png" alt="Mostrador" className="w-6 h-6 object-contain rounded-full drop-shadow-sm" />,
-      isOwned: associationData?.ecosystemAccess?.vitrine !== false
+      isOwned: hasPack('vitrine')
     },
     {
       id: 'dancador',
       label: 'Dançador',
       icon: <img src="/logos/dancador.png" alt="Dançador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: associationData?.ecosystemAccess?.dancador !== false
+      isOwned: hasPack('dancador')
     }
   ];
 

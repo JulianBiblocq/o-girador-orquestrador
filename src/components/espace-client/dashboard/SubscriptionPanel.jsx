@@ -18,7 +18,7 @@ export default function SubscriptionPanel({ associationData, setActiveTab }) {
         // Determine active plan
         const unlockedIdsRaw = associationData.unlockedPacks || [];
         const unlockedIds = unlockedIdsRaw.map(id => id.replace('-monthly', '').replace('-annual', ''));
-        const planOrder = ['decouverte', 'essentiel', 'association', 'ecosysteme'];
+        const planOrder = ['decouverte', 'createur', 'gestion', 'integrale'];
         const activePlanId = [...planOrder].reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
         
         const foundIndex = plans.findIndex(p => p.id === activePlanId);

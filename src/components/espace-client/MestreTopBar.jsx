@@ -7,7 +7,24 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
     const packs = associationData?.unlockedPacks || [];
-    return packs.some(p => p.includes(packId) || p.includes('ecosysteme') || p.includes('association') || p.includes('essentiel'));
+    
+    let userMaxLevel = 1;
+    for (const p of packs) {
+      if (p.includes('integrale')) userMaxLevel = Math.max(userMaxLevel, 4);
+      else if (p.includes('gestion')) userMaxLevel = Math.max(userMaxLevel, 3);
+      else if (p.includes('createur')) userMaxLevel = Math.max(userMaxLevel, 2);
+    }
+    
+    let requiredLevel = 5;
+    if (packId === 'dancador' || packId === 'integrale') requiredLevel = 4;
+    if (packId === 'manager' || packId === 'vitrine' || packId === 'gestion') requiredLevel = 3;
+    if (packId === 'sequenceur' || packId === 'createur') requiredLevel = 2;
+
+    if (packs.some(p => p.includes(packId) || p.includes(`${packId}-solo`))) {
+      return true;
+    }
+
+    return userMaxLevel >= requiredLevel;
   };
   const apps = [
     {
@@ -30,7 +47,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       label: 'Organizador',
       desc: 'Gestion & Association',
       iconUrl: '/logos/organizador.png',
-      isOwned: hasPack('essentiel'),
+      isOwned: hasPack('manager'),
       url: 'https://organizador.o-girador.com',
       colorActive: 'bg-[#fdf6e7] border-[#d4b895]',
       colorHover: 'hover:bg-[#fdf6e7] hover:border-[#d4b895]',
@@ -44,7 +61,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       label: 'Sequenciador',
       desc: 'Création Audio',
       iconUrl: '/logos/sequenciador.png',
-      isOwned: hasPack('association'),
+      isOwned: hasPack('sequenceur'),
       url: 'https://sequenciador.o-girador.com',
       colorActive: 'bg-[#1a1a1a] border-[#000000]',
       colorHover: 'hover:bg-[#1a1a1a] hover:border-[#000000]',
@@ -58,7 +75,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       label: 'Dançador',
       desc: 'Studio Chorégraphique',
       iconUrl: '/logos/dancador.png',
-      isOwned: hasPack('ecosysteme'),
+      isOwned: hasPack('dancador'),
       url: 'https://dancador.o-girador.com',
       colorActive: 'bg-[#b22222] border-[#8b0000]',
       colorHover: 'hover:bg-[#b22222] hover:border-[#8b0000]',
@@ -72,7 +89,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       label: 'Mostrador',
       desc: 'Site Public',
       iconUrl: '/logos/mostrador.png',
-      isOwned: hasPack('essentiel'),
+      isOwned: hasPack('vitrine'),
       url: 'https://mostrador.o-girador.com',
       colorActive: 'bg-[#d2691e] border-[#b05819]',
       colorHover: 'hover:bg-[#d2691e] hover:border-[#b05819]',
