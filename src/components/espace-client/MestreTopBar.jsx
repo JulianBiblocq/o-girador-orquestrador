@@ -6,6 +6,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
 
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
+    if (associationData?.appAccess?.[packId] === true) return true;
     const packs = associationData?.unlockedPacks || [];
     
     let userMaxLevel = 1;

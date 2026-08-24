@@ -15,7 +15,8 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
     appAccess: {
       sequenceur: true,
       manager: true,
-      vitrine: true
+      vitrine: true,
+      dancador: false
     },
     universeAccess: {
       maracatu: true,
@@ -40,7 +41,8 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         appAccess: {
           sequenceur: Boolean(initialData.appAccess?.sequenceur ?? true),
           manager: Boolean(initialData.appAccess?.manager ?? true),
-          vitrine: Boolean(initialData.appAccess?.vitrine ?? true)
+          vitrine: Boolean(initialData.appAccess?.vitrine ?? true),
+          dancador: Boolean(initialData.appAccess?.dancador ?? false)
         },
         universeAccess: {
           maracatu: Boolean(initialData.universeAccess?.maracatu ?? true),
@@ -62,7 +64,8 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         appAccess: {
           sequenceur: true,
           manager: true,
-          vitrine: true
+          vitrine: true,
+          dancador: false
         },
         universeAccess: {
           maracatu: true,

@@ -1,6 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Edit3, Trash2 } from 'lucide-react';
 import { calculateSubscriptionStatus, getAccessRights } from '../../utils/subscriptionRights';
+import { db } from '../../services/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+
+function ActiveMembersCount({ groupId, staticCount }) {
+  const [count, setCount] = useState(null);
+  useEffect(() => {
+    let isMounted = true;
+    if (!groupId) return;
+    const fetchCount = async () => {
+      try {
+        const q = query(collection(db, 'users'), where('groupId', '==', groupId), where('statutActuel', '==', 'active'));
+        const snap = await getDocs(q);
+        if (isMounted) setCount(snap.size);
+      } catch (e) { }
+    };
+    fetchCount();
+    return () => { isMounted = false; };
+  }, [groupId]);
+  return <>{count !== null ? count : (staticCount || 0)}</>;
+}
+
 
 export default function AssociationTable({ 
   associations, 
@@ -50,7 +71,7 @@ export default function AssociationTable({
                 <tr key={assoc.id} className="hover:bg-[#fdf6e7]/80 transition-colors">
                   <td className="p-3">
                     <div className="font-bold text-[#4a2e1b] text-sm font-cordel">{assoc.name || assoc.nom || 'Sans nom'}</div>
-                    <div className="text-[10px] text-gray-500">{assoc.membersCount || 0} membres</div>
+                    <div className="text-[10px] text-gray-500"><ActiveMembersCount groupId={assoc.id} staticCount={assoc.membersCount} /> membres actifs</div>
                   </td>
 
                   <td className="p-3">
