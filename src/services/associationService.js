@@ -71,7 +71,7 @@ const INITIAL_DEMO_GROUPS = [
   }
 ];
 
-export async function fetchAssociations() {
+async function fetchAssociations() {
   try {
     const querySnapshot = await getDocs(collection(db, 'associations'));
     if (!querySnapshot.empty) {

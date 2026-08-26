@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { getReviews } from '../../services/telemetryService';
-import { useLanguage } from '../../hooks/useLanguage';
 
 export default function ReviewsTab() {
-  const { t } = useLanguage();
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
