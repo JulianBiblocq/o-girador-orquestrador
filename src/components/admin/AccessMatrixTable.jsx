@@ -56,15 +56,29 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
                 </td>
 
                 <td className="p-3 text-center bg-amber-50/50">
-                  <button onClick={() => onToggleApp(assoc, 'sequenceur')} className="cursor-pointer inline-block">
-                    {assoc.appAccess?.sequenceur ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <button onClick={() => onToggleApp(assoc, 'sequenceur')} className="cursor-pointer inline-block">
+                      {assoc.appAccess?.sequenceur ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
+                    </button>
+                    {assoc.appAccess?.sequenceur && (
+                      <span className="text-[9px] font-bold text-gray-500">
+                        {assoc.quotas?.sequenciador != null ? `(${assoc.quotas.sequenciador})` : '(∞)'}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 <td className="p-3 text-center bg-amber-50/50">
-                  <button onClick={() => onToggleApp(assoc, 'manager')} className="cursor-pointer inline-block">
-                    {assoc.appAccess?.manager ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <button onClick={() => onToggleApp(assoc, 'manager')} className="cursor-pointer inline-block">
+                      {assoc.appAccess?.manager ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
+                    </button>
+                    {assoc.appAccess?.manager && (
+                      <span className="text-[9px] font-bold text-gray-500">
+                        {assoc.quotas?.orchestrador != null ? `(${assoc.quotas.orchestrador})` : '(∞)'}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 <td className="p-3 text-center bg-amber-50/50">
@@ -74,9 +88,16 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
                 </td>
 
                 <td className="p-3 text-center bg-amber-50/50">
-                  <button onClick={() => onToggleApp(assoc, 'dancador')} className="cursor-pointer inline-block">
-                    {assoc.appAccess?.dancador ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <button onClick={() => onToggleApp(assoc, 'dancador')} className="cursor-pointer inline-block">
+                      {assoc.appAccess?.dancador ? <ToggleRight className="w-7 h-7 text-green-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
+                    </button>
+                    {assoc.appAccess?.dancador && (
+                      <span className="text-[9px] font-bold text-gray-500">
+                        {assoc.quotas?.dansador != null ? `(${assoc.quotas.dansador})` : '(∞)'}
+                      </span>
+                    )}
+                  </div>
                 </td>
 
                 <td className="p-3 text-center border-l-2 border-gray-200">

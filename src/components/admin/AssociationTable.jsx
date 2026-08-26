@@ -109,9 +109,15 @@ export default function AssociationTable({
 
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.sequenceur ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>SEQ</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.manager ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>ORG</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.dancador ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>DAN</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.sequenceur ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                        SEQ {assoc.quotas?.sequenciador != null ? `(${assoc.quotas.sequenciador})` : ''}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.manager ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                        ORG {assoc.quotas?.orchestrador != null ? `(${assoc.quotas.orchestrador})` : ''}
+                      </span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.dancador ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
+                        DAN {assoc.quotas?.dansador != null ? `(${assoc.quotas.dansador})` : ''}
+                      </span>
                       <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.vitrine ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>MOS</span>
                     </div>
                   </td>

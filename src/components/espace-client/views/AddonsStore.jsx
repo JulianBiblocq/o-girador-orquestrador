@@ -124,7 +124,7 @@ export default function AddonsStore({ associationData, onBack }) {
             }`}
           >
             <ShoppingCart className="w-4 h-4" />
-            Acheter
+            Acheter pour {pack.price} €
           </button>
         </div>
         {pack.pricePoints && (
@@ -142,7 +142,7 @@ export default function AddonsStore({ associationData, onBack }) {
               }`}
             >
               <Award className="w-3.5 h-3.5" />
-              {points >= pack.pricePoints ? 'Débloquer' : `Manque ${pack.pricePoints - points} pts`}
+              {points >= pack.pricePoints ? `Débloquer avec ${pack.pricePoints} Points` : 'Points insuffisants'}
             </button>
           </div>
         )}

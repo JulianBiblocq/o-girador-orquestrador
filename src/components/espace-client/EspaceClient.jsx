@@ -181,10 +181,10 @@ export default function EspaceClient({ onNavigateHome }) {
           />
         )}
         {activeTab === 'sequenceur' && (
-          <SequencerView userData={userData} onBack={() => setActiveTab('dashboard')} />
+          <SequencerView userData={userData} associationData={associationData} onBack={() => setActiveTab('dashboard')} />
         )}
         {activeTab === 'dancador' && (
-          <DancadorView userData={userData} onBack={() => setActiveTab('dashboard')} />
+          <DancadorView userData={userData} associationData={associationData} onBack={() => setActiveTab('dashboard')} />
         )}
         {activeTab === 'manager' && (
           <OrganizadorView userData={userData} onBack={() => setActiveTab('dashboard')} />

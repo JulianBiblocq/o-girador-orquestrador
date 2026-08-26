@@ -1,22 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check } from 'lucide-react';
+import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
+import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
 
-export default function DancadorView({ userData, onBack }) {
+export default function DancadorView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleShare = (id) => {
     const url = `${window.location.origin}/?import_id=${id}&type=choreography#espace-client`;
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url).then(() => {
         setCopiedId(id);
+        showToast("Lien de partage copié !");
         setTimeout(() => setCopiedId(null), 2000);
       });
     } else {
       prompt("Copiez ce lien de partage (Ctrl+C, Entrée) :", url);
+    }
+  };
+
+  const handlePublish = async (item) => {
+    if (item.isPublic) {
+      showToast("Cette création est déjà publique !");
+      return;
+    }
+
+    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
+
+    try {
+      const creationRef = doc(db, 'choreographies', item.id);
+      
+      const updateData = {
+        isPublic: true,
+        authorName: associationData?.name || associationData?.nom || 'Association',
+        authorGroupId: userData.groupId
+      };
+
+      if (!item.rewardClaimed) {
+        updateData.rewardClaimed = true;
+      }
+
+      await updateDoc(creationRef, updateData);
+
+      if (!item.rewardClaimed) {
+        const groupRef = doc(db, 'associations', userData.groupId);
+        await updateDoc(groupRef, {
+          contributionPoints: increment(25)
+        });
+        showToast("Félicitations ! Votre création est en ligne. Vous remportez 25 Points d'Axé (0,50€) !");
+      } else {
+        showToast("Votre création est désormais publique !");
+      }
+
+      setItems(items.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: true } : i));
+    } catch (error) {
+      console.error("Erreur publication:", error);
+      showToast("Une erreur est survenue lors de la publication.");
     }
   };
 
@@ -118,6 +165,14 @@ export default function DancadorView({ userData, onBack }) {
                   >
                     {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
                   </button>
+                  <button 
+                    onClick={() => handlePublish(item)}
+                    disabled={item.isPublic}
+                    className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
+                    title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -138,6 +193,16 @@ export default function DancadorView({ userData, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gray-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-gray-700">
+            <Check className="w-5 h-5 text-green-400" />
+            <p className="font-bold text-sm">{toastMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { ArrowLeft, Music, Activity, Star, Download, Search } from 'lucide-react';
+import { ArrowLeft, Music, Activity, Star, Download, Search, ChevronDown, ChevronUp, Users } from 'lucide-react';
 
 export default function PublicCatalogue({ onNavigateHome }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'rhythm' | 'choreography'
+  const [expandedAuthors, setExpandedAuthors] = useState({});
+
+  const toggleAuthor = (authorName) => {
+    setExpandedAuthors(prev => ({
+      ...prev,
+      [authorName]: !prev[authorName]
+    }));
+  };
 
   useEffect(() => {
     const fetchPublicItems = async () => {
@@ -55,6 +63,18 @@ export default function PublicCatalogue({ onNavigateHome }) {
     if (activeFilter === 'all') return true;
     return item.itemType === activeFilter;
   });
+
+  const groupedItems = filteredItems.reduce((acc, item) => {
+    const author = item.authorName || 'Créateur Anonyme';
+    if (!acc[author]) acc[author] = [];
+    acc[author].push(item);
+    return acc;
+  }, {});
+
+  const groupedArray = Object.entries(groupedItems).map(([authorName, authorItems]) => ({
+    authorName,
+    items: authorItems
+  })).sort((a, b) => b.items.length - a.items.length);
 
   const getGradientForUniverse = (universeId) => {
     switch(universeId) {
@@ -146,67 +166,95 @@ export default function PublicCatalogue({ onNavigateHome }) {
               </div>
             ))}
           </div>
-        ) : filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredItems.map(item => (
-              <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-[#e6d5c3] overflow-hidden hover:shadow-xl transition-all group flex flex-col">
+        ) : groupedArray.length > 0 ? (
+          <div className="space-y-6">
+            {groupedArray.map(group => (
+              <div key={group.authorName} className="bg-white rounded-2xl shadow-sm border border-[#e6d5c3] overflow-hidden">
+                <button 
+                  onClick={() => toggleAuthor(group.authorName)}
+                  className="w-full px-6 py-4 flex items-center justify-between bg-amber-50/50 hover:bg-amber-50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-[#8b4513] to-[#b05819] text-white rounded-full flex items-center justify-center font-black text-xl shadow-inner">
+                      {group.authorName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#4a2e1b]">{group.authorName}</h3>
+                      <p className="text-sm text-[#8b4513] font-medium flex items-center gap-1.5 mt-0.5">
+                        <Users className="w-4 h-4" />
+                        {group.items.length} {group.items.length > 1 ? 'créations publiées' : 'création publiée'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-[#8b4513] bg-amber-100/50 p-2 rounded-full">
+                    {expandedAuthors[group.authorName] ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </div>
+                </button>
                 
-                {/* Image Placeholder */}
-                <div className={`h-48 bg-gradient-to-br ${getGradientForUniverse(item.universeId)} relative flex items-center justify-center overflow-hidden`}>
-                  <div className="absolute inset-0 opacity-20 bg-[url('/assets/texture.png')] mix-blend-overlay"></div>
-                  
-                  {item.itemType === 'rhythm' ? (
-                    <Music className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
-                  ) : (
-                    <Activity className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
-                  )}
-                  
-                  {/* Badge Type */}
-                  <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border border-white/20 shadow-sm">
-                    {item.itemType === 'rhythm' ? <Music className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
-                    {item.itemType === 'rhythm' ? 'Rythme' : 'Chorégraphie'}
-                  </div>
-                </div>
+                {expandedAuthors[group.authorName] && (
+                  <div className="p-6 border-t border-[#e6d5c3] bg-gray-50/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {group.items.map(item => (
+                        <div key={item.id} className="bg-white rounded-2xl shadow-sm border border-[#e6d5c3] overflow-hidden hover:shadow-xl transition-all group flex flex-col">
+                          
+                          {/* Image Placeholder */}
+                          <div className={`h-48 bg-gradient-to-br ${getGradientForUniverse(item.universeId)} relative flex items-center justify-center overflow-hidden`}>
+                            <div className="absolute inset-0 opacity-20 bg-[url('/assets/texture.png')] mix-blend-overlay"></div>
+                            
+                            {item.itemType === 'rhythm' ? (
+                              <Music className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
+                            ) : (
+                              <Activity className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
+                            )}
+                            
+                            {/* Badge Type */}
+                            <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border border-white/20 shadow-sm">
+                              {item.itemType === 'rhythm' ? <Music className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
+                              {item.itemType === 'rhythm' ? 'Rythme' : 'Chorégraphie'}
+                            </div>
+                          </div>
 
-                {/* Content */}
-                <div className="p-6 flex flex-col flex-1">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="text-xl font-bold text-[#4a2e1b] line-clamp-1">{item.title || item.nom || 'Sans titre'}</h3>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm ${getBadgeForUniverse(item.universeId).bg} ${getBadgeForUniverse(item.universeId).text}`}>
-                      {item.universeId || 'Universel'}
-                    </span>
-                    {item.style && (
-                      <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm bg-gray-100 text-gray-600">
-                        {item.style}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <p className="text-sm text-gray-500 mb-6 flex-1 line-clamp-2">
-                    {item.description || "Aucune description fournie pour cette création."}
-                  </p>
+                          {/* Content */}
+                          <div className="p-6 flex flex-col flex-1">
+                            <div className="flex items-start justify-between mb-3">
+                              <h3 className="text-xl font-bold text-[#4a2e1b] line-clamp-1">{item.title || item.nom || 'Sans titre'}</h3>
+                            </div>
+                            
+                            <div className="flex items-center gap-2 mb-4">
+                              <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm ${getBadgeForUniverse(item.universeId).bg} ${getBadgeForUniverse(item.universeId).text}`}>
+                                {item.universeId || 'Universel'}
+                              </span>
+                              {item.style && (
+                                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm bg-gray-100 text-gray-600">
+                                  {item.style}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <p className="text-sm text-gray-500 mb-6 flex-1 line-clamp-2">
+                              {item.description || "Aucune description fournie pour cette création."}
+                            </p>
 
-                  <div className="pt-4 border-t border-gray-100">
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-2">Créateur</p>
-                    <p className="text-[#8b4513] font-bold truncate mb-5">{item.authorName || 'Créateur Anonyme'}</p>
-                    
-                    <button 
-                      onClick={() => {
-                        window.location.href = `/?import_id=${item.id}&type=${item.itemType}#espace-client`;
-                      }} 
-                      className="w-full flex items-center justify-center gap-2 bg-[#d2691e] hover:bg-[#b05819] text-white py-3 px-4 rounded-xl font-black text-sm uppercase tracking-wide transition-all shadow-md hover:shadow-lg"
-                    >
-                      <Download className="w-4 h-4" />
-                      Importer 
-                    </button>
-                    <p className="text-[10px] text-center text-gray-400 mt-2 font-medium">
-                      Créez votre compte gratuit pour utiliser ce morceau
-                    </p>
+                            <div className="pt-4 border-t border-gray-100">
+                              <button 
+                                onClick={() => {
+                                  window.location.href = `/?import_id=${item.id}&type=${item.itemType}#espace-client`;
+                                }} 
+                                className="w-full flex items-center justify-center gap-2 bg-[#d2691e] hover:bg-[#b05819] text-white py-3 px-4 rounded-xl font-black text-sm uppercase tracking-wide transition-all shadow-md hover:shadow-lg"
+                              >
+                                <Download className="w-4 h-4" />
+                                Importer 
+                              </button>
+                              <p className="text-[10px] text-center text-gray-400 mt-2 font-medium">
+                                Créez votre compte gratuit pour utiliser ce morceau
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             ))}
           </div>

@@ -22,6 +22,11 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
       maracatu: true,
       capoeira: false,
       samba: false
+    },
+    quotas: {
+      sequenciador: null,
+      dansador: null,
+      orchestrador: null
     }
   });
 
@@ -48,6 +53,11 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
           maracatu: Boolean(initialData.universeAccess?.maracatu ?? true),
           capoeira: Boolean(initialData.universeAccess?.capoeira ?? false),
           samba: Boolean(initialData.universeAccess?.samba ?? false)
+        },
+        quotas: {
+          sequenciador: initialData.quotas?.sequenciador ?? null,
+          dansador: initialData.quotas?.dansador ?? null,
+          orchestrador: initialData.quotas?.orchestrador ?? null
         }
       });
     } else {
@@ -71,6 +81,11 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
           maracatu: true,
           capoeira: false,
           samba: false
+        },
+        quotas: {
+          sequenciador: null,
+          dansador: null,
+          orchestrador: null
         }
       });
     }
@@ -381,6 +396,59 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                       <ToggleLeft className="w-7 h-7 text-gray-400" />
                     )}
                   </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Quotas Matrix */}
+            <div className="bg-white/80 p-4 rounded-lg border-2 border-[#8b4513]/20 space-y-3 sm:col-span-2 mt-4">
+              <h3 className="text-xs font-bold text-[#4a2e1b] uppercase">
+                Quotas de Badges Administrateur
+              </h3>
+              <p className="text-[10px] text-gray-500 italic mb-2">Laissez vide pour un accès illimité. Mettez 0 pour bloquer complètement l'accès.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                <div>
+                  <label className="block font-semibold text-gray-800 mb-1">Séquenciador</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Illimité"
+                    value={formData.quotas?.sequenciador ?? ''}
+                    onChange={e => setFormData({
+                      ...formData,
+                      quotas: { ...formData.quotas, sequenciador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
+                    })}
+                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-gray-800 mb-1">Dançador</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Illimité"
+                    value={formData.quotas?.dansador ?? ''}
+                    onChange={e => setFormData({
+                      ...formData,
+                      quotas: { ...formData.quotas, dansador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
+                    })}
+                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-gray-800 mb-1">Orchestrador</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="Illimité"
+                    value={formData.quotas?.orchestrador ?? ''}
+                    onChange={e => setFormData({
+                      ...formData,
+                      quotas: { ...formData.quotas, orchestrador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
+                    })}
+                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
+                  />
                 </div>
               </div>
             </div>

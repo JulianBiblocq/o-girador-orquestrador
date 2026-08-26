@@ -1,22 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check } from 'lucide-react';
+import { collection, query, where, getDocs, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
 
-export default function SequencerView({ userData, onBack }) {
+export default function SequencerView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   const handleShare = (id) => {
-    const url = `${window.location.origin}/?import_id=${id}&type=rhythm#espace-client`;
+    const url = `${window.location.origin}/?import_id=${id}&type=rythme#espace-client`;
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(url).then(() => {
         setCopiedId(id);
+        showToast("Lien de partage copié !");
         setTimeout(() => setCopiedId(null), 2000);
       });
     } else {
       prompt("Copiez ce lien de partage (Ctrl+C, Entrée) :", url);
+    }
+  };
+
+  const isValidForPoints = (rythme) => {
+    const measuresCount = Array.isArray(rythme.measures) ? rythme.measures.length : (Number(rythme.measures) || 0);
+    if (measuresCount < 8) return false;
+
+    const tracks = rythme.tracks || [];
+    let hasAlfaia = false;
+    let hasCaixaOrTarol = false;
+    let hasGongue = false;
+    let hasMineiroOrAbe = false;
+
+    tracks.forEach(track => {
+      if (track.isMuted) return;
+
+      const instr = (track.instrument || track.name || track.id || '').toLowerCase();
+      if (instr.includes('alfaia')) hasAlfaia = true;
+      if (instr.includes('caixa') || instr.includes('tarol')) hasCaixaOrTarol = true;
+      if (instr.includes('gongue') || instr.includes('gonguê') || instr.includes('gong')) hasGongue = true;
+      if (instr.includes('mineiro') || instr.includes('abe') || instr.includes('abê')) hasMineiroOrAbe = true;
+    });
+
+    return hasAlfaia && hasCaixaOrTarol && hasGongue && hasMineiroOrAbe;
+  };
+
+  const handlePublish = async (item) => {
+    if (item.isPublic) {
+      showToast("Cette création est déjà publique !");
+      return;
+    }
+
+    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
+
+    try {
+      const isEligible = isValidForPoints(item);
+      let canClaimReward = false;
+      let toastMsg = "";
+
+      if (!item.rewardClaimed && isEligible) {
+        const rhythmsRef = collection(db, 'rhythms');
+        const qCap = query(rhythmsRef, where('authorGroupId', '==', userData.groupId), where('rewardClaimed', '==', true));
+        const snap = await getDocs(qCap);
+        
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        let recentCount = 0;
+        
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const date = d.rewardDate?.toMillis?.() || d.dateCreation?.toMillis?.() || 0;
+          if (now - date < oneDay) {
+            recentCount++;
+          }
+        });
+
+        if (recentCount < 2) {
+          canClaimReward = true;
+          toastMsg = "Morceau publié ! Arrangement complet : +25 Points d'Axé.";
+        } else {
+          toastMsg = "Morceau publié ! (Plafond quotidien de points atteint).";
+        }
+      } else if (!item.rewardClaimed && !isEligible) {
+        toastMsg = "Morceau publié ! Note : Les points sont réservés aux arrangements complets (min 8 mesures, 4 instruments).";
+      } else {
+        toastMsg = "Votre création est désormais publique !";
+      }
+
+      const creationRef = doc(db, 'rhythms', item.id);
+      const updateData = {
+        isPublic: true,
+        authorName: associationData?.name || associationData?.nom || 'Association',
+        authorGroupId: userData.groupId
+      };
+
+      if (canClaimReward) {
+        updateData.rewardClaimed = true;
+        updateData.rewardDate = serverTimestamp();
+      }
+
+      await updateDoc(creationRef, updateData);
+
+      if (canClaimReward) {
+        const groupRef = doc(db, 'associations', userData.groupId);
+        await updateDoc(groupRef, {
+          contributionPoints: increment(25)
+        });
+      }
+
+      showToast(toastMsg);
+      setItems(items.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: canClaimReward ? true : i.rewardClaimed } : i));
+    } catch (error) {
+      console.error("Erreur publication:", error);
+      showToast("Une erreur est survenue lors de la publication.");
     }
   };
 
@@ -118,6 +219,14 @@ export default function SequencerView({ userData, onBack }) {
                   >
                     {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
                   </button>
+                  <button 
+                    onClick={() => handlePublish(item)}
+                    disabled={item.isPublic}
+                    className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
+                    title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -138,6 +247,16 @@ export default function SequencerView({ userData, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gray-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-gray-700">
+            <Check className="w-5 h-5 text-green-400" />
+            <p className="font-bold text-sm">{toastMessage}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
