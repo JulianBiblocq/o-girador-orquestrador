@@ -1,7 +1,7 @@
 {
   "name": "o-girador-ecosysteme",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,22 +11,22 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
-    "firebase": "^12.17.1",
+    "firebase": "^12.18.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0",
-    "sharp": "^0.35.3"
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.0.5",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.0",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.1",
+    "vite": "^8.2.2",
     "vite-plugin-sitemap": "^0.8.2"
   }
 }
