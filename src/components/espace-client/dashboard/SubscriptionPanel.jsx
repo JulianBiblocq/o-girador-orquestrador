@@ -144,6 +144,7 @@ export default function SubscriptionPanel({ associationData, setActiveTab, onNav
               if (onNavigateHome) {
                 window.location.hash = 'tarifs';
                 onNavigateHome();
+                setTimeout(() => document.getElementById('tarifs')?.scrollIntoView({ behavior: 'smooth' }), 100);
               }
             }}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#d2691e] hover:bg-[#b05819] text-white font-bold text-sm rounded-lg transition-all shadow-md hover:shadow-lg"
