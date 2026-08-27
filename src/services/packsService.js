@@ -8,10 +8,14 @@ export async function fetchPacks() {
   try {
     const querySnapshot = await getDocs(collection(db, 'premium_packs'));
     if (!querySnapshot.empty) {
-      return querySnapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data()
-      }));
+      return querySnapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          ...data,
+          prices: data.prices || { EUR: data.price || 0, BRL: 0 }
+        };
+      });
     }
   } catch (err) {
     console.warn("Firestore fetchPacks fallback:", err);
@@ -21,7 +25,11 @@ export async function fetchPacks() {
   const localData = localStorage.getItem('ogirador_packs');
   if (localData) {
     try {
-      return JSON.parse(localData);
+      const parsed = JSON.parse(localData);
+      return parsed.map(pack => ({
+        ...pack,
+        prices: pack.prices || { EUR: pack.price || 0, BRL: 0 }
+      }));
     } catch (e) {
       console.error(e);
     }

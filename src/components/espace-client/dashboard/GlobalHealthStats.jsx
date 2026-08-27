@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
-import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye } from 'lucide-react';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
 
@@ -53,6 +53,58 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDeleteRhythm = async (item) => {
+    if (!window.confirm(`Voulez-vous vraiment supprimer "${item.label}" ?`)) return;
+
+    try {
+      if (item.type === 'section' || item.type === 'rhythm') {
+        await deleteDoc(doc(db, 'presets', item.id));
+      } else if (item.type === 'storage') {
+        alert("Impossible de supprimer un ancien fichier Storage depuis cette interface.");
+        return;
+      }
+      
+      const newRhythms = stats.latestRhythms.filter(r => r.id !== item.id);
+      setStats(prev => ({ ...prev, latestRhythms: newRhythms }));
+      showToast("Rythme supprimé avec succès !");
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      showToast("Une erreur est survenue lors de la suppression.");
+    }
+  };
+
+  const moveRhythmItem = async (indexInFiltered, direction, filteredList) => {
+    if ((direction === -1 && indexInFiltered === 0) || (direction === 1 && indexInFiltered === filteredList.length - 1)) return;
+
+    const item = filteredList[indexInFiltered];
+    const targetItem = filteredList[indexInFiltered + direction];
+    
+    const newRhythms = [...stats.latestRhythms];
+    const absIdx = newRhythms.findIndex(r => r.id === item.id);
+    const absTargetIdx = newRhythms.findIndex(r => r.id === targetItem.id);
+    
+    const temp = newRhythms[absIdx];
+    newRhythms[absIdx] = newRhythms[absTargetIdx];
+    newRhythms[absTargetIdx] = temp;
+    
+    setStats(prev => ({ ...prev, latestRhythms: newRhythms }));
+
+    try {
+      const updatePromises = [];
+      if (item.type === 'section' || item.type === 'rhythm') {
+        updatePromises.push(updateDoc(doc(db, 'presets', item.id), { orderIndex: indexInFiltered + direction }));
+      }
+      if (targetItem.type === 'section' || targetItem.type === 'rhythm') {
+        updatePromises.push(updateDoc(doc(db, 'presets', targetItem.id), { orderIndex: indexInFiltered }));
+      }
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error("Erreur réorganisation:", error);
+      showToast("Erreur lors de l'enregistrement de l'ordre.");
+    }
   };
 
   const handlePublishRhythm = async (item) => {
@@ -127,7 +179,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
       showToast(toastMsg);
       setStats(prev => ({
         ...prev,
-        latestRhythms: prev.latestRhythms.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: canClaimReward ? true : i.rewardClaimed } : i)
+        latestRhythms: prev.latestRhythms.map(i => i.id === item.id ? { ...i, isPublic: true, type: 'rhythm', rewardClaimed: canClaimReward ? true : i.rewardClaimed } : i)
       }));
     } catch (error) {
       console.error("Erreur publication:", error);
@@ -281,30 +333,40 @@ export default function GlobalHealthStats({ userData, associationData }) {
           });
           
           // B. Séquences Complètes (Presets)
-          console.log('[DEBUG PRESETS] userData.uid:', userData.uid, 'userData.groupId:', userData.groupId);
+          console.log('[PRESETS] Fetching presets for ownerId:', userData.uid);
           
-          // Try fetching ALL presets first to see what's in the collection
-          const allPresetsSnap = await safeGetDocs(query(collection(db, 'presets')));
-          if (allPresetsSnap) {
-            console.log('[DEBUG PRESETS] Total presets in collection:', allPresetsSnap.size);
-            allPresetsSnap.forEach(docSnap => {
-              const d = docSnap.data();
-              const fieldKeys = Object.keys(d).filter(k => k !== 'data');
-              const info = {};
-              fieldKeys.forEach(k => info[k] = d[k]);
-              console.log('[DEBUG PRESETS] Doc:', docSnap.id, JSON.stringify(info));
-            });
-          } else {
-            console.log('[DEBUG PRESETS] allPresetsSnap is null (permission denied?)');
-          }
+          const firestoreItemsMap = new Map();
 
-          const qPresets = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
-          const presetsSnap = await safeGetDocs(qPresets);
-          console.log('[DEBUG PRESETS] Filtered presetsSnap size:', presetsSnap?.size);
-          if (presetsSnap) {
-            presetsSnap.forEach(docSnap => {
+          try {
+            // 1. Fetch user's own presets
+            const qOwner = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
+            const ownerSnap = await getDocs(qOwner);
+            ownerSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+
+            // 2. Fetch public presets
+            const qPublic = query(collection(db, 'presets'), where('visibility', '==', 'public'));
+            const publicSnap = await getDocs(qPublic);
+            publicSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+            
+            // 3. Fetch presets targeted to this user
+            const qTarget = query(collection(db, 'presets'), where('targetUserId', '==', userData.uid));
+            const targetSnap = await getDocs(qTarget);
+            targetSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+            
+            // Also fetch 'admin_global' visibility if used
+            const qGlobal = query(collection(db, 'presets'), where('visibility', '==', 'admin_global'));
+            const globalSnap = await getDocs(qGlobal);
+            globalSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+
+            console.log('[PRESETS] Total unique presets found:', firestoreItemsMap.size);
+          } catch (presetErr) {
+            console.error('[PRESETS] Error fetching presets:', presetErr.code, presetErr.message);
+          }
+          
+          if (firestoreItemsMap.size > 0) {
+            firestoreItemsMap.forEach(docSnap => {
               const data = docSnap.data();
-              const isPublic = data.visibility === 'public';
+              const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
               
               let parsedData = data;
               if (data.data) {
@@ -322,6 +384,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 type: isPublic ? 'rhythm' : 'section', // rhythm = public tab, section = local tab
                 isPublic: isPublic,
                 rewardClaimed: data.rewardClaimed || false,
+                orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
                 originalData: parsedData
               });
             });
@@ -356,7 +419,12 @@ export default function GlobalHealthStats({ userData, associationData }) {
             });
           }
           
-          rhythmsList.sort((a, b) => b.date - a.date);
+          rhythmsList.sort((a, b) => {
+            if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
+              return a.orderIndex - b.orderIndex;
+            }
+            return b.date - a.date;
+          });
         } catch (e) {
           console.warn("Rhythms fetch error:", e.message);
         }
@@ -789,20 +857,51 @@ export default function GlobalHealthStats({ userData, associationData }) {
                           <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
                           {item.date > 0 && <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</span>}
                         </div>
-                        {item.isExternal ? (
-                          <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
-                            <Globe className="w-4 h-4" />
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => handlePublishRhythm(item)}
-                            disabled={item.isPublic}
-                            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                            title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                          >
-                            <Globe className="w-4 h-4" />
-                          </button>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && !item.isExternal && (
+                            <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mr-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); moveRhythmItem(idx, -1, filteredList); }}
+                                disabled={idx === 0}
+                                className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); moveRhythmItem(idx, 1, filteredList); }}
+                                disabled={idx === filteredList.length - 1}
+                                className="p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                          )}
+                          
+                          {item.isExternal ? (
+                            <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
+                              <Globe className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => handlePublishRhythm(item)}
+                              disabled={item.isPublic}
+                              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                              title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                            >
+                              <Globe className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {!item.isExternal && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteRhythm(item); }}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

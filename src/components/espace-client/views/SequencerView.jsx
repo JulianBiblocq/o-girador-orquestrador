@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db, storage } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { ref, listAll } from 'firebase/storage';
-import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
+import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import LZString from 'lz-string';
 
 export default function SequencerView({ userData, associationData, onBack }) {
@@ -126,6 +126,54 @@ export default function SequencerView({ userData, associationData, onBack }) {
     }
   };
 
+  const handleDelete = async (item) => {
+    if (!window.confirm(`Voulez-vous vraiment supprimer le rythme "${item.title}" ?`)) return;
+
+    try {
+      if (item.source === 'firestore') {
+        await deleteDoc(doc(db, 'presets', item.id));
+      } else {
+        showToast("Impossible de supprimer un ancien fichier Storage ici.");
+        return;
+      }
+      
+      setItems(items.filter(i => i.id !== item.id));
+      showToast("Rythme supprimé avec succès !");
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      showToast("Une erreur est survenue lors de la suppression.");
+    }
+  };
+
+  const moveItem = async (index, direction) => {
+    if ((direction === -1 && index === 0) || (direction === 1 && index === items.length - 1)) return;
+
+    const newItems = [...items];
+    const targetIndex = index + direction;
+    
+    // Échange dans la liste locale
+    const temp = newItems[index];
+    newItems[index] = newItems[targetIndex];
+    newItems[targetIndex] = temp;
+    
+    setItems(newItems);
+
+    try {
+      const updatePromises = [];
+      if (newItems[index].source === 'firestore') {
+        updatePromises.push(updateDoc(doc(db, 'presets', newItems[index].id), { orderIndex: index }));
+      }
+      if (newItems[targetIndex].source === 'firestore') {
+        updatePromises.push(updateDoc(doc(db, 'presets', newItems[targetIndex].id), { orderIndex: targetIndex }));
+      }
+      
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error("Erreur lors de la réorganisation:", error);
+      showToast("Erreur lors de l'enregistrement de l'ordre.");
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       if (!userData?.groupId) return;
@@ -167,8 +215,31 @@ export default function SequencerView({ userData, associationData, onBack }) {
         // 3. Récupérer les créations du Séquenceur (Firestore : presets)
         const firestoreItems = [];
         try {
-          const qPresets = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
-          const presetsSnap = await getDocs(qPresets);
+          console.log('[SequencerView PRESETS] Fetching for user:', userData.uid);
+          
+          const firestoreItemsMap = new Map();
+          
+          // 1. Fetch user's own presets
+          const qOwner = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
+          const ownerSnap = await getDocs(qOwner);
+          ownerSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+
+          // 2. Fetch public presets
+          const qPublic = query(collection(db, 'presets'), where('visibility', '==', 'public'));
+          const publicSnap = await getDocs(qPublic);
+          publicSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+          
+          // 3. Fetch presets targeted to this user
+          const qTarget = query(collection(db, 'presets'), where('targetUserId', '==', userData.uid));
+          const targetSnap = await getDocs(qTarget);
+          targetSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+          
+          // Also fetch 'admin_global' visibility if used
+          const qGlobal = query(collection(db, 'presets'), where('visibility', '==', 'admin_global'));
+          const globalSnap = await getDocs(qGlobal);
+          globalSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
+
+          console.log('[SequencerView PRESETS] Found unique documents:', firestoreItemsMap.size);
           
           const processFirestoreDoc = (docSnap) => {
              const data = docSnap.data();
@@ -185,25 +256,31 @@ export default function SequencerView({ userData, associationData, onBack }) {
                id: docSnap.id,
                title: data.name || data.title || 'Sans titre',
                isAudio: false,
-               isPublic: data.visibility === 'public' || !!publishedData?.isPublic,
+               isPublic: data.visibility === 'public' || data.visibility === 'admin_global' || !!publishedData?.isPublic,
                rewardClaimed: !!publishedData?.rewardClaimed,
                dateCreation: data.createdAt || 0,
+               orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
                source: 'firestore',
                originalData: parsedData
              });
           };
           
-          presetsSnap.forEach(processFirestoreDoc);
+          firestoreItemsMap.forEach(processFirestoreDoc);
         } catch (fsError) {
-          console.warn("Could not fetch Firestore presets (possibly permission denied):", fsError);
+          console.error("[SequencerView PRESETS] Error:", fsError.code, fsError.message);
         }
         
         const allFetchedItems = [...fetchedItems, ...firestoreItems];
         
-        // Tri par date décroissante
-        allFetchedItems.sort((a, b) => b.dateCreation - a.dateCreation);
+        // Tri par orderIndex d'abord, puis par date décroissante
+        allFetchedItems.sort((a, b) => {
+          if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
+            return a.orderIndex - b.orderIndex;
+          }
+          return b.dateCreation - a.dateCreation;
+        });
         
-        setItems(allFetchedItems.slice(0, 3));
+        setItems(allFetchedItems);
 
         // 4. Récupérer le catalogue public (Global)
         const publicFetchedItems = [];
@@ -296,33 +373,58 @@ export default function SequencerView({ userData, associationData, onBack }) {
             ))}
           </div>
         ) : items.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {items.map(item => (
-              <div key={item.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
-                <div>
+          <div className="flex flex-col gap-3">
+            {items.map((item, index) => (
+              <div key={item.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col sm:flex-row justify-between hover:shadow-md transition-shadow group gap-4">
+                <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-gray-800 line-clamp-1">{item.name || item.title || 'Rythme sans titre'}</h4>
                   <p className="text-xs text-gray-500 mt-1">{item.tempo ? `${item.tempo} BPM` : 'Tempo par défaut'}</p>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-600 group-hover:border-purple-300 group-hover:text-purple-600 transition-colors cursor-not-allowed">
-                    <Edit3 className="w-3.5 h-3.5" />
-                    Éditer
-                  </button>
-                  <button 
-                    onClick={() => handleShare(item.id)}
-                    className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-[#d2691e] hover:border-[#d2691e] transition-colors"
-                    title="Partager le rythme"
-                  >
-                    {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
-                  </button>
-                  <button 
-                    onClick={() => handlePublish(item)}
-                    disabled={item.isPublic}
-                    className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
-                    title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                  >
-                    <Globe className="w-3.5 h-3.5" />
-                  </button>
+                
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col gap-1 mr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      onClick={() => moveItem(index, -1)}
+                      disabled={index === 0}
+                      className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400"
+                      title="Monter"
+                    >
+                      <ArrowUp className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => moveItem(index, 1)}
+                      disabled={index === items.length - 1}
+                      className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30 disabled:hover:text-gray-400"
+                      title="Descendre"
+                    >
+                      <ArrowDown className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => handleShare(item.id)}
+                      className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-[#d2691e] hover:border-[#d2691e] transition-colors"
+                      title="Partager le rythme"
+                    >
+                      {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
+                    </button>
+                    <button 
+                      onClick={() => handlePublish(item)}
+                      disabled={item.isPublic}
+                      className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
+                      title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(item)}
+                      className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-500 hover:bg-red-50 transition-all"
+                      title="Supprimer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
