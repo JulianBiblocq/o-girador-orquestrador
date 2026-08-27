@@ -1,10 +1,13 @@
 import React from 'react';
 import { Check, Sparkles, HeartHandshake, ArrowUpRight } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function PricingCard({ plan, billingCycle, onSelect }) {
   const { t } = useLanguage();
-  const price = billingCycle === 'annual' ? plan.pricing.annual : plan.pricing.monthly;
+  const { currency, symbol } = useCurrency();
+  const price = billingCycle === 'annual' ? plan.pricing.annual[currency] : plan.pricing.monthly[currency];
+  const monthlyEquivalent = plan.pricingMonthlyEquivalent ? plan.pricingMonthlyEquivalent[currency] : 0;
   const isAnnual = billingCycle === 'annual';
 
   return (
@@ -34,13 +37,13 @@ export default function PricingCard({ plan, billingCycle, onSelect }) {
 
         <div className="bg-[#f4e8cf]/50 p-4 rounded-lg border border-[#8b4513]/20 text-center mb-6">
           <div className="text-3xl sm:text-4xl font-black text-[#4a2e1b] font-cordel">
-            {price === 0 ? '0€' : `${price}€`}
+            {price === 0 ? `0${symbol}` : `${symbol === 'R$' ? 'R$' : ''}${price}${symbol === '€' ? '€' : ''}`}
           </div>
           <div className="text-xs text-gray-600 font-medium mt-1">
             {price === 0
               ? 'Accès gratuit à vie'
               : isAnnual
-              ? `par an (${plan.pricingMonthlyEquivalent}€ / mois)`
+              ? `par an (${symbol === 'R$' ? 'R$' : ''}${monthlyEquivalent}${symbol === '€' ? '€' : ''} / mois)`
               : 'par mois (sans engagement)'}
           </div>
         </div>

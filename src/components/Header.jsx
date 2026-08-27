@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Menu, X, ChevronDown, Compass, PlayCircle, User, Sparkles, LogIn, ShoppingBag } from 'lucide-react';
+import { Menu, X, ChevronDown, Compass, PlayCircle, User, LogIn, ShoppingBag } from 'lucide-react';
 import universData from '../data/univers.json';
 import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
+import AxePointsBadge from './AxePointsBadge';
 
 export default function Header({ 
   activeUniverse, 
@@ -116,10 +117,9 @@ export default function Header({
                   setTimeout(() => document.getElementById('boutique')?.scrollIntoView({ behavior: 'smooth' }), 100);
                 }
               }}
-              className="hover:text-[#e67e22] transition-colors cursor-pointer flex items-center gap-1"
+              className="hover:text-[#e67e22] transition-colors cursor-pointer"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Boutique</span>
+              Boutique
             </a>
             <a href="#tarifs" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e] transition-colors">
               Tarifs
@@ -149,6 +149,7 @@ export default function Header({
               </button>
             ) : (
                 <div className="relative flex items-center gap-2">
+                  <AxePointsBadge />
                   <button
                     onClick={toggleCart}
                     className="relative flex items-center justify-center p-2 rounded-full hover:bg-[#f4e8cf] transition-colors"
@@ -354,7 +355,6 @@ export default function Header({
                     className="text-left px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors cursor-pointer text-[#4a2e1b] hover:bg-[#f4e8cf]"
                   >
                     <span>{t('header.nav.boutique') || 'Boutique'}</span>
-                    <Sparkles className="w-4 h-4 text-[#e67e22]" />
                   </a>
                 </nav>
               </div>

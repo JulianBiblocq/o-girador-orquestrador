@@ -25,8 +25,14 @@
       "badge": "Gratuit",
       "highlighted": false,
       "pricing": {
-        "monthly": 0,
-        "annual": 0
+        "monthly": {
+          "EUR": 0,
+          "BRL": 0
+        },
+        "annual": {
+          "EUR": 0,
+          "BRL": 0
+        }
       },
       "targetAudience": "Passionnés & Élèves",
       "features": [
@@ -46,10 +52,19 @@
       "badge": "Séquenceur Pro",
       "highlighted": false,
       "pricing": {
-        "monthly": 9.99,
-        "annual": 99.99
+        "monthly": {
+          "EUR": 9.99,
+          "BRL": 29.97
+        },
+        "annual": {
+          "EUR": 99.99,
+          "BRL": 299.96999999999997
+        }
       },
-      "pricingMonthlyEquivalent": 8.33,
+      "pricingMonthlyEquivalent": {
+        "EUR": 8.33,
+        "BRL": 24.99
+      },
       "targetAudience": "Mestres & Compositeurs",
       "features": [
         "Création Sans Limite : Composez et arrangez vos propres séquences de A à Z.",
@@ -68,10 +83,19 @@
       "badge": "Manager + Vitrine",
       "highlighted": true,
       "pricing": {
-        "monthly": 29.99,
-        "annual": 299.99
+        "monthly": {
+          "EUR": 29.99,
+          "BRL": 89.97
+        },
+        "annual": {
+          "EUR": 299.99,
+          "BRL": 899.97
+        }
       },
-      "pricingMonthlyEquivalent": 24.99,
+      "pricingMonthlyEquivalent": {
+        "EUR": 24.99,
+        "BRL": 74.97
+      },
       "targetAudience": "Associations & Blocos",
       "features": [
         "Gestion Centralisée : Pilotez l'agenda, les présences, le matériel et la trésorerie.",
@@ -91,10 +115,19 @@
       "badge": "Écosystème Complet",
       "highlighted": false,
       "pricing": {
-        "monthly": 49.99,
-        "annual": 499.99
+        "monthly": {
+          "EUR": 49.99,
+          "BRL": 149.97
+        },
+        "annual": {
+          "EUR": 499.99,
+          "BRL": 1499.97
+        }
       },
-      "pricingMonthlyEquivalent": 41.66,
+      "pricingMonthlyEquivalent": {
+        "EUR": 41.66,
+        "BRL": 124.98
+      },
       "targetAudience": "Grands Collectifs & Fédérations",
       "features": [
         "La Suite Totale : Accès illimité au Manager et à la Vitrine.",
@@ -112,8 +145,14 @@
       "appName": "O Girador - Séquenceur Standalone",
       "description": "Utilisation du Séquenceur autonome sans les outils de gestion d'association",
       "pricing": {
-        "monthly": 3.99,
-        "annual": 34.99
+        "monthly": {
+          "EUR": 3.99,
+          "BRL": 11.97
+        },
+        "annual": {
+          "EUR": 34.99,
+          "BRL": 104.97
+        }
       },
       "universeId": "maracatu",
       "isUniversal": false
@@ -123,8 +162,14 @@
       "appName": "O Girador - Manager Standalone",
       "description": "Utilisation de la suite de gestion d'association et vitrine uniquement",
       "pricing": {
-        "monthly": 14.99,
-        "annual": 129.99
+        "monthly": {
+          "EUR": 14.99,
+          "BRL": 44.97
+        },
+        "annual": {
+          "EUR": 129.99,
+          "BRL": 389.97
+        }
       },
       "universeId": "maracatu",
       "isUniversal": false
@@ -134,8 +179,14 @@
       "appName": "O Girador - Dançador Standalone",
       "description": "Utilisation du studio chorégraphique interactif autonome",
       "pricing": {
-        "monthly": 5.99,
-        "annual": 49.99
+        "monthly": {
+          "EUR": 5.99,
+          "BRL": 17.97
+        },
+        "annual": {
+          "EUR": 49.99,
+          "BRL": 149.97
+        }
       },
       "universeId": "maracatu",
       "isUniversal": false

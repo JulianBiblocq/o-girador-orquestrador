@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useCurrency } from './CurrencyContext';
 
 const CartContext = createContext();
 
@@ -6,12 +7,13 @@ export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const { currency } = useCurrency();
 
   // Recalculer le total dès que les items changent
   useEffect(() => {
-    const total = cartItems.reduce((sum, item) => sum + (item.price || 0), 0);
+    const total = cartItems.reduce((sum, item) => sum + (item.prices?.[currency] || 0), 0);
     setCartTotal(total);
-  }, [cartItems]);
+  }, [cartItems, currency]);
 
   const addToCart = (product) => {
     setCartItems((prevItems) => {

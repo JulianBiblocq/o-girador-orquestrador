@@ -5,12 +5,13 @@ import UniverseWarningModal from './UniverseWarningModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { db } from '../../../services/firebase';
 import { doc, updateDoc, increment } from 'firebase/firestore';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 export default function AddonsStore({ associationData, onBack }) {
   const [loading, setLoading] = useState(true);
   const [packs, setPacks] = useState([]);
   const [selectedWarningPack, setSelectedWarningPack] = useState(null);
-  
+  const { currency, symbol } = useCurrency();
   const { userData } = useAuth();
   
   // L'univers principal de l'utilisateur (simplifié)
@@ -113,7 +114,7 @@ export default function AddonsStore({ associationData, onBack }) {
       <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <div className="font-black text-xl text-[#4a2e1b]">
-            {pack.price}€
+            {symbol === 'R$' ? 'R$' : ''}{pack.prices[currency]}{symbol === '€' ? '€' : ''}
           </div>
           <button 
             onClick={() => handleBuyClick(pack)}
@@ -124,7 +125,7 @@ export default function AddonsStore({ associationData, onBack }) {
             }`}
           >
             <ShoppingCart className="w-4 h-4" />
-            Acheter pour {pack.price} €
+            Acheter pour {symbol === 'R$' ? 'R$' : ''}{pack.prices[currency]}{symbol === '€' ? '€' : ''}
           </button>
         </div>
         {pack.pricePoints && (

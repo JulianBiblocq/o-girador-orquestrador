@@ -4,7 +4,6 @@
       "id": "pack-seq-bases",
       "name": "Pack Bases du Maracatu Nação",
       "description": "Les 10 rythmes fondamentaux du Maracatu Nação pour bien démarrer.",
-      "price": 15,
       "targetApp": "sequenceur",
       "features": [
         "10 rythmes fondamentaux",
@@ -13,13 +12,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 150
+      "pricePoints": 150,
+      "prices": {
+        "EUR": 15,
+        "BRL": 45
+      }
     },
     {
       "id": "pack-seq-masterclass",
       "name": "Pack Masterclass Mestre",
       "description": "Ses créations, breaks et viradas signature avec ses commentaires audios explicatifs.",
-      "price": 40,
       "targetApp": "sequenceur",
       "features": [
         "Créations originales",
@@ -28,13 +30,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 400
+      "pricePoints": 400,
+      "prices": {
+        "EUR": 40,
+        "BRL": 120
+      }
     },
     {
       "id": "pack-seq-samba",
       "name": "Pack Samba-Reggae / Batucada",
       "description": "Pour ouvrir votre Séquenceur à d'autres styles brésiliens !",
-      "price": 25,
       "targetApp": "sequenceur",
       "features": [
         "Rythmes Samba-Reggae",
@@ -43,13 +48,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 250
+      "pricePoints": 250,
+      "prices": {
+        "EUR": 25,
+        "BRL": 75
+      }
     },
     {
       "id": "pack-dan-orixas",
       "name": "Pack Orixás - Mouvements de base",
       "description": "Vidéos détourées et séquençage audio pour l'apprentissage des pas de base des Orixás.",
-      "price": 30,
       "targetApp": "dancador",
       "features": [
         "Vidéos détourées",
@@ -58,13 +66,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 300
+      "pricePoints": 300,
+      "prices": {
+        "EUR": 30,
+        "BRL": 90
+      }
     },
     {
       "id": "pack-dan-defile",
       "name": "Pack Chorégraphie - Défilé de rue",
       "description": "Chorégraphie complète créée par une prof renommée, prête à être apprise par les élèves.",
-      "price": 50,
       "targetApp": "dancador",
       "features": [
         "Chorégraphie complète",
@@ -73,13 +84,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 500
+      "pricePoints": 500,
+      "prices": {
+        "EUR": 50,
+        "BRL": 150
+      }
     },
     {
       "id": "pack-man-encyclo",
       "name": "Pack Encyclopédie du Pernambouc",
       "description": "100 fiches prêtes à l'emploi avec QCM intégrés sur l'histoire, la cuisine et la géographie.",
-      "price": 20,
       "targetApp": "manager",
       "features": [
         "100 Fiches culturelles",
@@ -88,13 +102,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 200
+      "pricePoints": 200,
+      "prices": {
+        "EUR": 20,
+        "BRL": 60
+      }
     },
     {
       "id": "pack-man-lutherie",
       "name": "Pack Tutoriels Lutherie Premium",
       "description": "Vidéos pro de fabrication d'Alfaias et de maillage d'Agbê.",
-      "price": 25,
       "targetApp": "manager",
       "features": [
         "Tutos Fabrication Alfaias",
@@ -103,13 +120,16 @@
       ],
       "universeId": "maracatu",
       "isUniversal": false,
-      "pricePoints": 250
+      "pricePoints": 250,
+      "prices": {
+        "EUR": 25,
+        "BRL": 75
+      }
     },
     {
       "id": "pack-seq-samba-enredo",
       "name": "Pack Samba Enredo (Pro)",
       "description": "Retrouvez les grooves complexes des écoles de Samba de Rio.",
-      "price": 35,
       "targetApp": "sequenceur",
       "features": [
         "Rythmes Enredo",
@@ -118,13 +138,16 @@
       ],
       "universeId": "samba",
       "isUniversal": false,
-      "pricePoints": 350
+      "pricePoints": 350,
+      "prices": {
+        "EUR": 35,
+        "BRL": 105
+      }
     },
     {
       "id": "pack-dan-samba",
       "name": "Pack Passista - Pas de base",
       "description": "Apprenez le Samba no Pé et développez votre technique individuelle.",
-      "price": 25,
       "targetApp": "dancador",
       "features": [
         "Samba no Pé lent",
@@ -133,13 +156,16 @@
       ],
       "universeId": "samba",
       "isUniversal": false,
-      "pricePoints": 250
+      "pricePoints": 250,
+      "prices": {
+        "EUR": 25,
+        "BRL": 75
+      }
     },
     {
       "id": "pack-seq-berimbau",
       "name": "Pack Toques de Berimbau",
       "description": "Séquences de Berimbau (Angola, São Bento Grande, Benguela).",
-      "price": 20,
       "targetApp": "sequenceur",
       "features": [
         "Toques traditionnels",
@@ -148,13 +174,16 @@
       ],
       "universeId": "capoeira",
       "isUniversal": false,
-      "pricePoints": 200
+      "pricePoints": 200,
+      "prices": {
+        "EUR": 20,
+        "BRL": 60
+      }
     },
     {
       "id": "pack-uni-theorie",
       "name": "Pack Théorie Musicale Brésilienne",
       "description": "Comprendre la syncope, le placement des temps forts et faibles.",
-      "price": 15,
       "targetApp": "manager",
       "features": [
         "Exercices interactifs",
@@ -163,7 +192,11 @@
       ],
       "universeId": "universal",
       "isUniversal": true,
-      "pricePoints": 150
+      "pricePoints": 150,
+      "prices": {
+        "EUR": 15,
+        "BRL": 45
+      }
     }
   ]
 }

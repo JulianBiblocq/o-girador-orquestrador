@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { db, storage } from '../../../services/firebase';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { ref, listAll } from 'firebase/storage';
 import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
+import LZString from 'lz-string';
 
 export default function SequencerView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
+  const [publicItems, setPublicItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -64,8 +67,8 @@ export default function SequencerView({ userData, associationData, onBack }) {
       let toastMsg = "";
 
       if (!item.rewardClaimed && isEligible) {
-        const rhythmsRef = collection(db, 'rhythms');
-        const qCap = query(rhythmsRef, where('authorGroupId', '==', userData.groupId), where('rewardClaimed', '==', true));
+        const presetsRef = collection(db, 'presets');
+        const qCap = query(presetsRef, where('ownerId', '==', userData.uid), where('rewardClaimed', '==', true));
         const snap = await getDocs(qCap);
         
         const now = Date.now();
@@ -92,11 +95,13 @@ export default function SequencerView({ userData, associationData, onBack }) {
         toastMsg = "Votre création est désormais publique !";
       }
 
-      const creationRef = doc(db, 'rhythms', item.id);
+      const creationRef = doc(db, 'presets', item.id);
       const updateData = {
+        title: item.title || item.name || 'Sans titre',
+        visibility: 'public',
         isPublic: true,
         authorName: associationData?.name || associationData?.nom || 'Association',
-        authorGroupId: userData.groupId
+        ownerId: userData.uid
       };
 
       if (canClaimReward) {
@@ -104,7 +109,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
         updateData.rewardDate = serverTimestamp();
       }
 
-      await updateDoc(creationRef, updateData);
+      await setDoc(creationRef, updateData, { merge: true });
 
       if (canClaimReward) {
         const groupRef = doc(db, 'associations', userData.groupId);
@@ -126,23 +131,114 @@ export default function SequencerView({ userData, associationData, onBack }) {
       if (!userData?.groupId) return;
       
       try {
-        const ref = collection(db, 'rhythms');
-        const q = query(ref, where('groupId', '==', userData.groupId));
+        // 1. Récupérer le statut de publication depuis Firestore (presets)
+        const presetsRef = collection(db, 'presets');
+        const q = query(presetsRef, where('ownerId', '==', userData.uid));
         const snap = await getDocs(q);
         
-        let docs = [];
-        snap.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-        
-        // Tri en mémoire
-        docs.sort((a, b) => {
-          const dateA = a.dateCreation?.toMillis?.() || a.dateCreation || 0;
-          const dateB = b.dateCreation?.toMillis?.() || b.dateCreation || 0;
-          return dateB - dateA;
+        const publishedMap = {};
+        snap.forEach(d => {
+          publishedMap[d.id] = d.data();
         });
         
-        setItems(docs.slice(0, 3));
+        // 2. Récupérer le catalogue depuis Storage
+        const folderRef = ref(storage, `documents/${userData.groupId}/sequencer`);
+        const res = await listAll(folderRef);
+        
+        const fetchedItems = await Promise.all(
+          res.items.map(async (itemRef) => {
+            const rawName = itemRef.name;
+            const cleanName = rawName.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, '');
+            const isAudio = /\.(mp3|wav|ogg|m4a|aac)$/i.test(rawName);
+            
+            const publishedData = publishedMap[rawName];
+            
+            return {
+              id: rawName,
+              title: cleanName,
+              isAudio,
+              isPublic: !!publishedData?.isPublic,
+              rewardClaimed: !!publishedData?.rewardClaimed,
+              dateCreation: parseInt(rawName.split('_')[0]) || 0
+            };
+          })
+        );
+        
+        // 3. Récupérer les créations du Séquenceur (Firestore : presets)
+        const firestoreItems = [];
+        try {
+          const qPresets = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
+          const presetsSnap = await getDocs(qPresets);
+          
+          const processFirestoreDoc = (docSnap) => {
+             const data = docSnap.data();
+             
+             let parsedData = data;
+             if (data.data) {
+               try {
+                 parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+               } catch(e) {}
+             }
+
+             const publishedData = publishedMap[docSnap.id];
+             firestoreItems.push({
+               id: docSnap.id,
+               title: data.name || data.title || 'Sans titre',
+               isAudio: false,
+               isPublic: data.visibility === 'public' || !!publishedData?.isPublic,
+               rewardClaimed: !!publishedData?.rewardClaimed,
+               dateCreation: data.createdAt || 0,
+               source: 'firestore',
+               originalData: parsedData
+             });
+          };
+          
+          presetsSnap.forEach(processFirestoreDoc);
+        } catch (fsError) {
+          console.warn("Could not fetch Firestore presets (possibly permission denied):", fsError);
+        }
+        
+        const allFetchedItems = [...fetchedItems, ...firestoreItems];
+        
+        // Tri par date décroissante
+        allFetchedItems.sort((a, b) => b.dateCreation - a.dateCreation);
+        
+        setItems(allFetchedItems.slice(0, 3));
+
+        // 4. Récupérer le catalogue public (Global)
+        const publicFetchedItems = [];
+        try {
+          const qPublic = query(collection(db, 'presets'), where('visibility', 'in', ['admin_global', 'public']));
+          const publicSnap = await getDocs(qPublic);
+          
+          publicSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            // Ne pas l'ajouter s'il appartient déjà à l'utilisateur (déjà dans items)
+            if (data.ownerId === userData.uid) return;
+
+            let parsedData = data;
+            if (data.data) {
+              try {
+                parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+              } catch(e) {}
+            }
+
+            publicFetchedItems.push({
+              id: docSnap.id,
+              title: data.name || data.title || 'Sans titre',
+              authorName: data.authorName || 'O Girador',
+              dateCreation: data.createdAt || 0,
+              originalData: parsedData
+            });
+          });
+          publicFetchedItems.sort((a, b) => b.dateCreation - a.dateCreation);
+          setPublicItems(publicFetchedItems.slice(0, 3));
+        } catch (pubErr) {
+          console.warn("Could not fetch public catalog:", pubErr);
+        }
+
       } catch (error) {
-        console.error("Erreur fetch rhythms:", error);
+        console.error("Erreur fetch catalogue sequencer:", error);
       } finally {
         setLoading(false);
       }
@@ -244,6 +340,46 @@ export default function SequencerView({ userData, associationData, onBack }) {
               <Plus className="w-4 h-4" />
               Composer mon premier rythme
             </a>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h3 className="font-bold text-gray-700 mb-6 flex items-center gap-2 uppercase tracking-wider text-sm">
+          <Globe className="w-4 h-4 text-blue-600" />
+          Catalogue Public (Communauté)
+        </h3>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : publicItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {publicItems.map(item => (
+              <div key={item.id} className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
+                <div>
+                  <h4 className="font-bold text-gray-800 line-clamp-1">{item.title}</h4>
+                  <p className="text-xs text-blue-600 mt-1">Par {item.authorName}</p>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  <button 
+                    onClick={() => handleShare(item.id)}
+                    className="flex-1 flex items-center justify-center py-1.5 bg-white border border-blue-200 rounded-lg text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 mr-1.5" />
+                    Ouvrir
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <Globe className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">Aucun rythme public disponible pour le moment.</p>
           </div>
         )}
       </div>

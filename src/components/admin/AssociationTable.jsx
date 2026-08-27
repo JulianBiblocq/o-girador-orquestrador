@@ -66,6 +66,17 @@ export default function AssociationTable({
             {associations.map((assoc) => {
               const statusInfo = calculateSubscriptionStatus(assoc.endDate, assoc.planType);
               const rights = getAccessRights(assoc);
+              
+              const unlockedIds = (assoc.unlockedPacks || []).map(id => id.replace('-monthly', '').replace('-annual', ''));
+              const planOrder = ['decouverte', 'createur', 'gestion', 'integrale'];
+              const activePlanId = [...planOrder].reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
+              const planLabels = {
+                'decouverte': 'Découverte',
+                'createur': 'Créateur',
+                'gestion': 'Gestion',
+                'integrale': 'Intégrale'
+              };
+              const planName = planLabels[activePlanId];
 
               return (
                 <tr key={assoc.id} className="hover:bg-[#fdf6e7]/80 transition-colors">
@@ -87,7 +98,10 @@ export default function AssociationTable({
                   </td>
 
                   <td className="p-3">
-                    <span className="font-bold uppercase text-[10px] bg-gray-100 px-2 py-0.5 rounded border border-gray-300">
+                    <div className="font-bold text-[#8b4513] uppercase text-[11px] mb-0.5">
+                      {planName}
+                    </div>
+                    <span className="font-semibold uppercase text-[9px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded border border-gray-300">
                       {assoc.planType || 'annuel'}
                     </span>
                   </td>

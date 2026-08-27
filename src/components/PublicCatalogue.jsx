@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { ArrowLeft, Music, Activity, Star, Download, Search, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import LZString from 'lz-string';
 
 export default function PublicCatalogue({ onNavigateHome }) {
   const [items, setItems] = useState([]);
@@ -19,22 +20,36 @@ export default function PublicCatalogue({ onNavigateHome }) {
   useEffect(() => {
     const fetchPublicItems = async () => {
       try {
-        const rhythmsRef = collection(db, 'rhythms');
+        const presetsRef = collection(db, 'presets');
         const choroRef = collection(db, 'choreographies');
         
         // Requêtes pour items publics
-        const qRhythms = query(rhythmsRef, where('isPublic', '==', true));
+        const qPresets = query(presetsRef, where('visibility', '==', 'public'));
         const qChoro = query(choroRef, where('isPublic', '==', true));
         
-        const [rhythmsSnap, choroSnap] = await Promise.all([
-          getDocs(qRhythms),
+        const [presetsSnap, choroSnap] = await Promise.all([
+          getDocs(qPresets),
           getDocs(qChoro)
         ]);
         
         let allItems = [];
         
-        rhythmsSnap.forEach(doc => {
-          allItems.push({ id: doc.id, itemType: 'rhythm', ...doc.data() });
+        presetsSnap.forEach(doc => {
+          const data = doc.data();
+          let parsedData = data;
+          if (data.data) {
+            try {
+              parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+            } catch(e) {}
+          }
+          
+          allItems.push({ 
+            id: doc.id, 
+            itemType: 'rhythm', 
+            ...data,
+            title: data.name || data.title,
+            originalData: parsedData 
+          });
         });
         
         choroSnap.forEach(doc => {

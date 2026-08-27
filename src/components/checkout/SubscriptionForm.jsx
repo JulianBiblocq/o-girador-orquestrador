@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createSubscription } from '../../services/subscriptionService';
 import { Loader2, ShieldCheck, CheckCircle } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 
 export default function SubscriptionForm({ plan, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ export default function SubscriptionForm({ plan, onSuccess }) {
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { currency } = useCurrency();
 
   const handleChange = (e) => {
     setFormData(prev => ({
@@ -31,7 +33,8 @@ export default function SubscriptionForm({ plan, onSuccess }) {
       const result = await createSubscription({
         ...formData,
         planId: plan?.id || 'unknown',
-        status: formData.planType === 'trial' ? 'trialing' : 'active'
+        status: formData.planType === 'trial' ? 'trialing' : 'active',
+        currency: currency
       });
       
       onSuccess({ ...formData, ...result });

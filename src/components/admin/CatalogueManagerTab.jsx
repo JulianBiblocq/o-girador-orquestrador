@@ -44,7 +44,7 @@ export default function CatalogueManagerTab() {
       id: '',
       name: '',
       description: '',
-      price: 0,
+      prices: { EUR: 0, BRL: 0 },
       targetApp: 'sequenceur',
       universeId: 'universal',
       isUniversal: true,
@@ -206,15 +206,33 @@ export default function CatalogueManagerTab() {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#8b4513] uppercase">Prix (€)</label>
-            <input 
-              type="number" 
-              step="0.01"
-              value={editingPack.price}
-              onChange={e => setEditingPack({...editingPack, price: parseFloat(e.target.value) || 0})}
-              className="w-full md:w-1/3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold"
-            />
+          <div className="space-y-1.5 flex gap-4">
+            <div className="flex-1">
+              <label className="text-xs font-bold text-[#8b4513] uppercase">Prix (€)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={editingPack.prices?.EUR ?? editingPack.price}
+                onChange={e => setEditingPack({
+                  ...editingPack, 
+                  prices: { ...(editingPack.prices || {}), EUR: parseFloat(e.target.value) || 0 }
+                })}
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="text-xs font-bold text-[#8b4513] uppercase">Prix (R$)</label>
+              <input 
+                type="number" 
+                step="0.01"
+                value={editingPack.prices?.BRL ?? 0}
+                onChange={e => setEditingPack({
+                  ...editingPack, 
+                  prices: { ...(editingPack.prices || {}), BRL: parseFloat(e.target.value) || 0 }
+                })}
+                className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold"
+              />
+            </div>
           </div>
 
           {/* Points forts */}
@@ -390,7 +408,7 @@ export default function CatalogueManagerTab() {
                       </div>
                     </td>
                     <td className="p-4 font-bold text-emerald-700">
-                      {pack.price} €
+                      {pack.prices?.EUR ?? pack.price} € / {pack.prices?.BRL ?? 0} R$
                     </td>
                     <td className="p-4">
                       {pack.jsonData ? (

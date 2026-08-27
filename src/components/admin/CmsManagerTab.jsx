@@ -265,10 +265,29 @@ export default function CmsManagerTab() {
                   <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Prix Mensuel (€)</label>
                   <input 
                     type="number" 
-                    value={plan.pricing.monthly} 
+                    value={plan.pricing.monthly?.EUR ?? plan.pricing.monthly} 
                     onChange={e => {
                       const val = parseFloat(e.target.value) || 0;
-                      const newPricing = { ...plan.pricing, monthly: val };
+                      const newPricing = { 
+                        ...plan.pricing, 
+                        monthly: { ...(plan.pricing.monthly || {}), EUR: val } 
+                      };
+                      handlePlanChange(index, 'pricing', newPricing);
+                    }}
+                    className="w-full p-2 text-sm border rounded bg-gray-50 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Prix Mensuel (R$)</label>
+                  <input 
+                    type="number" 
+                    value={plan.pricing.monthly?.BRL ?? 0} 
+                    onChange={e => {
+                      const val = parseFloat(e.target.value) || 0;
+                      const newPricing = { 
+                        ...plan.pricing, 
+                        monthly: { ...(plan.pricing.monthly || {}), BRL: val } 
+                      };
                       handlePlanChange(index, 'pricing', newPricing);
                     }}
                     className="w-full p-2 text-sm border rounded bg-gray-50 font-mono"
@@ -278,10 +297,29 @@ export default function CmsManagerTab() {
                   <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Prix Annuel (€)</label>
                   <input 
                     type="number" 
-                    value={plan.pricing.annual} 
+                    value={plan.pricing.annual?.EUR ?? plan.pricing.annual} 
                     onChange={e => {
                       const val = parseFloat(e.target.value) || 0;
-                      const newPricing = { ...plan.pricing, annual: val };
+                      const newPricing = { 
+                        ...plan.pricing, 
+                        annual: { ...(plan.pricing.annual || {}), EUR: val } 
+                      };
+                      handlePlanChange(index, 'pricing', newPricing);
+                    }}
+                    className="w-full p-2 text-sm border rounded bg-gray-50 font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1">Prix Annuel (R$)</label>
+                  <input 
+                    type="number" 
+                    value={plan.pricing.annual?.BRL ?? 0} 
+                    onChange={e => {
+                      const val = parseFloat(e.target.value) || 0;
+                      const newPricing = { 
+                        ...plan.pricing, 
+                        annual: { ...(plan.pricing.annual || {}), BRL: val } 
+                      };
                       handlePlanChange(index, 'pricing', newPricing);
                     }}
                     className="w-full p-2 text-sm border rounded bg-gray-50 font-mono"

@@ -3,9 +3,11 @@ import { PackageOpen, ChevronLeft, ChevronRight, Check, X, Lock, ShoppingCart, E
 import packsData from '../../../data/packs.json';
 import tarifsData from '../../../data/tarifs.json';
 import { useCart } from '../../../context/CartContext';
+import { useCurrency } from '../../../context/CurrencyContext';
 
 export default function TabTools({ associationData, userData }) {
   const { addToCart, cartItems } = useCart();
+  const { currency, symbol } = useCurrency();
   
   // Extraire les IDs de base sans la période de facturation
   const unlockedIdsRaw = associationData?.unlockedPacks || [];
@@ -206,11 +208,11 @@ export default function TabTools({ associationData, userData }) {
             {!isCurrentlyOwnedPlan && (
               <div className="mt-8 text-center">
                 <button 
-                  onClick={() => addToCart({ id: `${currentPlanDisplay.id}-annual`, name: `Abo. ${currentPlanDisplay.name} (Annuel)`, price: currentPlanDisplay.pricing.annual, type: 'subscription' })}
+                  onClick={() => addToCart({ id: `${currentPlanDisplay.id}-annual`, name: `Abo. ${currentPlanDisplay.name} (Annuel)`, prices: currentPlanDisplay.pricing.annual, type: 'subscription' })}
                   className="inline-flex items-center gap-2 bg-[#8b4513] hover:bg-[#6e370f] text-white px-6 py-3 rounded-xl font-bold uppercase tracking-wider text-sm transition-colors shadow-md"
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  Mettre à niveau ({currentPlanDisplay.pricing.monthly}€/mois)
+                  Mettre à niveau ({symbol === 'R$' ? 'R$' : ''}{currentPlanDisplay.pricing.monthly[currency]}{symbol === '€' ? '€' : ''}/mois)
                 </button>
               </div>
             )}
@@ -322,7 +324,7 @@ export default function TabTools({ associationData, userData }) {
                     <span className="text-[10px] uppercase tracking-wider font-bold text-gray-500">
                       Cible: {pack.targetApp}
                     </span>
-                    {!pack.isOwned && <div className="font-black text-gray-600">{pack.price}€</div>}
+                    {!pack.isOwned && <div className="font-black text-gray-600">{symbol === 'R$' ? 'R$' : ''}{pack.prices[currency]}{symbol === '€' ? '€' : ''}</div>}
                   </div>
                   <h4 className="font-bold text-[#4a2e1b] mb-1 leading-tight">
                     {pack.name}
@@ -339,7 +341,7 @@ export default function TabTools({ associationData, userData }) {
                     </div>
                   ) : (
                     <button 
-                      onClick={() => !inCart && addToCart({ id: pack.id, name: pack.name, price: pack.price, type: 'addon' })}
+                      onClick={() => !inCart && addToCart({ id: pack.id, name: pack.name, prices: pack.prices, type: 'addon' })}
                       disabled={inCart}
                       className={`flex items-center justify-center gap-1.5 w-full py-1.5 px-4 text-xs font-bold rounded-lg transition-colors ${
                         inCart 

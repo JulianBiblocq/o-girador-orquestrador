@@ -169,14 +169,17 @@ function AppContent() {
 }
 
 import { CartProvider } from './context/CartContext';
+import { CurrencyProvider } from './context/CurrencyContext';
 
 export default function App() {
   return (
     <LanguageProvider>
       <AuthProvider>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
+        <CurrencyProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </CurrencyProvider>
       </AuthProvider>
     </LanguageProvider>
   );

@@ -1,14 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock } from 'lucide-react';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye } from 'lucide-react';
+import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
 
 export default function GlobalHealthStats({ userData, associationData }) {
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
+    if (associationData?.appAccess?.[packId] === true) return true;
     const packs = associationData?.unlockedPacks || [];
-    return packs.some(p => p.includes(packId) || p.includes('ecosysteme') || p.includes('association') || p.includes('essentiel'));
+
+    // Hiérarchie des forfaits : integrale (4) > gestion (3) > createur (2) > decouverte (1)
+    let userMaxLevel = 1;
+    for (const p of packs) {
+      if (p.includes('integrale')) userMaxLevel = Math.max(userMaxLevel, 4);
+      else if (p.includes('gestion')) userMaxLevel = Math.max(userMaxLevel, 3);
+      else if (p.includes('createur') || p.includes('association') || p.includes('essentiel')) userMaxLevel = Math.max(userMaxLevel, 2);
+    }
+
+    // Niveau requis par fonctionnalité
+    const levelMap = {
+      'ecosysteme': 4, 'dancador': 4, 'integrale': 4,
+      'manager': 3, 'vitrine': 3, 'gestion': 3,
+      'sequenceur': 2, 'createur': 2, 'association': 2, 'essentiel': 2
+    };
+    const requiredLevel = levelMap[packId] || 5;
+
+    // Match direct OU hiérarchie
+    if (packs.some(p => p.includes(packId))) return true;
+    return userMaxLevel >= requiredLevel;
   };
   const [stats, setStats] = useState({
     activeMembers: 0,
@@ -23,6 +44,137 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [loading, setLoading] = useState(true);
   const [isPupitreModalOpen, setIsPupitreModalOpen] = useState(false);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
+  const [isSubscribersModalOpen, setIsSubscribersModalOpen] = useState(false);
+  const [isRhythmsModalOpen, setIsRhythmsModalOpen] = useState(false);
+  const [isChoreosModalOpen, setIsChoreosModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [activeRhythmTab, setActiveRhythmTab] = useState('rhythm'); // 'rhythm', 'section', 'storage'
+
+  const showToast = (message) => {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handlePublishRhythm = async (item) => {
+    if (item.isPublic) {
+      showToast("Cette création est déjà publique !");
+      return;
+    }
+    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
+
+    try {
+      const isEligible = true; // Simplified for the modal, or we can check originalData.measures etc.
+      let canClaimReward = false;
+      let toastMsg = "";
+
+      if (!item.rewardClaimed) {
+        const presetsRef = collection(db, 'presets');
+        const qCap = query(presetsRef, where('ownerId', '==', userData.uid), where('rewardClaimed', '==', true));
+        const snap = await getDocs(qCap);
+        
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        let recentCount = 0;
+        
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const date = d.rewardDate?.toMillis?.() || d.dateCreation?.toMillis?.() || 0;
+          if (now - date < oneDay) {
+            recentCount++;
+          }
+        });
+
+        if (recentCount < 2) {
+          canClaimReward = true;
+          toastMsg = "Morceau publié ! Arrangement complet : +25 Points d'Axé.";
+        } else {
+          toastMsg = "Morceau publié ! (Plafond quotidien de points atteint).";
+        }
+      } else {
+        toastMsg = "Votre création est désormais publique !";
+      }
+
+      const creationRef = doc(db, 'presets', item.id);
+      const updateData = {
+        title: item.label || 'Sans titre',
+        visibility: 'public',
+        isPublic: true,
+        authorName: associationData?.name || associationData?.nom || 'Association',
+        ownerId: userData.uid
+      };
+
+      if (item.originalData) {
+        updateData.tempo = item.originalData.tempo || 100;
+        updateData.timeSignature = item.originalData.timeSignature || [4, 4];
+        updateData.measures = item.originalData.measures || 4;
+        if (item.originalData.tracks) updateData.tracks = item.originalData.tracks;
+      }
+
+      if (canClaimReward) {
+        updateData.rewardClaimed = true;
+        updateData.rewardDate = serverTimestamp();
+      }
+
+      await setDoc(creationRef, updateData, { merge: true });
+
+      if (canClaimReward) {
+        const groupRef = doc(db, 'associations', userData.groupId);
+        await updateDoc(groupRef, {
+          contributionPoints: increment(25)
+        });
+      }
+
+      showToast(toastMsg);
+      setStats(prev => ({
+        ...prev,
+        latestRhythms: prev.latestRhythms.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: canClaimReward ? true : i.rewardClaimed } : i)
+      }));
+    } catch (error) {
+      console.error("Erreur publication:", error);
+      showToast("Une erreur est survenue lors de la publication.");
+    }
+  };
+
+  const handlePublishChoreo = async (item) => {
+    if (item.isPublic) {
+      showToast("Cette création est déjà publique !");
+      return;
+    }
+    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
+
+    try {
+      const creationRef = doc(db, 'choreographies', item.id);
+      const updateData = {
+        isPublic: true,
+        authorName: associationData?.name || associationData?.nom || 'Association',
+        authorGroupId: userData.groupId
+      };
+
+      if (!item.rewardClaimed) {
+        updateData.rewardClaimed = true;
+      }
+
+      await updateDoc(creationRef, updateData);
+
+      if (!item.rewardClaimed) {
+        const groupRef = doc(db, 'associations', userData.groupId);
+        await updateDoc(groupRef, {
+          contributionPoints: increment(25)
+        });
+        showToast("Félicitations ! Votre création est en ligne. Vous remportez 25 Points d'Axé !");
+      } else {
+        showToast("Votre création est désormais publique !");
+      }
+
+      setStats(prev => ({
+        ...prev,
+        latestChoreos: prev.latestChoreos.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: true } : i)
+      }));
+    } catch (error) {
+      console.error("Erreur publication:", error);
+      showToast("Une erreur est survenue lors de la publication.");
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -108,32 +260,151 @@ export default function GlobalHealthStats({ userData, associationData }) {
           nextEvent = upcomingEventsCount > 0 ? (upcomingEvents[0].title || upcomingEvents[0].nom || 'Événement') : null;
         }
 
-        // 3. Fetch Rhythms
-        const rhythmsRef = collection(db, 'rhythms');
-        const qRhythms = query(rhythmsRef, where('groupId', '==', userData.groupId));
-        const rhythmsSnap = await safeGetDocs(qRhythms);
-        const totalRhythmsCount = rhythmsSnap ? rhythmsSnap.size : 0;
+        // 3. Fetch Rhythms from Storage (Catalogue Séquenceur) & Firestore
+        let rhythmsList = [];
+        try {
+          const { ref, listAll } = await import('firebase/storage');
+          const { storage } = await import('../../../services/firebase');
+          
+          // A. Storage
+          const folderRef = ref(storage, `documents/${userData.groupId}/sequencer`);
+          const res = await listAll(folderRef);
+          res.items.forEach(item => {
+             const isJson = /\.json$/i.test(item.name);
+             rhythmsList.push({ 
+               id: item.name, 
+               label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''), 
+               date: parseInt(item.name.split('_')[0]) || 0,
+               type: isJson ? 'section' : 'storage',
+               isPublic: false
+             });
+          });
+          
+          // B. Séquences Complètes (Presets)
+          console.log('[DEBUG PRESETS] userData.uid:', userData.uid, 'userData.groupId:', userData.groupId);
+          
+          // Try fetching ALL presets first to see what's in the collection
+          const allPresetsSnap = await safeGetDocs(query(collection(db, 'presets')));
+          if (allPresetsSnap) {
+            console.log('[DEBUG PRESETS] Total presets in collection:', allPresetsSnap.size);
+            allPresetsSnap.forEach(docSnap => {
+              const d = docSnap.data();
+              const fieldKeys = Object.keys(d).filter(k => k !== 'data');
+              const info = {};
+              fieldKeys.forEach(k => info[k] = d[k]);
+              console.log('[DEBUG PRESETS] Doc:', docSnap.id, JSON.stringify(info));
+            });
+          } else {
+            console.log('[DEBUG PRESETS] allPresetsSnap is null (permission denied?)');
+          }
+
+          const qPresets = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
+          const presetsSnap = await safeGetDocs(qPresets);
+          console.log('[DEBUG PRESETS] Filtered presetsSnap size:', presetsSnap?.size);
+          if (presetsSnap) {
+            presetsSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              const isPublic = data.visibility === 'public';
+              
+              let parsedData = data;
+              if (data.data) {
+                try {
+                  parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+                } catch (e) {
+                  console.warn("Could not decompress preset data:", e);
+                }
+              }
+
+              rhythmsList.push({
+                id: docSnap.id,
+                label: data.name || data.title || 'Sans titre',
+                date: data.createdAt || 0,
+                type: isPublic ? 'rhythm' : 'section', // rhythm = public tab, section = local tab
+                isPublic: isPublic,
+                rewardClaimed: data.rewardClaimed || false,
+                originalData: parsedData
+              });
+            });
+          }
+
+          // C. Séquences Publiques Globales
+          const qPublic = query(collection(db, 'presets'), where('visibility', 'in', ['admin_global', 'public']));
+          const publicSnap = await safeGetDocs(qPublic);
+          if (publicSnap) {
+            publicSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              // Ne pas ajouter en double si c'est déjà traité (le user est l'owner)
+              if (data.ownerId === userData.uid) return;
+
+              let parsedData = data;
+              if (data.data) {
+                try {
+                  parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+                } catch (e) {}
+              }
+
+              rhythmsList.push({
+                id: docSnap.id,
+                label: data.name || data.title || 'Sans titre',
+                date: data.createdAt || 0,
+                type: 'rhythm', // On le met dans le catalogue public
+                isPublic: true,
+                rewardClaimed: true, // Non applicable
+                originalData: parsedData,
+                isExternal: true
+              });
+            });
+          }
+          
+          rhythmsList.sort((a, b) => b.date - a.date);
+        } catch (e) {
+          console.warn("Rhythms fetch error:", e.message);
+        }
 
         // 4. Fetch Choreographies
+        let choreosList = [];
         const choreoRef = collection(db, 'choreographies');
         const qChoreo = query(choreoRef, where('groupId', '==', userData.groupId));
         const choreoSnap = await safeGetDocs(qChoreo);
-        const totalChoreosCount = choreoSnap ? choreoSnap.size : 0;
+        if (choreoSnap) {
+           choreoSnap.forEach(docSnap => {
+             const data = docSnap.data();
+             choreosList.push({ 
+               id: docSnap.id, 
+               label: data.title || data.name || 'Chorégraphie', 
+               date: data.createdAt?.toMillis?.() || 0,
+               isPublic: data.isPublic || false,
+               rewardClaimed: data.rewardClaimed || false,
+               originalData: data
+             });
+           });
+           choreosList.sort((a, b) => b.date - a.date);
+        }
 
         // 5. Fetch Newsletter Subscribers
+        let subscribersList = [];
         const newsletterRef = collection(db, 'newsletter_subscribers');
         const qNewsletter = query(newsletterRef, where('groupId', '==', userData.groupId));
         const newsletterSnap = await safeGetDocs(qNewsletter);
-        const newsletterSubscribersCount = newsletterSnap ? newsletterSnap.size : 0;
+        if (newsletterSnap) {
+           newsletterSnap.forEach(doc => {
+             const data = doc.data();
+             subscribersList.push({ id: doc.id, label: data.email || data.name || 'Abonné', date: data.createdAt?.toMillis?.() || 0 });
+           });
+           subscribersList.sort((a, b) => b.date - a.date);
+        }
 
         setStats({
           activeMembers: activeMembersCount,
           pupitres: pupitresArray, // Full array
           upcomingEvents: upcomingEventsCount,
           nextEventName: nextEvent,
-          totalRhythms: totalRhythmsCount,
-          totalChoreos: totalChoreosCount,
-          newsletterSubscribers: newsletterSubscribersCount,
+          totalRhythms: rhythmsList.length,
+          totalChoreos: choreosList.length,
+          newsletterSubscribers: subscribersList.length,
+          latestSubscribers: subscribersList,
+          latestRhythms: rhythmsList,
+          latestChoreos: choreosList,
           vitrineViews: 142 // Hardcoded as per legacy TabAnalytics
         });
       } catch (error) {
@@ -203,11 +474,24 @@ export default function GlobalHealthStats({ userData, associationData }) {
           bgColor: hasPack('essentiel') ? "bg-indigo-100" : "bg-gray-100",
           borderColor: hasPack('essentiel') ? "border-indigo-200" : "border-gray-200",
           isLocked: !hasPack('essentiel'),
-          secondary: (
+          interactive: hasPack('essentiel'),
+          onClick: () => setIsSubscribersModalOpen(true),
+          secondary: stats.latestSubscribers?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestSubscribers.slice(0, 3).map((s, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate mr-2 flex-1">{s.label}</span>
+                </div>
+              ))}
+              {stats.latestSubscribers.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestSubscribers.length - 3} autres (cliquer pour voir tout)
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-[10px] font-medium text-purple-700 bg-purple-50 px-2 py-1 rounded border border-purple-100 flex items-center gap-1 w-max">
-                <Globe className="w-3 h-3" /> {stats.vitrineViews} vues ce mois
-              </span>
+              <span className="text-[10px] text-gray-400 block">Aucun abonné</span>
               {!hasPack('essentiel') && <Lock className="w-4 h-4 text-gray-400" />}
             </div>
           )
@@ -224,7 +508,22 @@ export default function GlobalHealthStats({ userData, associationData }) {
           bgColor: hasPack('association') ? "bg-purple-100" : "bg-gray-100",
           borderColor: hasPack('association') ? "border-purple-200" : "border-gray-200",
           isLocked: !hasPack('association'),
-          secondary: (
+          interactive: hasPack('association'),
+          onClick: () => setIsRhythmsModalOpen(true),
+          secondary: stats.latestRhythms?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestRhythms.slice(0, 3).map((r, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate mr-2 flex-1">{r.label}</span>
+                </div>
+              ))}
+              {stats.latestRhythms.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestRhythms.length - 3} autres (cliquer pour voir tout)
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="mt-3 flex items-center justify-between">
               <span className="text-[10px] font-bold text-purple-500/80 uppercase tracking-wider block">App Séquenceur</span>
               {!hasPack('association') && <Lock className="w-4 h-4 text-gray-400" />}
@@ -238,7 +537,22 @@ export default function GlobalHealthStats({ userData, associationData }) {
           bgColor: hasPack('ecosysteme') ? "bg-pink-100" : "bg-gray-100",
           borderColor: hasPack('ecosysteme') ? "border-pink-200" : "border-gray-200",
           isLocked: !hasPack('ecosysteme'),
-          secondary: (
+          interactive: hasPack('ecosysteme'),
+          onClick: () => setIsChoreosModalOpen(true),
+          secondary: stats.latestChoreos?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestChoreos.slice(0, 3).map((c, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate mr-2 flex-1">{c.label}</span>
+                </div>
+              ))}
+              {stats.latestChoreos.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestChoreos.length - 3} autres (cliquer pour voir tout)
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="mt-3 flex items-center justify-between">
               <span className="text-[10px] font-bold text-pink-500/80 uppercase tracking-wider block">App Dançador</span>
               {!hasPack('ecosysteme') && <Lock className="w-4 h-4 text-gray-400" />}
@@ -248,7 +562,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
       ]
     },
     {
-      title: "📅 Activité",
+      title: "📅 Activité & Vitrine",
       items: [
         {
           label: "Événements à venir",
@@ -264,6 +578,21 @@ export default function GlobalHealthStats({ userData, associationData }) {
               {stats.nextEventName}
             </div>
           ) : <span className="text-[10px] text-gray-400 mt-3 block">Aucun événement planifié</span>
+        },
+        {
+          label: "Vues de la Vitrine",
+          value: stats.vitrineViews,
+          icon: <Eye className="w-5 h-5 text-cyan-600" />,
+          bgColor: hasPack('essentiel') ? "bg-cyan-100" : "bg-gray-100",
+          borderColor: hasPack('essentiel') ? "border-cyan-200" : "border-gray-200",
+          isLocked: !hasPack('essentiel'),
+          interactive: false,
+          secondary: (
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[10px] text-gray-400 block">Visiteurs sur votre page</span>
+              {!hasPack('essentiel') && <Lock className="w-4 h-4 text-gray-400" />}
+            </div>
+          )
         }
       ]
     }
@@ -366,6 +695,181 @@ export default function GlobalHealthStats({ userData, associationData }) {
           onClose={() => setIsEventsModalOpen(false)} 
         />
       )}
+
+      {/* Modal Abonnés Vitrine */}
+      {isSubscribersModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-[#4a2e1b] flex items-center gap-2">
+                <Mail className="w-5 h-5 text-indigo-600" />
+                Abonnés Vitrine
+              </h3>
+              <button 
+                onClick={() => setIsSubscribersModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1">
+              {stats.latestSubscribers.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.latestSubscribers.map((item, idx) => (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between">
+                      <span className="font-medium text-gray-800 line-clamp-1 flex-1">{item.label}</span>
+                      {item.date > 0 && <span className="text-xs text-gray-400 ml-2 shrink-0">{new Date(item.date).toLocaleDateString()}</span>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Aucun abonné à la vitrine pour le moment.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Rythmes Audio */}
+      {isRhythmsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-[#4a2e1b] flex items-center gap-2">
+                <Music className="w-5 h-5 text-purple-600" />
+                Rythmes Audio
+              </h3>
+              <button 
+                onClick={() => setIsRhythmsModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex border-b border-gray-100 bg-gray-50 px-2">
+              <button 
+                onClick={() => setActiveRhythmTab('rhythm')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeRhythmTab === 'rhythm' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Catalogue public ({stats.latestRhythms.filter(r => r.type === 'rhythm').length})
+              </button>
+              <button 
+                onClick={() => setActiveRhythmTab('section')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeRhythmTab === 'section' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Catalogue local ({stats.latestRhythms.filter(r => r.type === 'section').length})
+              </button>
+              <button 
+                onClick={() => setActiveRhythmTab('storage')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeRhythmTab === 'storage' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Fichiers audio ({stats.latestRhythms.filter(r => r.type === 'storage').length})
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-white">
+              {(() => {
+                const filteredList = stats.latestRhythms.filter(r => r.type === activeRhythmTab);
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      Aucun rythme dans cette catégorie.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {filteredList.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
+                        <div className="flex-1 mr-2">
+                          <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                          {item.date > 0 && <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</span>}
+                        </div>
+                        {item.isExternal ? (
+                          <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
+                            <Globe className="w-4 h-4" />
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={() => handlePublishRhythm(item)}
+                            disabled={item.isPublic}
+                            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                            title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                          >
+                            <Globe className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chorégraphies */}
+      {isChoreosModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h3 className="text-lg font-bold text-[#4a2e1b] flex items-center gap-2">
+                <Activity className="w-5 h-5 text-pink-600" />
+                Chorégraphies
+              </h3>
+              <button 
+                onClick={() => setIsChoreosModalOpen(false)}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-white">
+              {stats.latestChoreos.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.latestChoreos.map((item, idx) => (
+                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
+                      <div className="flex-1 mr-2">
+                        <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                        {item.date > 0 && <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</span>}
+                      </div>
+                      <button 
+                        onClick={() => handlePublishChoreo(item)}
+                        disabled={item.isPublic}
+                        className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                        title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                      >
+                        <Globe className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Aucune chorégraphie créée pour le moment.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-gray-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-gray-700">
+            <Check className="w-5 h-5 text-green-400" />
+            <p className="font-bold text-sm">{toastMessage}</p>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

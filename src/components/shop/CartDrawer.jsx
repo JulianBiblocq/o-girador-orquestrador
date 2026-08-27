@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { X, Trash2, ShoppingBag, Loader2 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { useAuth } from '../../context/AuthContext';
 import { functions } from '../../services/firebase';
 import { httpsCallable } from 'firebase/functions';
 
 export default function CartDrawer() {
   const { cartItems, cartTotal, removeFromCart, isCartOpen, setIsCartOpen } = useCart();
+  const { currency, symbol } = useCurrency();
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -20,7 +22,8 @@ export default function CartDrawer() {
       const response = await createStripeCheckoutSession({
         cartItems: cartItems,
         groupId: user?.groupId,
-        origin: window.location.origin
+        origin: window.location.origin,
+        currency: currency
       });
 
       const { url } = response.data;
@@ -80,7 +83,9 @@ export default function CartDrawer() {
                   <p className="text-xs text-[#8b4513] uppercase tracking-wider font-bold mt-1">{item.type}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-black text-[#2c1d11]">{item.price}€</span>
+                  <span className="font-black text-[#2c1d11]">
+                    {symbol === 'R$' ? 'R$' : ''}{item.prices?.[currency] || 0}{symbol === '€' ? '€' : ''}
+                  </span>
                   <button 
                     onClick={() => removeFromCart(item.id)}
                     disabled={isProcessing}
@@ -99,7 +104,9 @@ export default function CartDrawer() {
         <div className="p-4 bg-white border-t border-[#e8c39e]">
           <div className="flex justify-between items-center mb-4">
             <span className="font-bold text-[#5c4033] uppercase tracking-wider text-sm">Total</span>
-            <span className="font-black text-2xl text-[#8b4513]">{cartTotal.toFixed(2)}€</span>
+            <span className="font-black text-2xl text-[#8b4513]">
+              {symbol === 'R$' ? 'R$' : ''}{cartTotal.toFixed(2)}{symbol === '€' ? '€' : ''}
+            </span>
           </div>
           <button 
             disabled={cartItems.length === 0 || isProcessing}

@@ -148,7 +148,9 @@ export default function TerreiroView({ associationData, userData, onBack }) {
           
           <div className="relative z-10 max-w-2xl">
             <h2 className="text-3xl font-black font-cordel mb-2 flex items-center gap-3 text-[#fdf6e7]">
-              <img src="/logos/terreiro.png" alt="Terreiro" className="w-10 h-10 rounded-full border-2 border-white/20 shadow-md" />
+              <div className="w-10 h-10 rounded-full border-2 border-white/20 shadow-md bg-amber-500/20 flex items-center justify-center shrink-0">
+                <Flame className="w-6 h-6 text-white" />
+              </div>
               Le Terreiro
             </h2>
             <p className="text-amber-100 text-sm md:text-base leading-relaxed">

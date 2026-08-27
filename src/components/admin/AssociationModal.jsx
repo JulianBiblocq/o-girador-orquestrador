@@ -8,6 +8,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
     contactName: '',
     contactEmail: '',
     planType: 'annual',
+    formule: 'decouverte',
     startDate: new Date().toISOString().split('T')[0],
     endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     membersCount: 20,
@@ -39,6 +40,13 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         contactName: initialData.contactName || '',
         contactEmail: initialData.contactEmail || '',
         planType: initialData.planType || 'annual',
+        formule: (() => {
+          const unlockedIdsRaw = initialData.unlockedPacks || [];
+          const unlockedIds = unlockedIdsRaw.map(id => id.replace('-monthly', '').replace('-annual', ''));
+          const planOrder = ['decouverte', 'createur', 'gestion', 'integrale'];
+          return [...planOrder].reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
+        })(),
+        unlockedPacks: initialData.unlockedPacks || [],
         startDate: initialData.startDate || new Date().toISOString().split('T')[0],
         endDate: initialData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: initialData.membersCount ?? 20,
@@ -67,6 +75,8 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         contactName: '',
         contactEmail: '',
         planType: 'annual',
+        formule: 'decouverte',
+        unlockedPacks: [],
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: 20,
@@ -115,7 +125,20 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // Nettoyer les anciennes formules principales
+    const mainFormulas = ['decouverte', 'createur', 'gestion', 'integrale'];
+    let newPacks = (formData.unlockedPacks || []).filter(p => !mainFormulas.includes(p));
+    
+    // Ajouter la nouvelle formule
+    if (formData.formule !== 'decouverte') {
+      newPacks.push(formData.formule);
+    }
+    
+    const finalData = { ...formData, unlockedPacks: newPacks };
+    delete finalData.formule;
+    
+    onSave(finalData);
   };
 
   return (
@@ -219,10 +242,26 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
               Abonnement & Échéance
             </h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Type de Forfait
+                  Formule Principale
+                </label>
+                <select
+                  value={formData.formule}
+                  onChange={e => setFormData({ ...formData, formule: e.target.value })}
+                  className="w-full px-3 py-2 bg-[#fdf6e7] text-xs font-bold text-[#4a2e1b] rounded border border-[#8b4513]"
+                >
+                  <option value="decouverte">Découverte (Gratuit)</option>
+                  <option value="createur">Créateur</option>
+                  <option value="gestion">Gestion</option>
+                  <option value="integrale">Intégrale</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Facturation
                 </label>
                 <select
                   value={formData.planType}

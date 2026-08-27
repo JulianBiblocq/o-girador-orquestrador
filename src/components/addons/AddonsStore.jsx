@@ -3,6 +3,7 @@ import { ShoppingCart, CheckCircle2, Info, X, ChevronDown, ChevronUp } from 'luc
 import { fetchPacks } from '../../services/packsService';
 import { useLanguage } from '../../hooks/useLanguage';
 import { useCart } from '../../context/CartContext';
+import { useCurrency } from '../../context/CurrencyContext';
 
 const APP_COLORS = {
   sequenceur: {
@@ -42,6 +43,7 @@ const APP_COLORS = {
 export default function AddonsStore() {
   const { t } = useLanguage();
   const { addToCart } = useCart();
+  const { currency, symbol } = useCurrency();
   const [packs, setPacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPack, setSelectedPack] = useState(null);
@@ -139,8 +141,10 @@ export default function AddonsStore() {
                           
                           <div className={`p-4 bg-gray-50 border-t border-gray-100 flex flex-col justify-between items-center gap-3`}>
                             <div className="text-center w-full">
-                              <span className="text-xl font-black text-[#4a2e1b] font-mono">{pack.price === 0 ? 'Gratuit' : `${pack.price}€`}</span>
-                              {pack.price > 0 && <span className="text-[10px] text-gray-500 ml-1">/paiement unique</span>}
+                              <span className="text-xl font-black text-[#4a2e1b] font-mono">
+                                {pack.prices[currency] === 0 ? 'Gratuit' : `${symbol === 'R$' ? 'R$' : ''}${pack.prices[currency]}${symbol === '€' ? '€' : ''}`}
+                              </span>
+                              {pack.prices[currency] > 0 && <span className="text-[10px] text-gray-500 ml-1">/paiement unique</span>}
                             </div>
                             
                             <div className="flex gap-2 w-full">
@@ -152,10 +156,10 @@ export default function AddonsStore() {
                                 Détails
                               </button>
                               <button
-                                onClick={() => addToCart({ id: pack.id, name: pack.name, price: pack.price, type: 'addon' })}
+                                onClick={() => addToCart({ id: pack.id, name: pack.name, prices: pack.prices, type: 'addon' })}
                                 className={`flex-1 py-2 px-3 font-bold text-xs rounded-lg flex items-center justify-center gap-1.5 transition-all shadow-md ${colors.buttonBg}`}
                               >
-                                {pack.price === 0 ? 'Ajouter' : 'Acheter'}
+                                {pack.prices[currency] === 0 ? 'Ajouter' : 'Acheter'}
                                 <ShoppingCart className="w-3.5 h-3.5" />
                               </button>
                             </div>
@@ -231,10 +235,12 @@ export default function AddonsStore() {
                   <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-center sm:text-left">
                       <span className="block text-xs text-gray-500 uppercase font-bold mb-1">Prix total</span>
-                      <span className="text-4xl font-black text-[#4a2e1b]">{selectedPack.price}€</span>
+                      <span className="text-4xl font-black text-[#4a2e1b]">
+                        {symbol === 'R$' ? 'R$' : ''}{selectedPack.prices[currency]}{symbol === '€' ? '€' : ''}
+                      </span>
                     </div>
                     <button
-                      onClick={() => addToCart({ id: selectedPack.id, name: selectedPack.name, price: selectedPack.price, type: 'addon' })}
+                      onClick={() => addToCart({ id: selectedPack.id, name: selectedPack.name, prices: selectedPack.prices, type: 'addon' })}
                       className={`${selectedPack.colors.buttonBg} w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-xl hover:scale-105 cursor-pointer`}
                     >
                       <ShoppingCart className="w-5 h-5" />
