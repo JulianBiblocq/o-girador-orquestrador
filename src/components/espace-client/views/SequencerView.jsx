@@ -377,7 +377,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
                 <div className="flex-1 min-w-0">
                   {item.source === 'firestore' ? (
                     <a 
-                      href={`https://ogirador.web.app/?loadPreset=${item.id}`}
+                      href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
                       target="_blank"
                       rel="noreferrer"
                       className="font-bold text-gray-800 line-clamp-1 hover:text-[#d2691e] transition-colors"
@@ -466,7 +466,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
               <div key={item.id} className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
                 <div>
                   <a 
-                    href={`https://ogirador.web.app/?loadPreset=${item.id}`}
+                    href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
                     target="_blank"
                     rel="noreferrer"
                     className="font-bold text-gray-800 line-clamp-1 hover:text-blue-600 transition-colors"
@@ -481,7 +481,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
                 </div>
                 <div className="mt-4 flex gap-2">
                   <a 
-                    href={`https://ogirador.web.app/?loadPreset=${item.id}`}
+                    href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
                     target="_blank"
                     rel="noreferrer"
                     className="flex-1 flex items-center justify-center py-1.5 bg-white border border-blue-200 rounded-lg text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"

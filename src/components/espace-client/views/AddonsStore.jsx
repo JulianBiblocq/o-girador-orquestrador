@@ -131,7 +131,7 @@ export default function AddonsStore({ associationData, onBack }) {
         {pack.pricePoints && (
           <div className="flex items-center justify-between border-t border-gray-200 pt-3 mt-1">
             <div className="text-sm font-bold text-amber-700 flex items-center gap-1">
-              <Award className="w-4 h-4" /> {pack.pricePoints} pts
+              <Sparkles className="w-4 h-4" /> {pack.pricePoints} pts
             </div>
             <button 
               onClick={() => handleBuyWithPoints(pack)}
@@ -142,7 +142,7 @@ export default function AddonsStore({ associationData, onBack }) {
                   : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-70'
               }`}
             >
-              <Award className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" />
               {points >= pack.pricePoints ? `Débloquer avec ${pack.pricePoints} Points` : 'Points insuffisants'}
             </button>
           </div>
@@ -181,10 +181,10 @@ export default function AddonsStore({ associationData, onBack }) {
             {/* Karma Points Balance */}
             <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 flex items-center gap-4 shrink-0">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-inner">
-                <Award className="w-6 h-6 text-white" />
+                <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <p className="text-amber-200 text-xs font-bold uppercase tracking-wider mb-0.5">Solde de Points</p>
+                <p className="text-amber-200 text-xs font-bold uppercase tracking-wider mb-0.5">Solde de points d'Axé</p>
                 <div className="text-3xl font-black font-cordel text-white">{points}</div>
               </div>
             </div>

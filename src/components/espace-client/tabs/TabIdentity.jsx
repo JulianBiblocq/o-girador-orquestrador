@@ -19,7 +19,8 @@ export default function TabIdentity({ associationData, groupId }) {
     facebook: publicTheme?.socialLinks?.facebook || rootSocials?.facebook || '',
     instagram: publicTheme?.socialLinks?.instagram || rootSocials?.instagram || '',
     youtube: publicTheme?.socialLinks?.youtube || rootSocials?.youtube || '',
-    website: publicTheme?.socialLinks?.website || rootSocials?.website || ''
+    website: publicTheme?.socialLinks?.website || rootSocials?.website || '',
+    customDomain: associationData?.customDomain || ''
   });
   
   const [logoFile, setLogoFile] = useState(null);
@@ -97,7 +98,8 @@ export default function TabIdentity({ associationData, groupId }) {
           instagram: formData.instagram,
           youtube: formData.youtube,
           website: formData.website
-        }
+        },
+        customDomain: formData.customDomain
       };
 
       const updatePayload = {
@@ -288,6 +290,18 @@ export default function TabIdentity({ associationData, groupId }) {
               <label className="block text-sm font-bold text-gray-700 mb-1 flex items-center gap-2">
                 <Share2 className="w-4 h-4 text-gray-500" /> Réseaux Sociaux
               </label>
+              
+              <div className="mb-4">
+                <label className="block text-xs font-bold text-[#4a2e1b] uppercase tracking-wider mb-2">
+                  Domaine Personnalisé (Vitrine)
+                </label>
+                <input
+                  type="text" name="customDomain" placeholder="ex: www.mon-groupe.fr"
+                  value={formData.customDomain} onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-xl border-2 border-white focus:border-[#8b4513] focus:ring-0 text-sm shadow-sm"
+                />
+                <p className="text-xs text-amber-700 mt-1">Si renseigné, la carte du monde redirigera vers ce domaine public au lieu de Mostrador.</p>
+              </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input

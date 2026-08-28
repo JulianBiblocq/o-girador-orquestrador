@@ -50,7 +50,12 @@ export default function WorldMapNetwork({ associations = [] }) {
                   <p className="font-bold text-[#4a2e1b] m-0 text-sm mb-1">{assoc.name || 'Association'}</p>
                   {assoc.city && <p className="text-xs text-gray-500 m-0 mb-2">{assoc.city}</p>}
                   <a 
-                    href={`https://mostrador.o-girador.com/${assoc.id}`} 
+                    href={
+                      (assoc.customDomains && assoc.customDomains.length > 0) ? (assoc.customDomains[0].startsWith('http') ? assoc.customDomains[0] : `https://${assoc.customDomains[0]}`) :
+                      assoc.customDomain ? (assoc.customDomain.startsWith('http') ? assoc.customDomain : `https://${assoc.customDomain}`) :
+                      assoc.website ? (assoc.website.startsWith('http') ? assoc.website : `https://${assoc.website}`) :
+                      `https://mostrador.o-girador.com/${assoc.id}`
+                    } 
                     target="_blank" 
                     rel="noreferrer"
                     className="text-xs font-bold text-[#d2691e] hover:text-[#b05819]"

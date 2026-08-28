@@ -35,6 +35,9 @@ export function CartProvider({ children }) {
     setCartItems([]);
   };
 
+  const toggleCart = () => {
+    setIsCartOpen((prev) => !prev);
+  };
 
   return (
     <CartContext.Provider value={{
@@ -42,6 +45,7 @@ export function CartProvider({ children }) {
       addToCart,
       removeFromCart,
       clearCart,
+      toggleCart,
       cartTotal,
       isCartOpen,
       setIsCartOpen

@@ -18,6 +18,7 @@ export default function ProfileView({ associationData, userData, onBack }) {
     facebook: associationData?.facebook || associationData?.socialLinks?.facebook || associationData?.publicTheme?.socialLinks?.facebook || '',
     instagram: associationData?.instagram || associationData?.socialLinks?.instagram || associationData?.publicTheme?.socialLinks?.instagram || '',
     address: associationData?.address || associationData?.adresseLocal || '',
+    customDomain: (associationData?.customDomains && associationData.customDomains.length > 0) ? associationData.customDomains[0] : (associationData?.customDomain || ''),
   });
 
   // Par défaut, s'il n'y a pas de réglage, on considère que c'est public (true)
@@ -109,7 +110,9 @@ export default function ProfileView({ associationData, userData, onBack }) {
         'branding.logoUrl': finalLogoUrl,
         logoUrl: finalLogoUrl,
         isPublicInTerreiro,
-        location
+        location,
+        customDomain: formData.customDomain,
+        customDomains: formData.customDomain ? [formData.customDomain] : []
       });
       
       setSuccess(true);
@@ -235,6 +238,22 @@ export default function ProfileView({ associationData, userData, onBack }) {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b4513] focus:border-[#8b4513] outline-none transition-all"
                 placeholder="@votre_compte"
               />
+            </div>
+
+            {/* Domaine Personnalisé */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                <Globe className="w-4 h-4 text-gray-400" /> Domaine Personnalisé (Vitrine)
+              </label>
+              <input 
+                type="text" 
+                name="customDomain"
+                value={formData.customDomain}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b4513] focus:border-[#8b4513] outline-none transition-all"
+                placeholder="ex: www.mon-groupe.fr"
+              />
+              <p className="text-xs text-gray-500 mt-1">Si renseigné, la carte du monde redirigera vers ce domaine public au lieu de l'URL par défaut Mostrador.</p>
             </div>
           </div>
 

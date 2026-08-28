@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, getDocs, orderBy, limit, addDoc, deleteDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
-import { ArrowLeft, Users, Store, Flame, MapPin, Tag, Search, Compass, Award, Trophy, Medal, Globe2, MessageSquare, Send, Trash2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Users, Store, Flame, MapPin, Tag, Search, Compass, Award, Sparkles, Trophy, Medal, Globe2, MessageSquare, Send, Trash2, Loader2 } from 'lucide-react';
 import artisansData from '../../../data/artisans.json';
 import WorldMapNetwork from '../../ui/WorldMapNetwork';
 
@@ -198,7 +198,12 @@ export default function TerreiroView({ associationData, userData, onBack }) {
                   )}
                 </div>
                 <a 
-                  href={`https://mostrador.o-girador.com/${bateria.id}`}
+                  href={
+                    (bateria.customDomains && bateria.customDomains.length > 0) ? (bateria.customDomains[0].startsWith('http') ? bateria.customDomains[0] : `https://${bateria.customDomains[0]}`) :
+                    bateria.customDomain ? (bateria.customDomain.startsWith('http') ? bateria.customDomain : `https://${bateria.customDomain}`) :
+                    bateria.website ? (bateria.website.startsWith('http') ? bateria.website : `https://${bateria.website}`) :
+                    `https://mostrador.o-girador.com/${bateria.id}`
+                  }
                   target="_blank"
                   rel="noreferrer"
                   className="mt-4 flex items-center justify-center gap-2 w-full py-2 bg-white border border-[#d4b895] rounded-lg text-sm font-bold text-[#8b4513] group-hover:bg-[#8b4513] group-hover:text-white transition-colors"
@@ -365,9 +370,9 @@ export default function TerreiroView({ associationData, userData, onBack }) {
             </div>
             
             <div className="bg-black/20 rounded-lg px-4 py-2 text-center shrink-0">
-              <p className="text-[10px] text-amber-200/70 font-bold uppercase tracking-widest mb-1">Vos points (Karma)</p>
+              <p className="text-[10px] text-amber-200/70 font-bold uppercase tracking-widest mb-1">Vos points d'Axé</p>
               <div className="text-2xl font-black text-amber-400 font-cordel flex items-center justify-center gap-2">
-                <Award className="w-5 h-5" />
+                <Sparkles className="w-5 h-5" />
                 {associationData?.contributionPoints || 0}
               </div>
             </div>
@@ -388,7 +393,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-white truncate">{assoc.name || 'Association'}</p>
                     <p className="text-xs text-amber-200/80 truncate flex items-center gap-1">
-                      <Award className="w-3 h-3" /> {assoc.contributionPoints} pts
+                      <Sparkles className="w-3 h-3" /> {assoc.contributionPoints} pts
                     </p>
                   </div>
                 </div>
@@ -396,7 +401,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
             </div>
           ) : (
             <div className="text-center py-8">
-              <Award className="w-12 h-12 text-white/20 mx-auto mb-3" />
+              <Sparkles className="w-12 h-12 text-white/20 mx-auto mb-3" />
               <p className="text-amber-100/70">Aucune association n'a encore cumulé de points de contribution.</p>
               <p className="text-sm font-bold text-amber-400 mt-2">Soyez le premier ! Partagez un rythme ou une chorégraphie.</p>
             </div>

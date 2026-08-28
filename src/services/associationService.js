@@ -23,6 +23,7 @@ const INITIAL_DEMO_GROUPS = [
       capoeira: true,
       samba: false
     },
+    customDomain: 'www.samambaia-maracatu.fr',
     createdAt: new Date().toISOString()
   },
   {

@@ -5,6 +5,7 @@ import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
 import { awardAxePoints } from '../../../services/gamificationService';
+import presetsDump from '../../../presets_dump.json';
 
 export default function GlobalHealthStats({ userData, associationData }) {
   const hasPack = (packId) => {
@@ -50,10 +51,51 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [isChoreosModalOpen, setIsChoreosModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [activeRhythmTab, setActiveRhythmTab] = useState('rhythm'); // 'rhythm', 'section', 'storage'
+  const [activeChoreoTab, setActiveChoreoTab] = useState('choreo'); // 'choreo', 'section', 'storage'
 
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleImportPublicCatalog = async () => {
+    if (!window.confirm("Importer les rythmes par défaut dans le catalogue public ?")) return;
+    try {
+      showToast("Importation en cours...");
+      
+      let importedCount = 0;
+      for (const item of presetsDump) {
+        try {
+          const { filename, rawData } = item;
+          const compressedData = LZString.compressToBase64(rawData);
+          const docId = filename.replace('.json', '');
+          
+          const labelMap = {
+            'fatras': 'Fatras',
+            'Vou vadiar carnaval': 'Vou Vadiar Carnaval',
+            '_convencao_2': 'Convention 2'
+          };
+          
+          await setDoc(doc(db, 'presets', docId), {
+            name: labelMap[docId] || docId,
+            visibility: 'admin_global',
+            isPublic: true,
+            data: compressedData,
+            authorName: 'O Girador',
+            ownerId: userData.uid,
+            createdAt: serverTimestamp()
+          }, { merge: true });
+          importedCount++;
+        } catch (err) {
+          console.error("Erreur avec un fichier", err);
+        }
+      }
+      showToast(`${importedCount} rythmes importés !`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (error) {
+      console.error(error);
+      showToast("Erreur lors de l'importation.");
+    }
   };
 
   const handleDeleteRhythm = async (item) => {
@@ -282,6 +324,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
         
         let upcomingEventsCount = 0;
         let nextEvent = null;
+        let latestEventsArray = [];
         if (eventsSnap) {
           const tzOffset = (new Date()).getTimezoneOffset() * 60000;
           const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
@@ -298,13 +341,14 @@ export default function GlobalHealthStats({ userData, associationData }) {
               dateStr = evt.dateString.split('T')[0];
             }
             if (dateStr && dateStr >= todayStr) {
-              upcomingEvents.push({ ...evt, dateStr });
+              upcomingEvents.push({ ...evt, id: docSnap.id, dateStr });
             }
           });
           
           upcomingEvents.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
           upcomingEventsCount = upcomingEvents.length;
           nextEvent = upcomingEventsCount > 0 ? (upcomingEvents[0].title || upcomingEvents[0].nom || 'Événement') : null;
+          latestEventsArray = upcomingEvents.slice(0, 3);
         }
 
         // 3. Fetch Rhythms from Storage (Catalogue Séquenceur) & Firestore
@@ -332,8 +376,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
           }
           
           // B. Séquences Complètes (Presets)
-          console.log('[PRESETS] Fetching presets for ownerId:', userData.uid);
-          
           const firestoreItemsMap = new Map();
 
           try {
@@ -356,8 +398,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
             const qGlobal = query(collection(db, 'presets'), where('visibility', '==', 'admin_global'));
             const globalSnap = await getDocs(qGlobal);
             globalSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
-
-            console.log('[PRESETS] Total unique presets found:', firestoreItemsMap.size);
           } catch (presetErr) {
             console.error('[PRESETS] Error fetching presets:', presetErr.code, presetErr.message);
           }
@@ -390,10 +430,10 @@ export default function GlobalHealthStats({ userData, associationData }) {
           }
 
           // C. Séquences Publiques Globales
-          const qPublic = query(collection(db, 'presets'), where('visibility', 'in', ['admin_global', 'public']));
-          const publicSnap = await safeGetDocs(qPublic);
-          if (publicSnap) {
-            publicSnap.forEach(docSnap => {
+          const qPublicR = query(collection(db, 'presets'), where('visibility', 'in', ['admin_global', 'public']));
+          const publicSnapR = await safeGetDocs(qPublicR);
+          if (publicSnapR) {
+            publicSnapR.forEach(docSnap => {
               const data = docSnap.data();
               // Ne pas ajouter en double si c'est déjà traité (le user est l'owner)
               if (data.ownerId === userData.uid) return;
@@ -430,23 +470,112 @@ export default function GlobalHealthStats({ userData, associationData }) {
 
         // 4. Fetch Choreographies
         let choreosList = [];
-        const choreoRef = collection(db, 'choreographies');
-        const qChoreo = query(choreoRef, where('groupId', '==', userData.groupId));
-        const choreoSnap = await safeGetDocs(qChoreo);
-        if (choreoSnap) {
-           choreoSnap.forEach(docSnap => {
-             const data = docSnap.data();
-             choreosList.push({ 
-               id: docSnap.id, 
-               label: data.title || data.name || 'Chorégraphie', 
-               date: data.createdAt?.toMillis?.() || 0,
-               isPublic: data.isPublic || false,
-               rewardClaimed: data.rewardClaimed || false,
-               originalData: data
+        
+        // A. Fichiers Audio Danse (Stockage brut via metadata de l'utilisateur)
+        const choreoStorageRef = collection(db, 'user_dance_audio_files');
+        const qChoreoAudio = query(choreoStorageRef, where('userId', '==', userData.uid));
+        try {
+          const choreoAudioSnap = await safeGetDocs(qChoreoAudio);
+          if (choreoAudioSnap) {
+             choreoAudioSnap.forEach(docSnap => {
+               const item = docSnap.data();
+               const isJson = item.name.endsWith('.json');
+               choreosList.push({
+                 id: docSnap.id,
+                 label: item.name,
+                 date: parseInt(item.name.split('_')[0]) || 0,
+                 type: isJson ? 'section' : 'storage',
+                 isPublic: false
+               });
              });
-           });
-           choreosList.sort((a, b) => b.date - a.date);
+          }
+        } catch (storageErr) {
+          console.warn('[STORAGE] Error fetching choreo audio files from storage:', storageErr);
         }
+        
+        // B. Séquences Complètes (Choreographies)
+        const choreoItemsMap = new Map();
+        try {
+          const qOwnerChoreo = query(collection(db, 'choreographies'), where('ownerId', '==', userData.uid));
+          const ownerChoreoSnap = await safeGetDocs(qOwnerChoreo);
+          if (ownerChoreoSnap) ownerChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
+          
+          const qPublicChoreo = query(collection(db, 'choreographies'), where('visibility', '==', 'public'));
+          const publicChoreoSnap = await safeGetDocs(qPublicChoreo);
+          if (publicChoreoSnap) publicChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
+          
+          const qTargetChoreo = query(collection(db, 'choreographies'), where('targetUserId', '==', userData.uid));
+          const targetChoreoSnap = await safeGetDocs(qTargetChoreo);
+          if (targetChoreoSnap) targetChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
+          
+          const qGlobalChoreo = query(collection(db, 'choreographies'), where('visibility', '==', 'admin_global'));
+          const globalChoreoSnap = await safeGetDocs(qGlobalChoreo);
+          if (globalChoreoSnap) globalChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
+        } catch (choreoErr) {
+          console.error('[CHOREOS] Error fetching choreos:', choreoErr.code, choreoErr.message);
+        }
+        
+        if (choreoItemsMap.size > 0) {
+          choreoItemsMap.forEach(docSnap => {
+            const data = docSnap.data();
+            const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
+            
+            let parsedData = data;
+            if (data.data) {
+              try {
+                parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+              } catch (e) {}
+            }
+
+            choreosList.push({
+              id: docSnap.id,
+              label: data.name || data.title || 'Sans titre',
+              date: data.createdAt || 0,
+              type: isPublic ? 'choreo' : 'section',
+              isPublic: isPublic,
+              rewardClaimed: data.rewardClaimed || false,
+              orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
+              originalData: parsedData
+            });
+          });
+        }
+        
+        // C. Séquences Publiques Globales Choreos
+        const qPublicChoreo2 = query(collection(db, 'choreographies'), where('visibility', 'in', ['admin_global', 'public']));
+        const publicChoreoSnap2 = await safeGetDocs(qPublicChoreo2);
+        if (publicChoreoSnap2) {
+          publicChoreoSnap2.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.ownerId === userData.uid) return;
+
+            let parsedData = data;
+            if (data.data) {
+              try {
+                parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
+              } catch (e) {}
+            }
+
+            choreosList.push({
+              id: docSnap.id,
+              label: data.name || data.title || 'Sans titre',
+              date: data.createdAt || 0,
+              type: 'choreo',
+              isPublic: true,
+              rewardClaimed: true,
+              orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
+              originalData: parsedData,
+              isGlobal: true,
+              authorName: data.authorName || 'Inconnu'
+            });
+          });
+        }
+        
+        choreosList.sort((a, b) => {
+          if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
+            return a.orderIndex - b.orderIndex;
+          }
+          return b.date - a.date;
+        });
 
         // 5. Fetch Newsletter Subscribers
         let subscribersList = [];
@@ -466,6 +595,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
           pupitres: pupitresArray, // Full array
           upcomingEvents: upcomingEventsCount,
           nextEventName: nextEvent,
+          latestEvents: latestEventsArray,
           totalRhythms: rhythmsList.length,
           totalChoreos: choreosList.length,
           newsletterSubscribers: subscribersList.length,
@@ -639,10 +769,23 @@ export default function GlobalHealthStats({ userData, associationData }) {
           borderColor: "border-emerald-200",
           interactive: true,
           onClick: () => setIsEventsModalOpen(true),
-          secondary: stats.nextEventName ? (
-            <div className="mt-3 text-[10px] text-emerald-800 bg-emerald-50 px-2 py-1.5 rounded border border-emerald-100 line-clamp-2">
-              <strong className="block text-emerald-900 mb-0.5">Prochain :</strong> 
-              {stats.nextEventName}
+          secondary: stats.latestEvents && stats.latestEvents.length > 0 ? (
+            <div className="mt-3 flex flex-col gap-2 bg-emerald-50 p-2 rounded border border-emerald-100">
+              {stats.latestEvents.map((evt, idx) => (
+                <div key={evt.id || idx} className="flex items-center gap-2">
+                  {evt.coverUrl || evt.photoUrl ? (
+                    <img src={evt.coverUrl || evt.photoUrl} alt="Cover" className="w-8 h-8 rounded object-cover shadow-sm" />
+                  ) : (
+                    <div className="w-8 h-8 rounded bg-emerald-200 flex items-center justify-center flex-shrink-0">
+                      <Calendar className="w-4 h-4 text-emerald-600" />
+                    </div>
+                  )}
+                  <div className="flex flex-col overflow-hidden">
+                    <span className="text-[10px] font-bold text-emerald-900 truncate">{evt.title || evt.nom || 'Événement'}</span>
+                    <span className="text-[9px] text-emerald-700">{new Date(evt.dateStr).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : <span className="text-[10px] text-gray-400 mt-3 block">Aucun événement planifié</span>
         },
@@ -667,10 +810,20 @@ export default function GlobalHealthStats({ userData, associationData }) {
 
   return (
     <div className="bg-white rounded-xl border border-amber-900/10 shadow-sm p-6 w-full h-full flex flex-col">
-      <h3 className="font-bold text-[#4a2e1b] mb-6 flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-amber-500" />
-        <span>Santé Globale & Hub</span>
-      </h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-bold text-[#4a2e1b] flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-amber-500" />
+          <span>Santé Globale & Hub</span>
+        </h3>
+        <button 
+          onClick={handleImportPublicCatalog}
+          className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-all text-sm flex items-center gap-2"
+          title="Importer les rythmes par défaut dans la base de données"
+        >
+          <Music className="w-4 h-4" />
+          Importer Catalogue Public
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
         {statGroups.map((group, gIdx) => (
@@ -822,13 +975,13 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 onClick={() => setActiveRhythmTab('rhythm')}
                 className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeRhythmTab === 'rhythm' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
-                Catalogue public ({stats.latestRhythms.filter(r => r.type === 'rhythm').length})
+                Catalogue O-Girador (Public) ({stats.latestRhythms.filter(r => r.type === 'rhythm').length})
               </button>
               <button 
                 onClick={() => setActiveRhythmTab('section')}
                 className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeRhythmTab === 'section' ? 'border-purple-600 text-purple-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
               >
-                Catalogue local ({stats.latestRhythms.filter(r => r.type === 'section').length})
+                Catalogue {associationData?.name || associationData?.nom || 'Local'} (Privé) ({stats.latestRhythms.filter(r => r.type === 'section').length})
               </button>
               <button 
                 onClick={() => setActiveRhythmTab('storage')}
@@ -852,9 +1005,21 @@ export default function GlobalHealthStats({ userData, associationData }) {
                   <div className="space-y-3">
                     {filteredList.map((item, idx) => (
                       <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
-                        <div className="flex-1 mr-2">
-                          <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
-                          {item.date > 0 && <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</span>}
+                        <div className="flex-1 mr-2 min-w-0">
+                          {(item.type === 'rhythm' || item.type === 'section') ? (
+                            <a 
+                              href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"
+                              title="Ouvrir dans le séquenceur"
+                            >
+                              {item.label}
+                            </a>
+                          ) : (
+                            <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                          )}
+                          {item.date > 0 && <span className="text-xs text-gray-400 block">{new Date(item.date).toLocaleDateString()}</span>}
                         </div>
                         <div className="flex items-center gap-1">
                           {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && !item.isExternal && (
@@ -914,45 +1079,100 @@ export default function GlobalHealthStats({ userData, associationData }) {
       {/* Modal Chorégraphies */}
       {isChoreosModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[85vh] animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="text-lg font-bold text-[#4a2e1b] flex items-center gap-2">
-                <Activity className="w-5 h-5 text-pink-600" />
-                Chorégraphies
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-pink-50">
+              <h3 className="text-lg font-bold text-pink-900 flex items-center gap-2">
+                <Activity className="w-6 h-6 text-pink-600" />
+                Chorégraphies & Danse
               </h3>
               <button 
                 onClick={() => setIsChoreosModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1 text-pink-400 hover:text-pink-700 hover:bg-pink-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
+            <div className="flex border-b bg-gray-50">
+              <button 
+                onClick={() => setActiveChoreoTab('choreo')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeChoreoTab === 'choreo' ? 'border-pink-600 text-pink-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Catalogue O-Girador (Public) ({stats.latestChoreos.filter(r => r.type === 'choreo').length})
+              </button>
+              <button 
+                onClick={() => setActiveChoreoTab('section')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeChoreoTab === 'section' ? 'border-pink-600 text-pink-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Catalogue {associationData?.name || associationData?.nom || 'Local'} (Privé) ({stats.latestChoreos.filter(r => r.type === 'section').length})
+              </button>
+              <button 
+                onClick={() => setActiveChoreoTab('storage')}
+                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeChoreoTab === 'storage' ? 'border-pink-600 text-pink-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                Fichiers audio ({stats.latestChoreos.filter(r => r.type === 'storage').length})
+              </button>
+            </div>
+            
             <div className="p-5 overflow-y-auto flex-1 bg-white">
-              {stats.latestChoreos.length > 0 ? (
-                <div className="space-y-3">
-                  {stats.latestChoreos.map((item, idx) => (
-                    <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
-                      <div className="flex-1 mr-2">
-                        <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
-                        {item.date > 0 && <span className="text-xs text-gray-400">{new Date(item.date).toLocaleDateString()}</span>}
-                      </div>
-                      <button 
-                        onClick={() => handlePublishChoreo(item)}
-                        disabled={item.isPublic}
-                        className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                        title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                      >
-                        <Globe className="w-4 h-4" />
-                      </button>
+              {(() => {
+                const filteredList = stats.latestChoreos.filter(r => r.type === activeChoreoTab);
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      Aucune donnée dans cette catégorie.
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  Aucune chorégraphie créée pour le moment.
-                </div>
-              )}
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {filteredList.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group hover:border-pink-200 transition-colors">
+                        <div className="flex-1 mr-2 min-w-0">
+                          <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-xs text-gray-500">
+                              {item.date && typeof item.date !== 'number' ? new Date(item.date.seconds * 1000).toLocaleDateString('fr-FR') : (item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date inconnue')}
+                            </span>
+                            {item.isGlobal && (
+                              <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                Par {item.authorName}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          {item.isExternal ? (
+                            <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
+                              <Globe className="w-4 h-4" />
+                            </div>
+                          ) : (
+                            <button 
+                              onClick={() => {}}
+                              disabled={item.isPublic || item.type === 'storage'}
+                              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${(item.isPublic || item.type === 'storage') ? 'text-blue-500 bg-blue-50 cursor-default opacity-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                              title={item.isPublic ? "Déjà publié" : "Publier"}
+                            >
+                              <Globe className="w-4 h-4" />
+                            </button>
+                          )}
+
+                          {!item.isExternal && (
+                            <button
+                              onClick={(e) => { e.stopPropagation(); }}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
