@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, s
 import { ref, listAll } from 'firebase/storage';
 import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import LZString from 'lz-string';
+import { awardAxePoints } from '../../../services/gamificationService';
 
 export default function SequencerView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
@@ -112,10 +113,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
       await setDoc(creationRef, updateData, { merge: true });
 
       if (canClaimReward) {
-        const groupRef = doc(db, 'associations', userData.groupId);
-        await updateDoc(groupRef, {
-          contributionPoints: increment(25)
-        });
+        await awardAxePoints(userData.groupId, 'create_sequence');
       }
 
       showToast(toastMsg);
@@ -290,8 +288,6 @@ export default function SequencerView({ userData, associationData, onBack }) {
           
           publicSnap.forEach(docSnap => {
             const data = docSnap.data();
-            // Ne pas l'ajouter s'il appartient déjà à l'utilisateur (déjà dans items)
-            if (data.ownerId === userData.uid) return;
 
             let parsedData = data;
             if (data.data) {
@@ -408,14 +404,6 @@ export default function SequencerView({ userData, associationData, onBack }) {
                       title="Partager le rythme"
                     >
                       {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
-                    </button>
-                    <button 
-                      onClick={() => handlePublish(item)}
-                      disabled={item.isPublic}
-                      className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
-                      title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                    >
-                      <Globe className="w-3.5 h-3.5" />
                     </button>
                     <button 
                       onClick={() => handleDelete(item)}

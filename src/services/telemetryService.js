@@ -1,4 +1,4 @@
-import { collection, query, where, orderBy, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, doc, updateDoc, Timestamp, addDoc, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from './firebase';
 
 /**
@@ -71,7 +71,6 @@ export const getTelemetryMetrics = async (days = 30) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
-    // On utilise uniquement orderBy pour éviter de nécessiter un index composite (where + orderBy sur Timestamp)
     const q = query(
       collection(db, 'hub_telemetry_daily'),
       orderBy('timestamp', 'desc')
@@ -79,7 +78,6 @@ export const getTelemetryMetrics = async (days = 30) => {
     
     const snapshot = await getDocs(q);
     
-    // On filtre localement par startDate
     const events = snapshot.docs
       .map(doc => doc.data())
       .filter(event => {
@@ -87,62 +85,76 @@ export const getTelemetryMetrics = async (days = 30) => {
         return eventDate >= startDate;
       });
       
-    // Mock demographics & time for the demo
-    const demographics = {
-      ageGroups: [
-        { label: '18-24', percentage: 15 },
-        { label: '25-34', percentage: 40 },
-        { label: '35-44', percentage: 25 },
-        { label: '45+', percentage: 20 },
-      ],
-      gender: [
-        { label: 'Femme', percentage: 55 },
-        { label: 'Homme', percentage: 42 },
-        { label: 'Autre', percentage: 3 },
-      ],
-      countries: [
-        { label: 'France', percentage: 85 },
-        { label: 'Belgique', percentage: 10 },
-        { label: 'Suisse', percentage: 5 },
-      ]
-    };
-
     if (events.length === 0) {
-      // Données factices de démonstration pour l'effet Wow
       return {
-        activeAssociationsCount: 14,
-        totalEvents: 4892,
-        eventsCount24h: 342,
-        topFeatures: [
-          { appId: 'Manager', eventName: 'login_success', count: 1250 },
-          { appId: 'Manager', eventName: 'view_member_list', count: 890 },
-          { appId: 'Séquenceur', eventName: 'play_pattern', count: 756 },
-          { appId: 'Vitrine', eventName: 'view_public_page', count: 620 },
-          { appId: 'Manager', eventName: 'edit_event', count: 430 },
-          { appId: 'Séquenceur', eventName: 'save_composition', count: 285 },
-          { appId: 'Manager', eventName: 'generate_report', count: 190 },
-        ],
-        connectionsCount: 512,
-        avgTimeSpent: "14m 30s",
-        demographics
+        activeAssociationsCount: 0,
+        totalEvents: 0,
+        eventsCount24h: 0,
+        topFeatures: [],
+        connectionsCount: 0,
+        avgTimeSpent: "0m 00s",
+        demographics: { ageGroups: [], gender: [], countries: [] }
       };
     }
     
     // Agrégation
     const activeAssociations = new Set();
     const featureUsage = {};
-    const eventsCount24h = events.filter(e => {
-      const ts = e.timestamp?.toDate() || new Date();
-      return (new Date() - ts) < 24 * 60 * 60 * 1000;
-    }).length;
+    const ageCounts = { '18-24': 0, '25-34': 0, '35-44': 0, '45+': 0, 'unknown': 0 };
+    const genderCounts = { 'Femme': 0, 'Homme': 0, 'Autre': 0, 'unknown': 0 };
+    const countryCounts = {};
+    
+    let totalDuration = 0;
+    let sessionsCount = 0;
+
+    let eventsCount24h = 0;
+    let connectionsCount = 0; // Number of session_start in last 24h
+
+    const now = new Date();
 
     events.forEach(event => {
+      const ts = event.timestamp?.toDate() || now;
+      const isLast24h = (now - ts) < 24 * 60 * 60 * 1000;
+
+      if (isLast24h) {
+        eventsCount24h++;
+      }
+
       if (event.groupId && event.groupId !== 'anonymous') {
         activeAssociations.add(event.groupId);
       }
       
-      const featureKey = `${event.appId}:${event.eventName}`;
-      featureUsage[featureKey] = (featureUsage[featureKey] || 0) + 1;
+      // Calculate top features (excluding technical ones)
+      if (event.eventName !== 'session_start' && event.eventName !== 'session_end' && event.eventName !== 'page_view' && event.eventName !== 'visibility_hidden') {
+        const featureKey = `${event.appId}:${event.eventName}`;
+        featureUsage[featureKey] = (featureUsage[featureKey] || 0) + 1;
+      }
+
+      // Session Duration
+      if (event.eventName === 'session_end' && event.duration) {
+        totalDuration += event.duration;
+        sessionsCount++;
+      }
+
+      // Connections & Demographics (count per session start)
+      if (event.eventName === 'session_start') {
+        if (isLast24h) connectionsCount++;
+
+        const demo = event.demographics || {};
+        
+        // Age
+        const age = demo.ageGroup || 'unknown';
+        if (ageCounts[age] !== undefined) ageCounts[age]++;
+        else ageCounts['unknown']++;
+
+        // Gender
+        const gender = demo.gender === 'female' ? 'Femme' : demo.gender === 'male' ? 'Homme' : demo.gender === 'other' ? 'Autre' : 'unknown';
+        if (genderCounts[gender] !== undefined) genderCounts[gender]++;
+
+        // Country
+        const country = demo.country || 'unknown';
+        countryCounts[country] = (countryCounts[country] || 0) + 1;
+      }
     });
 
     // Tri des fonctionnalités les plus utilisées (Top 10)
@@ -154,9 +166,37 @@ export const getTelemetryMetrics = async (days = 30) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
-    // (Demographics were moved up for reuse)
-    const avgTimeSpent = "12m 45s";
-    const connectionsCount = Math.floor(eventsCount24h * 1.5) || Math.floor(Math.random() * 50) + 100;
+    // Temps Moyen Passé
+    let avgTimeSpent = "0m 00s";
+    if (sessionsCount > 0) {
+      const avgSeconds = Math.round(totalDuration / sessionsCount);
+      const m = Math.floor(avgSeconds / 60);
+      const s = String(avgSeconds % 60).padStart(2, '0');
+      avgTimeSpent = `${m}m ${s}s`;
+    }
+
+    // Demographics Percentage Formatting Helper
+    const calculatePercentages = (countsObj, totalCount) => {
+      if (totalCount === 0) return [];
+      return Object.entries(countsObj)
+        .filter(([label, count]) => label !== 'unknown' && count > 0)
+        .map(([label, count]) => ({
+          label,
+          percentage: Math.round((count / totalCount) * 100)
+        }))
+        .sort((a, b) => b.percentage - a.percentage);
+    };
+
+    // Total demographics samples (excluding unknowns for exact percentages of known data, or just use all session starts)
+    const totalAgeKnown = Object.entries(ageCounts).filter(([k]) => k !== 'unknown').reduce((acc, [, v]) => acc + v, 0);
+    const totalGenderKnown = Object.entries(genderCounts).filter(([k]) => k !== 'unknown').reduce((acc, [, v]) => acc + v, 0);
+    const totalCountryKnown = Object.entries(countryCounts).filter(([k]) => k !== 'unknown').reduce((acc, [, v]) => acc + v, 0);
+
+    const demographics = {
+      ageGroups: calculatePercentages(ageCounts, totalAgeKnown),
+      gender: calculatePercentages(genderCounts, totalGenderKnown),
+      countries: calculatePercentages(countryCounts, totalCountryKnown).slice(0, 3) // Top 3 countries
+    };
 
     return {
       activeAssociationsCount: activeAssociations.size,
@@ -225,10 +265,6 @@ export const updateTicketStatus = async (ticketId, status) => {
   }
 };
 
-/**
- * Récupère les avis (hub_reviews)
- * @returns {Promise<Array>} Liste des avis
- */
 export const getReviews = async () => {
   try {
     const q = query(collection(db, 'hub_reviews'), orderBy('createdAt', 'desc'));
@@ -243,3 +279,92 @@ export const getReviews = async () => {
     return [];
   }
 };
+
+import { awardAxePoints } from './gamificationService';
+
+/**
+ * Soumet un nouvel avis
+ * @param {Object} reviewData - { rating, comment, userEmail, appSource }
+ * @param {string} groupId - Optionnel, pour récompenser avec des points Axé
+ */
+export const submitReview = async (reviewData, groupId = null) => {
+  try {
+    await addDoc(collection(db, 'hub_reviews'), {
+      ...reviewData,
+      status: 'pending',
+      createdAt: serverTimestamp()
+    });
+
+    if (groupId) {
+      await awardAxePoints(groupId, 'submit_review');
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la soumission de l'avis:", error);
+    throw error;
+  }
+};
+
+/**
+ * Met à jour le statut d'un avis (modération)
+ * @param {string} reviewId 
+ * @param {string} status - 'pending', 'published', 'hidden'
+ */
+export const updateReviewStatus = async (reviewId, status) => {
+  try {
+    const reviewRef = doc(db, 'hub_reviews', reviewId);
+    await updateDoc(reviewRef, { status });
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la mise à jour de l'avis:", error);
+    throw error;
+  }
+};
+
+/**
+ * Récupère uniquement les avis publiés
+ */
+export const getPublishedReviews = async () => {
+  try {
+    // On utilise uniquement 'where' et on trie localement pour éviter le besoin d'un index composite
+    const q = query(
+      collection(db, 'hub_reviews'),
+      where('status', '==', 'published')
+    );
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date()
+    }));
+    
+    // Tri local par date décroissante
+    return results.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des avis publiés:", error);
+    return [];
+  }
+};
+
+/**
+ * Récupère les inscrits à la newsletter (prospects)
+ */
+export const getProspects = async () => {
+  try {
+    const q = collection(db, 'prospects');
+    const snapshot = await getDocs(q);
+    const results = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate() || new Date()
+    }));
+    
+    // Tri local par date d'inscription décroissante
+    return results.sort((a, b) => b.createdAt - a.createdAt);
+  } catch (error) {
+    console.error("Erreur lors de la récupération des prospects:", error);
+    return [];
+  }
+};
+

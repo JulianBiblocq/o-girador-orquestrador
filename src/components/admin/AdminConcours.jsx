@@ -24,7 +24,8 @@ export default function AdminConcours({ associations = [] }) {
       description: 'Créez la meilleure composition de Maracatu Lent dans le Séquenceur.',
       universeId: 'maracatu',
       deadline: '2026-09-30',
-      isActive: true
+      isActive: true,
+      rewardPoints: 100
     }
   ]);
 
@@ -38,7 +39,8 @@ export default function AdminConcours({ associations = [] }) {
     description: '',
     universeId: 'maracatu',
     deadline: '',
-    isActive: false
+    isActive: false,
+    rewardPoints: 50
   });
 
   const handleSave = () => {
@@ -121,7 +123,24 @@ export default function AdminConcours({ associations = [] }) {
                 className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold"
               />
             </div>
-            <div className="flex items-center gap-3 pt-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#8b4513] uppercase">Récompense (Points d'Axé)</label>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-[#d2691e]">+</span>
+                <input 
+                  type="number" 
+                  min="0"
+                  value={editingConcours.rewardPoints || 0}
+                  onChange={e => setEditingConcours({...editingConcours, rewardPoints: Number(e.target.value)})}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold"
+                  placeholder="Ex: 100"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 pt-2">
+            <div className="flex items-center gap-3">
               <input 
                 type="checkbox"
                 id="activeToggle"
@@ -243,6 +262,7 @@ export default function AdminConcours({ associations = [] }) {
                         {c.title}
                       </div>
                       <div className="text-xs text-gray-500 line-clamp-1">{c.description}</div>
+                      <div className="text-[10px] font-bold text-[#d2691e] mt-1">Récompense: +{c.rewardPoints || 0} Axé</div>
                     </td>
                     <td className="p-4">
                       <span className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${uni.color}`}>

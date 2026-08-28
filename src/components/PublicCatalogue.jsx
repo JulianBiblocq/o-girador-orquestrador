@@ -24,7 +24,7 @@ export default function PublicCatalogue({ onNavigateHome }) {
         const choroRef = collection(db, 'choreographies');
         
         // Requêtes pour items publics
-        const qPresets = query(presetsRef, where('visibility', '==', 'public'));
+        const qPresets = query(presetsRef, where('visibility', 'in', ['admin_global', 'public']));
         const qChoro = query(choroRef, where('isPublic', '==', true));
         
         const [presetsSnap, choroSnap] = await Promise.all([

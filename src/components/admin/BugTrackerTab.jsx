@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { Sparkles, Copy, Check } from 'lucide-react';
 import { getSystemErrors, updateErrorStatus } from '../../services/telemetryService';
 import { useLanguage } from '../../hooks/useLanguage';
 
-const BugDetailModal = ({ bug, onClose }) => {
+const BugDetailModal = ({ bug, onClose, onSendToAI }) => {
   if (!bug) return null;
 
   return (
@@ -10,7 +11,16 @@ const BugDetailModal = ({ bug, onClose }) => {
       <div className="bg-[#fcf8f2] rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#4a2e1b]/20">
         <div className="p-6 space-y-6">
           <div className="flex justify-between items-start">
-            <h3 className="text-xl font-bold text-[#4a2e1b]">Détail du Bug</h3>
+            <h3 className="text-xl font-bold text-[#4a2e1b] flex items-center gap-2">
+              Détail du Bug
+              <button 
+                onClick={() => onSendToAI(bug)}
+                className="text-xs bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 ml-4 transition-colors border border-purple-200"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Transmettre à l'IA
+              </button>
+            </h3>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-800 font-bold">✕</button>
           </div>
           
@@ -56,6 +66,34 @@ export default function BugTrackerTab() {
   const [loading, setLoading] = useState(true);
   const [selectedBug, setSelectedBug] = useState(null);
   const [statusFilter, setStatusFilter] = useState('');
+  const [copyFeedback, setCopyFeedback] = useState(null);
+
+  const handleSendToAI = (bug) => {
+    const prompt = `Salut Antigravity, peux-tu analyser et résoudre ce bug provenant du Tracker de l'Orchestrador ?
+
+**Détails du Bug :**
+- **App :** ${bug.appId} (v${bug.appVersion})
+- **Type :** ${bug.type}
+- **Route :** ${bug.route}
+- **Date :** ${bug.timestamp?.toLocaleString() || bug.createdAt?.toLocaleString()}
+
+**Message d'Erreur :**
+\`\`\`
+${bug.errorMessage}
+\`\`\`
+
+**StackTrace :**
+\`\`\`
+${bug.stackTrace || 'Non disponible'}
+\`\`\`
+
+Merci de m'indiquer la cause probable et de proposer une correction dans les fichiers correspondants.`;
+
+    navigator.clipboard.writeText(prompt).then(() => {
+      setCopyFeedback(bug.id);
+      setTimeout(() => setCopyFeedback(null), 3000);
+    });
+  };
 
   const fetchBugs = async () => {
     setLoading(true);
@@ -148,6 +186,13 @@ export default function BugTrackerTab() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    <button 
+                      onClick={() => handleSendToAI(bug)} 
+                      className="text-purple-600 hover:text-purple-900 transition-colors"
+                      title="Copier le prompt pour demander à l'IA"
+                    >
+                      {copyFeedback === bug.id ? <Check className="w-4 h-4 inline" /> : <Sparkles className="w-4 h-4 inline" />}
+                    </button>
                     <button onClick={() => setSelectedBug(bug)} className="text-[#8b4513] hover:text-[#4a2e1b]">Détails</button>
                     {bug.status !== 'resolved' && (
                       <button onClick={() => handleStatusChange(bug.id, 'resolved')} className="text-green-600 hover:text-green-900">✔ Résoudre</button>
@@ -163,7 +208,19 @@ export default function BugTrackerTab() {
         </div>
       </div>
 
-      <BugDetailModal bug={selectedBug} onClose={() => setSelectedBug(null)} />
+      <BugDetailModal bug={selectedBug} onClose={() => setSelectedBug(null)} onSendToAI={handleSendToAI} />
+      
+      {copyFeedback && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <div className="bg-purple-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-purple-700">
+            <Check className="w-5 h-5 text-green-400" />
+            <div>
+              <p className="font-bold text-sm">Bug copié pour l'IA !</p>
+              <p className="text-xs text-purple-200">Collez le texte (Ctrl+V) dans la discussion d'Antigravity.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

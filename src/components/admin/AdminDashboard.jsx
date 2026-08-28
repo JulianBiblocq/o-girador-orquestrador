@@ -16,7 +16,9 @@ import CatalogueManagerTab from './CatalogueManagerTab';
 import CmsManagerTab from './CmsManagerTab';
 import AdminArtisans from './AdminArtisans';
 import AdminConcours from './AdminConcours';
+import AxeRulesTab from './AxeRulesTab';
 import AdminModerationTab from './AdminModerationTab';
+import NewsletterTab from './NewsletterTab';
 
 export default function AdminDashboard() {
   const { associations, reload, addOrUpdateAssociation, removeAssociation } = useSubscriptions();
@@ -144,6 +146,14 @@ export default function AdminDashboard() {
             📬 Tickets
           </button>
           <button
+            onClick={() => setActiveTab('newsletter')}
+            className={`px-4 py-2 font-bold text-xs sm:text-sm rounded-lg transition-all cursor-pointer ${
+              activeTab === 'newsletter' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-md' : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-[#e8d5b5]'
+            }`}
+          >
+            💌 Newsletter
+          </button>
+          <button
             onClick={() => setActiveTab('moderation')}
             className={`px-4 py-2 font-bold text-xs sm:text-sm rounded-lg transition-all cursor-pointer ${
               activeTab === 'moderation' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-md' : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-[#e8d5b5]'
@@ -215,6 +225,14 @@ export default function AdminDashboard() {
           >
             🏆 Gamification
           </button>
+          <button
+            onClick={() => setActiveTab('axe')}
+            className={`px-4 py-2 font-bold text-xs sm:text-sm rounded-lg transition-all cursor-pointer ${
+              activeTab === 'axe' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-md' : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-[#e8d5b5]'
+            }`}
+          >
+            ✨ Points d'Axé
+          </button>
         </div>
 
         {/* Tab Views */}
@@ -281,6 +299,14 @@ export default function AdminDashboard() {
 
         {activeTab === 'concours' && (
           <AdminConcours associations={associations} />
+        )}
+
+        {activeTab === 'axe' && (
+          <AxeRulesTab />
+        )}
+
+        {activeTab === 'newsletter' && (
+          <NewsletterTab />
         )}
 
         {/* Modal */}

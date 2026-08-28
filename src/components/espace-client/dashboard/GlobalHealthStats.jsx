@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, s
 import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
+import { awardAxePoints } from '../../../services/gamificationService';
 
 export default function GlobalHealthStats({ userData, associationData }) {
   const hasPack = (packId) => {
@@ -170,10 +171,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
       await setDoc(creationRef, updateData, { merge: true });
 
       if (canClaimReward) {
-        const groupRef = doc(db, 'associations', userData.groupId);
-        await updateDoc(groupRef, {
-          contributionPoints: increment(25)
-        });
+        await awardAxePoints(userData.groupId, 'create_sequence');
       }
 
       showToast(toastMsg);
@@ -209,11 +207,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
       await updateDoc(creationRef, updateData);
 
       if (!item.rewardClaimed) {
-        const groupRef = doc(db, 'associations', userData.groupId);
-        await updateDoc(groupRef, {
-          contributionPoints: increment(25)
-        });
-        showToast("Félicitations ! Votre création est en ligne. Vous remportez 25 Points d'Axé !");
+        const awarded = await awardAxePoints(userData.groupId, 'create_choreography');
+        showToast(`Félicitations ! Votre création est en ligne. Vous remportez ${awarded} Points d'Axé !`);
       } else {
         showToast("Votre création est désormais publique !");
       }
@@ -319,18 +314,22 @@ export default function GlobalHealthStats({ userData, associationData }) {
           const { storage } = await import('../../../services/firebase');
           
           // A. Storage
-          const folderRef = ref(storage, `documents/${userData.groupId}/sequencer`);
-          const res = await listAll(folderRef);
-          res.items.forEach(item => {
-             const isJson = /\.json$/i.test(item.name);
-             rhythmsList.push({ 
-               id: item.name, 
-               label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''), 
-               date: parseInt(item.name.split('_')[0]) || 0,
-               type: isJson ? 'section' : 'storage',
-               isPublic: false
-             });
-          });
+          try {
+            const folderRef = ref(storage, `documents/${userData.groupId}/sequencer`);
+            const res = await listAll(folderRef);
+            res.items.forEach(item => {
+               const isJson = /\.json$/i.test(item.name);
+               rhythmsList.push({ 
+                 id: item.name, 
+                 label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''), 
+                 date: parseInt(item.name.split('_')[0]) || 0,
+                 type: isJson ? 'section' : 'storage',
+                 isPublic: false
+               });
+            });
+          } catch (storageErr) {
+            console.warn('[STORAGE] Error fetching audio files from storage:', storageErr);
+          }
           
           // B. Séquences Complètes (Presets)
           console.log('[PRESETS] Fetching presets for ownerId:', userData.uid);
@@ -473,7 +472,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
           latestSubscribers: subscribersList,
           latestRhythms: rhythmsList,
           latestChoreos: choreosList,
-          vitrineViews: 142 // Hardcoded as per legacy TabAnalytics
+          vitrineViews: associationData?.vitrineViews || 0
         });
       } catch (error) {
         console.error("Erreur inattendue dans fetchStats:", error);

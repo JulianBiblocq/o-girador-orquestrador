@@ -9,6 +9,7 @@ import CreatorSection from './components/CreatorSection';
 import TutorialsSection from './components/TutorialsSection';
 import PublicNetworkSection from './components/PublicNetworkSection';
 import NewsletterSection from './components/NewsletterSection';
+import PublicReviewsSection from './components/PublicReviewsSection';
 import AdminLoginModal from './components/AdminLoginModal';
 import Footer from './components/Footer';
 import UniverseModal from './components/UniverseModal';
@@ -91,6 +92,7 @@ function AppContent() {
           <PricingSynergySection onSelectPlan={(plan) => { setActivePlan(plan); handleNavigate('checkout'); }} />
           <AddonsStore onNavigate={handleNavigate} />
           <PublicNetworkSection onNavigate={handleNavigate} />
+          <PublicReviewsSection onNavigate={handleNavigate} />
           <TutorialsSection />
           <NewsletterSection activeUniverse={activeUniverse} />
         </main>

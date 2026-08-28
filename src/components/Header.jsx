@@ -5,6 +5,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
 import AxePointsBadge from './AxePointsBadge';
+import LeaveReviewModal from './espace-client/LeaveReviewModal';
 
 export default function Header({ 
   activeUniverse, 
@@ -14,11 +15,12 @@ export default function Header({
   onOpenTeaser
 }) {
   const { t } = useLanguage();
-  const { currentUser, loginWithGoogle, logout } = useAuth();
+  const { currentUser, userData, loginWithGoogle, logout } = useAuth();
   const { cartItems, toggleCart } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [universeDropdownOpen, setUniverseDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
 
   const currentUniverseObj = universData.universes.find(u => u.id === activeUniverse) || universData.universes[0];
 
@@ -107,6 +109,17 @@ export default function Header({
           <nav className="hidden lg:flex items-center gap-5 text-[13px] font-bold text-[#4a2e1b]">
             <a href="#triptyque" onClick={() => activeView !== 'home' && onNavigate('home')} className="hover:text-[#d2691e] transition-colors">
               Applications
+            </a>
+            <a href="#avis" onClick={(e) => {
+                if (activeView !== 'home') {
+                  e.preventDefault();
+                  onNavigate('home');
+                  setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                }
+              }} 
+              className="hover:text-[#d2691e] transition-colors"
+            >
+              Avis
             </a>
             <a 
               href="#boutique"
@@ -198,6 +211,15 @@ export default function Header({
                     <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Mostrador (Vitrine)</a>
                     <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Sequenciador</a>
                     <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10">Dançador</a>
+                    <button
+                      onClick={() => {
+                        setShowReviewModal(true);
+                        setUserDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10"
+                    >
+                      Donner mon avis
+                    </button>
                     <button
                       onClick={() => {
                         logout();
@@ -318,6 +340,20 @@ export default function Header({
                     {t('header.nav.triptyque')} (Nos 4 Applications)
                   </a>
                   <a
+                    href="#avis"
+                    onClick={(e) => { 
+                      if (activeView !== 'home') {
+                        e.preventDefault();
+                        onNavigate('home');
+                        setTimeout(() => document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                      }
+                      setMobileMenuOpen(false); 
+                    }}
+                    className="text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#4a2e1b] hover:bg-[#f4e8cf] transition-colors"
+                  >
+                    {t('header.nav.avis') || 'Avis & Témoignages'}
+                  </a>
+                  <a
                     href="#tarifs"
                     onClick={() => { if (activeView !== 'home') onNavigate('home'); setMobileMenuOpen(false); }}
                     className="text-left px-3.5 py-2.5 rounded-lg text-xs font-semibold text-[#4a2e1b] hover:bg-[#f4e8cf] transition-colors"
@@ -410,6 +446,12 @@ export default function Header({
                     <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Sequenciador</a>
                     <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1">Dançador</a>
                     <button 
+                      onClick={() => { setShowReviewModal(true); setMobileMenuOpen(false); }}
+                      className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1"
+                    >
+                      Donner mon avis
+                    </button>
+                    <button 
                       onClick={() => { logout(); setMobileMenuOpen(false); }}
                       className="text-left py-1.5 text-[#8b4513] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer"
                     >
@@ -434,6 +476,14 @@ export default function Header({
           </div>
         </div>
       )}
+
+      <LeaveReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        userEmail={currentUser?.email}
+        groupId={userData?.groupId}
+        appSource="Orchestrador"
+      />
     </header>
   );
 }

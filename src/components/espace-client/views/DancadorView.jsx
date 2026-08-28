@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
+import { awardAxePoints } from '../../../services/gamificationService';
 
 export default function DancadorView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
@@ -51,11 +52,8 @@ export default function DancadorView({ userData, associationData, onBack }) {
       await updateDoc(creationRef, updateData);
 
       if (!item.rewardClaimed) {
-        const groupRef = doc(db, 'associations', userData.groupId);
-        await updateDoc(groupRef, {
-          contributionPoints: increment(25)
-        });
-        showToast("Félicitations ! Votre création est en ligne. Vous remportez 25 Points d'Axé (0,50€) !");
+        const awarded = await awardAxePoints(userData.groupId, 'create_choreography');
+        showToast(`Félicitations ! Votre création est en ligne. Vous remportez ${awarded} Points d'Axé !`);
       } else {
         showToast("Votre création est désormais publique !");
       }
@@ -164,14 +162,6 @@ export default function DancadorView({ userData, associationData, onBack }) {
                     title="Partager la chorégraphie"
                   >
                     {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
-                  </button>
-                  <button 
-                    onClick={() => handlePublish(item)}
-                    disabled={item.isPublic}
-                    className={`flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 border-blue-200 bg-blue-50 cursor-default' : 'text-gray-500 hover:text-blue-600 hover:border-blue-600'}`}
-                    title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                  >
-                    <Globe className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

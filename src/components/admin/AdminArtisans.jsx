@@ -46,13 +46,13 @@ export default function AdminArtisans() {
     // Mock Save
     setTimeout(() => {
       if (editingArtisan.id) {
-        setArtisans(artisans.map(a => a.id === editingArtisan.id ? editingArtisan : a));
+        setArtisans(prev => prev.map(a => a.id === editingArtisan.id ? editingArtisan : a));
       } else {
         const newArtisan = {
           ...editingArtisan,
           id: `art-${Date.now()}`
         };
-        setArtisans([...artisans, newArtisan]);
+        setArtisans(prev => [...prev, newArtisan]);
       }
       setEditingArtisan(null);
       setSaving(false);
