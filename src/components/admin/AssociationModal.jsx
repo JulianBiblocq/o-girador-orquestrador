@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2 } from 'lucide-react';
+import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2, HardDrive } from 'lucide-react';
+
+const formatBytes = (bytes) => {
+  if (bytes == null) return '0 Go';
+  if (bytes === 0) return '0 Octets';
+  const k = 1024;
+  const sizes = ['Octets', 'Ko', 'Mo', 'Go', 'To'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 export default function AssociationModal({ isOpen, initialData, onClose, onSave }) {
   const [formData, setFormData] = useState({
@@ -28,6 +37,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
       sequenciador: null,
       dansador: null,
       orchestrador: null
+    },
+    storage: {
+      usedBytes: 0,
+      quotaBytes: null
     }
   });
 
@@ -66,6 +79,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
           sequenciador: initialData.quotas?.sequenciador ?? null,
           dansador: initialData.quotas?.dansador ?? null,
           orchestrador: initialData.quotas?.orchestrador ?? null
+        },
+        storage: {
+          usedBytes: initialData.storage?.usedBytes ?? 0,
+          quotaBytes: initialData.storage?.quotaBytes ?? null
         }
       });
     } else {
@@ -96,6 +113,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
           sequenciador: null,
           dansador: null,
           orchestrador: null
+        },
+        storage: {
+          usedBytes: 0,
+          quotaBytes: null
         }
       });
     }
@@ -554,6 +575,47 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
               </div>
             </div>
             <p className="text-[10px] text-gray-500 italic">Laissez vide pour un accès "Illimité". Mettez 0 pour bloquer l'accès.</p>
+          </div>
+
+          {/* Cloud Storage */}
+          <div className="bg-white/80 p-4 rounded-lg border-2 border-[#8b4513]/20 space-y-4">
+            <h3 className="text-xs font-bold text-[#4a2e1b] uppercase flex items-center gap-1.5">
+              <HardDrive className="w-4 h-4 text-[#8b4513]" />
+              Stockage Cloud
+            </h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Espace Utilisé
+                </label>
+                <div className="w-full px-3 py-2 bg-gray-100 text-xs text-gray-600 font-mono rounded border border-gray-300">
+                  {formatBytes(formData.storage?.usedBytes)}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-700 mb-1">
+                  Quota alloué (en Go)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={formData.storage?.quotaBytes ? formData.storage.quotaBytes / (1024 ** 3) : ''}
+                  onChange={e => setFormData({ 
+                    ...formData, 
+                    storage: { 
+                      ...formData.storage, 
+                      quotaBytes: e.target.value === '' ? null : parseFloat(e.target.value) * (1024 ** 3) 
+                    }
+                  })}
+                  placeholder="Ex: 30"
+                  className="w-full px-3 py-2 bg-[#fdf6e7] text-xs font-mono rounded border border-[#8b4513]"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-500 italic">Laissez vide pour aucun quota (illimité ou géré ailleurs).</p>
           </div>
 
           {/* Form Actions */}

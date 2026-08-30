@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit3, Trash2 } from 'lucide-react';
+import { Search, Edit3, Trash2, HardDrive } from 'lucide-react';
 import { calculateSubscriptionStatus, getAccessRights } from '../../utils/subscriptionRights';
 import { db } from '../../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+
+const formatBytes = (bytes) => {
+  if (bytes == null) return '0 Go';
+  if (bytes === 0) return '0 Octets';
+  const k = 1024;
+  const sizes = ['Octets', 'Ko', 'Mo', 'Go', 'To'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 function ActiveMembersCount({ groupId, staticCount }) {
   const [count, setCount] = useState(null);
@@ -11,9 +20,18 @@ function ActiveMembersCount({ groupId, staticCount }) {
     if (!groupId) return;
     const fetchCount = async () => {
       try {
-        const q = query(collection(db, 'users'), where('groupId', '==', groupId), where('statutActuel', '==', 'active'));
+        const q = query(collection(db, 'users'), where('groupId', '==', groupId));
         const snap = await getDocs(q);
-        if (isMounted) setCount(snap.size);
+        if (isMounted) {
+          let count = 0;
+          snap.forEach(docSnap => {
+            const user = docSnap.data();
+            if (user && user.statutActuel !== 'archived') {
+              count++;
+            }
+          });
+          setCount(count);
+        }
       } catch (e) { }
     };
     fetchCount();
@@ -58,6 +76,7 @@ export default function AssociationTable({
               <th className="p-3">Forfait</th>
               <th className="p-3">Expiration</th>
               <th className="p-3">Statut Soft Lock</th>
+              <th className="p-3">Stockage</th>
               <th className="p-3 text-center">Accès Apps</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
@@ -119,6 +138,33 @@ export default function AssociationTable({
                         🔒 Lecture seule Manager
                       </span>
                     )}
+                  </td>
+
+                  <td className="p-3">
+                    {(() => {
+                      const used = assoc.storage?.usedBytes || 0;
+                      const quota = assoc.storage?.quotaBytes;
+                      const usedStr = formatBytes(used);
+                      const quotaStr = quota ? formatBytes(quota) : 'N/A';
+                      const percent = quota ? Math.min((used / quota) * 100, 100) : 0;
+                      let colorClass = 'bg-emerald-500';
+                      if (percent > 80) colorClass = 'bg-orange-500';
+                      if (percent > 95) colorClass = 'bg-red-500';
+                      
+                      return (
+                        <div className="w-full min-w-[80px]">
+                          <div className="text-[10px] font-bold text-gray-700 mb-1 flex justify-between">
+                            <span>{usedStr}</span>
+                            <span className="text-gray-400">/ {quotaStr}</span>
+                          </div>
+                          {quota && (
+                            <div className="w-full bg-gray-200 rounded-full h-1.5">
+                              <div className={`h-1.5 rounded-full ${colorClass}`} style={{ width: `${percent}%` }}></div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   <td className="p-3 text-center">

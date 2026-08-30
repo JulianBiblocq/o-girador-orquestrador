@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe } from 'lucide-react';
+import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Music, PlayCircle } from 'lucide-react';
 import { awardAxePoints } from '../../../services/gamificationService';
 
 export default function DancadorView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
+  const [audios, setAudios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
@@ -85,6 +86,19 @@ export default function DancadorView({ userData, associationData, onBack }) {
         });
         
         setItems(docs.slice(0, 3));
+
+        // Fetch audios
+        const audiosRef = collection(db, 'audio_masters');
+        const qAudios = query(audiosRef, where('tenantId', '==', userData.groupId));
+        const snapAudios = await getDocs(qAudios);
+        let audioDocs = [];
+        snapAudios.forEach(doc => audioDocs.push({ id: doc.id, ...doc.data() }));
+        audioDocs.sort((a, b) => {
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          return dateB - dateA;
+        });
+        setAudios(audioDocs.slice(0, 3));
       } catch (error) {
         console.error("Erreur fetch choreographies:", error);
       } finally {
@@ -180,6 +194,57 @@ export default function DancadorView({ userData, associationData, onBack }) {
               <Plus className="w-4 h-4" />
               Créer ma première chorégraphie
             </a>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <h3 className="font-bold text-gray-700 mb-6 flex items-center gap-2 uppercase tracking-wider text-sm">
+          <Music className="w-4 h-4 text-blue-600" />
+          Masters Audio (Derniers enregistrements)
+        </h3>
+
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse"></div>
+            ))}
+          </div>
+        ) : audios.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {audios.map(audio => (
+              <div key={audio.id} className="bg-gray-50 border border-gray-100 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition-shadow group">
+                <div>
+                  <h4 className="font-bold text-gray-800 line-clamp-1">{audio.nom || 'Piste audio sans nom'}</h4>
+                  <p className="text-xs text-gray-500 mt-1">{audio.bpm ? `${audio.bpm} BPM` : 'BPM inconnu'}</p>
+                </div>
+                <div className="mt-4 flex gap-2">
+                  {audio.audioUrl && (
+                    <a 
+                      href={audio.audioUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-blue-50 border border-blue-200 rounded-lg text-xs font-bold text-blue-600 hover:bg-blue-100 transition-colors"
+                    >
+                      <PlayCircle className="w-3.5 h-3.5" />
+                      Écouter
+                    </a>
+                  )}
+                  <button 
+                    onClick={() => handleShare(audio.id)}
+                    className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-500 hover:text-blue-600 hover:border-blue-600 transition-colors"
+                    title="Partager l'audio"
+                  >
+                    {copiedId === audio.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+            <Music className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium mb-4">Aucun enregistrement audio disponible.</p>
           </div>
         )}
       </div>

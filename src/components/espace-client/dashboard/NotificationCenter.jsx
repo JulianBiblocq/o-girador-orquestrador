@@ -17,7 +17,7 @@ export default function NotificationCenter({ userData }) {
     const q = query(
       usersRef, 
       where('groupId', '==', userData.groupId),
-      where('statutActuel', '==', 'pending')
+      where('isNew', '==', true)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {

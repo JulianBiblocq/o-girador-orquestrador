@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or } from 'firebase/firestore';
 import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
@@ -287,17 +287,22 @@ export default function GlobalHealthStats({ userData, associationData }) {
       try {
         // 1. Fetch Users (Membres Actifs) + Pupitres
         const usersRef = collection(db, 'users');
-        const qUsers = query(usersRef, where('groupId', '==', userData.groupId), where('statutActuel', '==', 'active'));
+        // Fetch all users for the group and filter in JS to exactly match Organizador logic
+        const qUsers = query(usersRef, where('groupId', '==', userData.groupId));
         const usersSnap = await safeGetDocs(qUsers);
         
         let pupitresArray = [];
         let activeMembersCount = 0;
         if (usersSnap) {
-          activeMembersCount = usersSnap.size;
           const pupitreCounts = {};
           usersSnap.forEach(docSnap => {
             const user = docSnap.data();
             if (!user) return;
+            // Match Organizador (Trombinoscope) logic: only hide explicitly archived members
+            if (user.statutActuel === 'archived') return;
+            
+            activeMembersCount++;
+            
             let insts = [];
             if (user.instrument) insts.push(user.instrument);
             else if (Array.isArray(user.instrumentsJoues) && user.instrumentsJoues.length > 0) insts = user.instrumentsJoues;
@@ -349,6 +354,75 @@ export default function GlobalHealthStats({ userData, associationData }) {
           upcomingEventsCount = upcomingEvents.length;
           nextEvent = upcomingEventsCount > 0 ? (upcomingEvents[0].title || upcomingEvents[0].nom || 'Événement') : null;
           latestEventsArray = upcomingEvents.slice(0, 3);
+        }
+
+        // 2.5 Fetch Audio Masters (Bandes Son du Séquenceur)
+        let audioMasters = [];
+        try {
+          const audioMastersRef = collection(db, 'audio_masters');
+          const qAudioMasters = query(audioMastersRef, or(
+            where('tenantId', '==', userData.groupId),
+            where('mestreId', '==', userData.uid)
+          ));
+          const snapAudioMasters = await safeGetDocs(qAudioMasters);
+          if (snapAudioMasters) {
+            snapAudioMasters.forEach(docSnap => {
+              const data = docSnap.data();
+              audioMasters.push({
+                id: docSnap.id,
+                label: data.nom || 'Master Audio',
+                date: data.createdAt ? new Date(data.createdAt).getTime() : 0,
+                type: 'storage',
+                isPublic: false,
+                audioUrl: data.audioUrl,
+                bpm: data.bpm
+              });
+            });
+          }
+        } catch (err) {
+          console.warn('Error fetching audio_masters from Firestore:', err);
+        }
+
+        // Direct Storage fallback (exports_danse)
+        try {
+          const { ref, listAll, getDownloadURL, getMetadata } = await import('firebase/storage');
+          const { storage } = await import('../../../services/firebase');
+          
+          const paths = [`exports_danse/tenant_local`, `exports_danse/${userData.groupId}`];
+          for (const path of paths) {
+            try {
+              const folderRef = ref(storage, path);
+              const res = await listAll(folderRef);
+              for (const item of res.items) {
+                const baseName = item.name.split('.')[0];
+                if (!audioMasters.some(a => a.id.includes(baseName))) {
+                  try {
+                    const url = await getDownloadURL(item);
+                    let date = Date.now();
+                    try {
+                      const meta = await getMetadata(item);
+                      if (meta.timeCreated) date = new Date(meta.timeCreated).getTime();
+                    } catch (e) {}
+                    
+                    audioMasters.push({
+                      id: item.name,
+                      label: item.name.replace(/\.[^/.]+$/, ''),
+                      date,
+                      type: 'storage',
+                      isPublic: false,
+                      audioUrl: url
+                    });
+                  } catch (itemErr) {
+                    console.warn('Skipping item due to error:', item.name, itemErr);
+                  }
+                }
+              }
+            } catch (e) {
+               // Ignore folder not found
+            }
+          }
+        } catch (err) {
+          console.warn('Error fetching direct storage for exports_danse:', err);
         }
 
         // 3. Fetch Rhythms from Storage (Catalogue Séquenceur) & Firestore
@@ -457,6 +531,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
               });
             });
           }
+          
+          audioMasters.forEach(item => rhythmsList.push(item));
           
           rhythmsList.sort((a, b) => {
             if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
@@ -569,6 +645,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
             });
           });
         }
+        
+        audioMasters.forEach(item => choreosList.push(item));
         
         choreosList.sort((a, b) => {
           if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
@@ -1007,19 +1085,33 @@ export default function GlobalHealthStats({ userData, associationData }) {
                       <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
                         <div className="flex-1 mr-2 min-w-0">
                           {(item.type === 'rhythm' || item.type === 'section') ? (
-                            <a 
-                              href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"
-                              title="Ouvrir dans le séquenceur"
-                            >
-                              {item.label}
-                            </a>
+                            <div className="flex items-center gap-2">
+                              <a 
+                                href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"
+                                title="Ouvrir dans le séquenceur"
+                              >
+                                {item.label}
+                              </a>
+                              {item.audioUrl && (
+                                <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                  Écouter
+                                </a>
+                              )}
+                            </div>
                           ) : (
-                            <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                              {item.audioUrl && (
+                                <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                  Écouter
+                                </a>
+                              )}
+                            </div>
                           )}
-                          {item.date > 0 && <span className="text-xs text-gray-400 block">{new Date(item.date).toLocaleDateString()}</span>}
+                          {item.date > 0 && <span className="text-xs text-gray-400 block mt-1">{new Date(item.date).toLocaleDateString()}</span>}
                         </div>
                         <div className="flex items-center gap-1">
                           {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && !item.isExternal && (
@@ -1129,7 +1221,14 @@ export default function GlobalHealthStats({ userData, associationData }) {
                     {filteredList.map((item, idx) => (
                       <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group hover:border-pink-200 transition-colors">
                         <div className="flex-1 mr-2 min-w-0">
-                          <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                            {item.audioUrl && (
+                              <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded hover:bg-pink-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                Écouter
+                              </a>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs text-gray-500">
                               {item.date && typeof item.date !== 'number' ? new Date(item.date.seconds * 1000).toLocaleDateString('fr-FR') : (item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date inconnue')}
