@@ -34,9 +34,10 @@ export default function Header({
   };
 
   return (
-    <header className="sticky top-0 z-40 bg-[#fdf6e7]/95 backdrop-blur border-b-2 border-[#4a2e1b] shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20 gap-3">
+    <>
+      <header className="sticky top-0 z-[100] bg-[#fdf6e7]/95 backdrop-blur border-b-2 border-[#4a2e1b] shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20 gap-3">
           
           {/* Logo & Brand: 
               - Smartphone (<768px): Icon + Title (Ultra-compact, no subtitle badge, no tagline)
@@ -249,10 +250,11 @@ export default function Header({
 
         </div>
       </div>
+    </header>
 
       {/* Drawer / Panel Coulissant pour Mobile & Tablette (< 1024px) */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex justify-end">
+        <div className="fixed inset-0 z-[200] lg:hidden flex justify-end">
           {/* Backdrop avec flou */}
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
@@ -484,6 +486,6 @@ export default function Header({
         groupId={userData?.groupId}
         appSource="Orchestrador"
       />
-    </header>
+    </>
   );
 }
