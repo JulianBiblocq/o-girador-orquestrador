@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, orderBy, limit, addDoc, deleteDoc, d
 import { ArrowLeft, Users, Store, Flame, MapPin, Tag, Search, Compass, Award, Sparkles, Trophy, Medal, Globe2, MessageSquare, Send, Trash2, Loader2 } from 'lucide-react';
 import artisansData from '../../../data/artisans.json';
 import WorldMapNetwork from '../../ui/WorldMapNetwork';
+import TerreiroSharedBank from './TerreiroSharedBank';
 
 export default function TerreiroView({ associationData, userData, onBack }) {
   const [baterias, setBaterias] = useState([]);
@@ -276,6 +277,9 @@ export default function TerreiroView({ associationData, userData, onBack }) {
           ))}
         </div>
       </section>
+
+      {/* Section 2.25 : La Banque de Partage */}
+      <TerreiroSharedBank userData={userData} />
 
       {/* Section 2.5 : Le Mur d'Échanges */}
       <section className="bg-[#fdf6e7] rounded-xl border border-[#e6d5c3] shadow-sm p-6">

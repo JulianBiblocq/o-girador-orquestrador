@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
             // -- UTILISATEUR EXISTANT --
             const data = userDocSnap.data();
             setUserData(data);
-            if (data.role === 'admin' || data.isAdmin) {
+            if (data.role === 'admin' || data.isAdmin || data.canWriteOrchestrador === true) {
               setIsAdmin(true);
             } else {
               setIsAdmin(false);

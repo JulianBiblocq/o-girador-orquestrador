@@ -4,7 +4,7 @@ import packsData from '../../../data/packs.json';
 import UniverseWarningModal from './UniverseWarningModal';
 import { useAuth } from '../../../hooks/useAuth';
 import { db } from '../../../services/firebase';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment, collection, getDocs, query, where } from 'firebase/firestore';
 import { useCurrency } from '../../../context/CurrencyContext';
 
 export default function AddonsStore({ associationData, onBack }) {
@@ -19,12 +19,24 @@ export default function AddonsStore({ associationData, onBack }) {
   const points = associationData?.contributionPoints || 0;
 
   useEffect(() => {
-    // Simule un petit délai réseau pour l'effet Skeleton
-    const timer = setTimeout(() => {
-      setPacks(packsData.packs || []);
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
+    const fetchPacks = async () => {
+      try {
+        const q = query(collection(db, 'premium_packs'), where('isActive', '==', true));
+        const snapshot = await getDocs(q);
+        const dynamicPacks = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+        
+        // On combine les packs statiques avec les packs dynamiques
+        // (les dynamiques apparaissent en premier)
+        setPacks([...dynamicPacks, ...(packsData.packs || [])]);
+      } catch (err) {
+        console.error("Erreur chargement packs:", err);
+        setPacks(packsData.packs || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchPacks();
   }, []);
 
   const recommendedPacks = packs.filter(p => p.universeId === userUniverse || p.isUniversal);

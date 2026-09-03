@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { ArrowLeft, Music, Activity, Star, Download, Search, ChevronDown, ChevronUp, Users } from 'lucide-react';
+import { ArrowLeft, Music, Activity, Star, Download, Search, ChevronDown, ChevronUp, Users, BookOpen, Hammer } from 'lucide-react';
 import LZString from 'lz-string';
 
 export default function PublicCatalogue({ onNavigateHome }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'rhythm' | 'choreography'
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'rhythm' | 'choreography' | 'culture' | 'fabrication'
   const [expandedAuthors, setExpandedAuthors] = useState({});
 
   const toggleAuthor = (authorName) => {
@@ -27,9 +27,17 @@ export default function PublicCatalogue({ onNavigateHome }) {
         const qPresets = query(presetsRef, where('visibility', 'in', ['admin_global', 'public']));
         const qChoro = query(choroRef, where('isPublic', '==', true));
         
-        const [presetsSnap, choroSnap] = await Promise.all([
+        const docsRef = collection(db, 'documents');
+        const qDocs = query(docsRef, where('isPublic', '==', true));
+        
+        const modelsRef = collection(db, 'instrument_models');
+        const qModels = query(modelsRef, where('isPublic', '==', true));
+        
+        const [presetsSnap, choroSnap, docsSnap, modelsSnap] = await Promise.all([
           getDocs(qPresets),
-          getDocs(qChoro)
+          getDocs(qChoro),
+          getDocs(qDocs),
+          getDocs(qModels)
         ]);
         
         let allItems = [];
@@ -54,6 +62,28 @@ export default function PublicCatalogue({ onNavigateHome }) {
         
         choroSnap.forEach(doc => {
           allItems.push({ id: doc.id, itemType: 'choreography', ...doc.data() });
+        });
+        
+        docsSnap.forEach(doc => {
+          const data = doc.data();
+          allItems.push({ 
+            id: doc.id, 
+            itemType: 'culture', 
+            ...data,
+            title: data.titre || data.nom || 'Document',
+            dateCreation: data.createdAt || data.dateAjout 
+          });
+        });
+        
+        modelsSnap.forEach(doc => {
+          const data = doc.data();
+          allItems.push({ 
+            id: doc.id, 
+            itemType: 'fabrication', 
+            ...data,
+            title: data.nom || 'Modèle',
+            dateCreation: data.createdAt 
+          });
         });
         
         // Tri du plus récent au plus ancien
@@ -162,6 +192,18 @@ export default function PublicCatalogue({ onNavigateHome }) {
           >
             <Activity className="w-4 h-4" /> Chorégraphies
           </button>
+          <button 
+            onClick={() => setActiveFilter('culture')}
+            className={`px-5 py-2.5 rounded-full font-bold text-sm transition-colors flex items-center gap-2 ${activeFilter === 'culture' ? 'bg-[#8b4513] text-white shadow-md' : 'bg-white text-[#8b4513] border border-[#d4b895] hover:bg-amber-50'}`}
+          >
+            <BookOpen className="w-4 h-4" /> Fiches Culturelles
+          </button>
+          <button 
+            onClick={() => setActiveFilter('fabrication')}
+            className={`px-5 py-2.5 rounded-full font-bold text-sm transition-colors flex items-center gap-2 ${activeFilter === 'fabrication' ? 'bg-[#8b4513] text-white shadow-md' : 'bg-white text-[#8b4513] border border-[#d4b895] hover:bg-amber-50'}`}
+          >
+            <Hammer className="w-4 h-4" /> Fabrication d'instruments
+          </button>
         </div>
 
         {/* Grid */}
@@ -218,14 +260,24 @@ export default function PublicCatalogue({ onNavigateHome }) {
                             
                             {item.itemType === 'rhythm' ? (
                               <Music className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
-                            ) : (
+                            ) : item.itemType === 'choreography' ? (
                               <Activity className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
+                            ) : item.itemType === 'culture' ? (
+                              <BookOpen className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
+                            ) : (
+                              <Hammer className="w-20 h-20 text-white/40 group-hover:scale-110 transition-transform duration-500" />
                             )}
                             
                             {/* Badge Type */}
                             <div className="absolute top-4 left-4 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border border-white/20 shadow-sm">
-                              {item.itemType === 'rhythm' ? <Music className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
-                              {item.itemType === 'rhythm' ? 'Rythme' : 'Chorégraphie'}
+                              {item.itemType === 'rhythm' ? <Music className="w-3.5 h-3.5" /> : 
+                               item.itemType === 'choreography' ? <Activity className="w-3.5 h-3.5" /> : 
+                               item.itemType === 'culture' ? <BookOpen className="w-3.5 h-3.5" /> : 
+                               <Hammer className="w-3.5 h-3.5" />}
+                              {item.itemType === 'rhythm' ? 'Rythme' : 
+                               item.itemType === 'choreography' ? 'Chorégraphie' : 
+                               item.itemType === 'culture' ? 'Culture' : 
+                               'Modèle'}
                             </div>
                           </div>
 

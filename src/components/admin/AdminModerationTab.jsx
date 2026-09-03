@@ -23,6 +23,14 @@ export default function AdminModerationTab() {
       const qChoro = query(choroRef, where('isPublic', '==', true));
       const snapChoro = await getDocs(qChoro);
       
+      const docsRef = collection(db, 'documents');
+      const qDocs = query(docsRef, where('isPublic', '==', true));
+      const snapDocs = await getDocs(qDocs);
+      
+      const modelsRef = collection(db, 'instrument_models');
+      const qModels = query(modelsRef, where('isPublic', '==', true));
+      const snapModels = await getDocs(qModels);
+      
       const allItems = [];
       
       snapRhythms.forEach(doc => {
@@ -47,6 +55,32 @@ export default function AdminModerationTab() {
           title: data.title || 'Chorégraphie Sans Nom',
           authorName: data.authorName || data.groupId || 'Inconnu',
           groupId: data.groupId,
+          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
+        });
+      });
+      
+      snapDocs.forEach(doc => {
+        const data = doc.data();
+        allItems.push({
+          id: doc.id,
+          collection: 'documents',
+          type: 'Document (Varal)',
+          title: data.titre || 'Document Sans Titre',
+          authorName: data.authorName || data.authorGroupId || data.groupId || 'Inconnu',
+          groupId: data.authorGroupId || data.groupId,
+          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
+        });
+      });
+      
+      snapModels.forEach(doc => {
+        const data = doc.data();
+        allItems.push({
+          id: doc.id,
+          collection: 'instrument_models',
+          type: 'Modèle Fabrication',
+          title: data.nom || 'Modèle Sans Nom',
+          authorName: data.authorName || data.authorGroupId || data.groupId || 'Inconnu',
+          groupId: data.authorGroupId || data.groupId,
           createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
         });
       });
@@ -166,9 +200,14 @@ export default function AdminModerationTab() {
                     </td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        item.type === 'Audio' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                        item.type === 'Audio' ? 'bg-blue-100 text-blue-700' : 
+                        item.type === 'Chorégraphie' ? 'bg-purple-100 text-purple-700' :
+                        item.type === 'Modèle Fabrication' ? 'bg-amber-100 text-amber-700' :
+                        'bg-gray-100 text-gray-700'
                       }`}>
-                        {item.type === 'Audio' ? <Music className="w-3.5 h-3.5" /> : <Activity className="w-3.5 h-3.5" />}
+                        {item.type === 'Audio' ? <Music className="w-3.5 h-3.5" /> : 
+                         item.type === 'Chorégraphie' ? <Activity className="w-3.5 h-3.5" /> : 
+                         null}
                         {item.type}
                       </span>
                     </td>

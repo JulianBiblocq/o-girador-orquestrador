@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or } from 'firebase/firestore';
-import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2 } from 'lucide-react';
+import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2, BookOpen, Hammer, Mic, Store } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
+import CreatePackModal from '../modals/CreatePackModal';
 import { awardAxePoints } from '../../../services/gamificationService';
 import presetsDump from '../../../presets_dump.json';
 
@@ -40,6 +41,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
     nextEventName: null,
     totalRhythms: 0,
     totalChoreos: 0,
+    totalVarals: 0,
     newsletterSubscribers: 0,
     vitrineViews: 0
   });
@@ -49,9 +51,28 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [isSubscribersModalOpen, setIsSubscribersModalOpen] = useState(false);
   const [isRhythmsModalOpen, setIsRhythmsModalOpen] = useState(false);
   const [isChoreosModalOpen, setIsChoreosModalOpen] = useState(false);
+  const [isCultureModalOpen, setIsCultureModalOpen] = useState(false);
+  const [isFabricationModalOpen, setIsFabricationModalOpen] = useState(false);
+  const [isToadasModalOpen, setIsToadasModalOpen] = useState(false);
+  const [isCreatePackModalOpen, setIsCreatePackModalOpen] = useState(false);
+  const [currentPackType, setCurrentPackType] = useState(null);
+  const [selectedPackItems, setSelectedPackItems] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
   const [activeRhythmTab, setActiveRhythmTab] = useState('rhythm'); // 'rhythm', 'section', 'storage'
   const [activeChoreoTab, setActiveChoreoTab] = useState('choreo'); // 'choreo', 'section', 'storage'
+  const isAdmin = associationData?.isAdmin || associationData?.role === 'admin' || userData?.role === 'super-admin' || userData?.isSystemAdmin === true;
+  const toggleItemSelection = (item) => {
+    setSelectedPackItems(prev => {
+      const exists = prev.find(i => i.id === item.id);
+      if (exists) return prev.filter(i => i.id !== item.id);
+      return [...prev, item];
+    });
+  };
+
+  const handleOpenCreatePack = (packType) => {
+    setCurrentPackType(packType);
+    setIsCreatePackModalOpen(true);
+  };
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -258,6 +279,45 @@ export default function GlobalHealthStats({ userData, associationData }) {
       setStats(prev => ({
         ...prev,
         latestChoreos: prev.latestChoreos.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: true } : i)
+      }));
+    } catch (error) {
+      console.error("Erreur publication:", error);
+      showToast("Une erreur est survenue lors de la publication.");
+    }
+  };
+
+  const handlePublishVaral = async (item) => {
+    if (item.isPublic) {
+      showToast("Cette fiche est déjà publique !");
+      return;
+    }
+    if (!window.confirm("Voulez-vous vraiment publier cette fiche dans le Terreiro ?")) return;
+
+    try {
+      const creationRef = doc(db, item.sourceCollection, item.id);
+      const updateData = {
+        isPublic: true,
+        authorName: associationData?.name || associationData?.nom || 'Association',
+        authorGroupId: userData.groupId
+      };
+
+      if (!item.rewardClaimed) {
+        updateData.rewardClaimed = true;
+      }
+
+      await updateDoc(creationRef, updateData);
+
+      if (!item.rewardClaimed) {
+        const assocRef = doc(db, 'associations', userData.groupId);
+        await updateDoc(assocRef, { contributionPoints: increment(25) });
+        showToast(`Félicitations ! Fiche en ligne. Vous remportez 25 Points d'Axé !`);
+      } else {
+        showToast("Votre fiche est désormais publique !");
+      }
+
+      setStats(prev => ({
+        ...prev,
+        latestVarals: prev.latestVarals.map(i => i.id === item.id ? { ...i, isPublic: true, rewardClaimed: true } : i)
       }));
     } catch (error) {
       console.error("Erreur publication:", error);
@@ -668,6 +728,75 @@ export default function GlobalHealthStats({ userData, associationData }) {
            subscribersList.sort((a, b) => b.date - a.date);
         }
 
+        // 6. Fetch Varals (documents & instrument_models)
+        let varalsList = [];
+        try {
+          const qDocs = query(collection(db, 'documents'), where('groupId', '==', userData.groupId));
+          const docsSnap = await safeGetDocs(qDocs);
+          if (docsSnap) {
+            docsSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              if (data.type === 'culture_fiche') {
+                varalsList.push({
+                  id: docSnap.id,
+                  label: data.titre || data.nom || 'Sans titre',
+                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+                  type: 'culture',
+                  categorieFiche: data.categorieFiche || 'Général',
+                  isPublic: data.isPublic || false,
+                  rewardClaimed: data.rewardClaimed || false,
+                  sourceCollection: 'documents'
+                });
+              } else if (data.type === 'song') {
+                varalsList.push({
+                  id: docSnap.id,
+                  label: data.titre || data.nom || 'Sans titre',
+                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+                  type: 'toada',
+                  isPublic: data.isPublic || false,
+                  rewardClaimed: data.rewardClaimed || false,
+                  sourceCollection: 'documents'
+                });
+              } else if (data.type === 'fabrication') {
+                varalsList.push({
+                  id: docSnap.id,
+                  label: data.titre || data.nom || 'Sans titre',
+                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+                  type: 'fabrication',
+                  isPublic: data.isPublic || false,
+                  rewardClaimed: data.rewardClaimed || false,
+                  sourceCollection: 'documents'
+                });
+              }
+            });
+          }
+
+          const qModels = query(collection(db, 'instrument_models'), where('groupId', '==', userData.groupId));
+          const modelsSnap = await safeGetDocs(qModels);
+          if (modelsSnap) {
+            modelsSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              varalsList.push({
+                id: docSnap.id,
+                label: data.nom || 'Sans titre',
+                date: data.createdAt?.toMillis?.() || 0,
+                type: 'fabrication',
+                isPublic: data.isPublic || false,
+                rewardClaimed: data.rewardClaimed || false,
+                sourceCollection: 'instrument_models'
+              });
+            });
+          }
+          
+          varalsList.sort((a, b) => b.date - a.date);
+        } catch (varalErr) {
+          console.warn("Varal fetch error:", varalErr.message);
+        }
+
+        const cultureItems = varalsList.filter(v => v.type === 'culture');
+        const fabricationItems = varalsList.filter(v => v.type === 'fabrication');
+        const toadaItems = varalsList.filter(v => v.type === 'toada');
+
         setStats({
           activeMembers: activeMembersCount,
           pupitres: pupitresArray, // Full array
@@ -676,10 +805,16 @@ export default function GlobalHealthStats({ userData, associationData }) {
           latestEvents: latestEventsArray,
           totalRhythms: rhythmsList.length,
           totalChoreos: choreosList.length,
+          totalCulture: cultureItems.length,
+          totalFabrication: fabricationItems.length,
+          totalToadas: toadaItems.length,
           newsletterSubscribers: subscribersList.length,
           latestSubscribers: subscribersList,
           latestRhythms: rhythmsList,
           latestChoreos: choreosList,
+          latestCulture: cultureItems,
+          latestFabrication: fabricationItems,
+          latestToadas: toadaItems,
           vitrineViews: associationData?.vitrineViews || 0
         });
       } catch (error) {
@@ -837,6 +972,98 @@ export default function GlobalHealthStats({ userData, associationData }) {
       ]
     },
     {
+      title: "📚 Encyclopédie & Savoirs",
+      items: [
+        {
+          label: "Fiches Culture",
+          value: stats.totalCulture,
+          icon: <BookOpen className="w-5 h-5 text-amber-600" />,
+          bgColor: hasPack('association') ? "bg-amber-100" : "bg-gray-100",
+          borderColor: hasPack('association') ? "border-amber-200" : "border-gray-200",
+          isLocked: !hasPack('association'),
+          interactive: hasPack('association'),
+          onClick: () => setIsCultureModalOpen(true),
+          secondary: stats.latestCulture?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestCulture.slice(0, 3).map((v, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate flex-1">{v.label}</span>
+                </div>
+              ))}
+              {stats.latestCulture.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestCulture.length - 3} autres
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-amber-500/80 uppercase tracking-wider block">Culture</span>
+              {!hasPack('association') && <Lock className="w-4 h-4 text-gray-400" />}
+            </div>
+          )
+        },
+        {
+          label: "Fabrication",
+          value: stats.totalFabrication,
+          icon: <Hammer className="w-5 h-5 text-orange-600" />,
+          bgColor: hasPack('association') ? "bg-orange-100" : "bg-gray-100",
+          borderColor: hasPack('association') ? "border-orange-200" : "border-gray-200",
+          isLocked: !hasPack('association'),
+          interactive: hasPack('association'),
+          onClick: () => setIsFabricationModalOpen(true),
+          secondary: stats.latestFabrication?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestFabrication.slice(0, 3).map((v, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate flex-1">{v.label}</span>
+                </div>
+              ))}
+              {stats.latestFabrication.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestFabrication.length - 3} autres
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-orange-500/80 uppercase tracking-wider block">Fabrication</span>
+              {!hasPack('association') && <Lock className="w-4 h-4 text-gray-400" />}
+            </div>
+          )
+        },
+        {
+          label: "Toadas",
+          value: stats.totalToadas,
+          icon: <Mic className="w-5 h-5 text-yellow-600" />,
+          bgColor: hasPack('association') ? "bg-yellow-100" : "bg-gray-100",
+          borderColor: hasPack('association') ? "border-yellow-200" : "border-gray-200",
+          isLocked: !hasPack('association'),
+          interactive: hasPack('association'),
+          onClick: () => setIsToadasModalOpen(true),
+          secondary: stats.latestToadas?.length > 0 ? (
+            <div className="mt-3 space-y-1.5">
+              {stats.latestToadas.slice(0, 3).map((v, idx) => (
+                <div key={idx} className="flex items-center justify-between text-[10px]">
+                  <span className="text-gray-500 truncate flex-1">{v.label}</span>
+                </div>
+              ))}
+              {stats.latestToadas.length > 3 && (
+                <div className="text-[9px] text-gray-400 text-center pt-1 italic">
+                  + {stats.latestToadas.length - 3} autres
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-[10px] font-bold text-yellow-500/80 uppercase tracking-wider block">Toadas</span>
+              {!hasPack('association') && <Lock className="w-4 h-4 text-gray-400" />}
+            </div>
+          )
+        }
+      ]
+    },
+    {
       title: "📅 Activité & Vitrine",
       items: [
         {
@@ -903,7 +1130,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1">
         {statGroups.map((group, gIdx) => (
           <div key={gIdx} className="flex flex-col gap-3">
             <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2 mb-1">
@@ -1040,12 +1267,23 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 <Music className="w-5 h-5 text-purple-600" />
                 Rythmes Audio
               </h3>
-              <button 
-                onClick={() => setIsRhythmsModalOpen(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                {isAdmin && selectedPackItems.length > 0 && selectedPackItems.some(i => i.type === 'rhythm' || i.type === 'section') && (
+                  <button 
+                    onClick={() => handleOpenCreatePack('rhythms')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  >
+                    <Store className="w-4 h-4" />
+                    Créer Pack ({selectedPackItems.filter(i => i.type === 'rhythm' || i.type === 'section').length})
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setIsRhythmsModalOpen(false); setSelectedPackItems([]); }}
+                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             <div className="flex border-b border-gray-100 bg-gray-50 px-2">
@@ -1081,39 +1319,51 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 }
                 return (
                   <div className="space-y-3">
-                    {filteredList.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group">
-                        <div className="flex-1 mr-2 min-w-0">
-                          {(item.type === 'rhythm' || item.type === 'section') ? (
-                            <div className="flex items-center gap-2">
-                              <a 
-                                href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"
-                                title="Ouvrir dans le séquenceur"
-                              >
-                                {item.label}
-                              </a>
-                              {item.audioUrl && (
-                                <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                                  Écouter
-                                </a>
+                    {filteredList.map((item, idx) => {
+                      const isSelected = selectedPackItems.some(i => i.id === item.id);
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border flex items-center justify-between group transition-colors ${isSelected ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100 hover:border-purple-200'}`}>
+                          <div className="flex-1 mr-2 min-w-0 flex items-center gap-3">
+                            {isAdmin && (item.type === 'rhythm' || item.type === 'section') && (
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => toggleItemSelection(item)}
+                                className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                              />
+                            )}
+                            <div>
+                              {(item.type === 'rhythm' || item.type === 'section') ? (
+                                <div className="flex items-center gap-2">
+                                  <a 
+                                    href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"
+                                    title="Ouvrir dans le séquenceur"
+                                  >
+                                    {item.label}
+                                  </a>
+                                  {item.audioUrl && (
+                                    <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                      Écouter
+                                    </a>
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
+                                  {item.audioUrl && (
+                                    <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                      Écouter
+                                    </a>
+                                  )}
+                                </div>
                               )}
+                              {item.date > 0 && <span className="text-xs text-gray-400 block mt-1">{new Date(item.date).toLocaleDateString()}</span>}
                             </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-800 line-clamp-1">{item.label}</span>
-                              {item.audioUrl && (
-                                <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded hover:bg-purple-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                                  Écouter
-                                </a>
-                              )}
-                            </div>
-                          )}
-                          {item.date > 0 && <span className="text-xs text-gray-400 block mt-1">{new Date(item.date).toLocaleDateString()}</span>}
-                        </div>
-                        <div className="flex items-center gap-1">
+                          </div>
+                          <div className="flex items-center gap-1">
                           {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && !item.isExternal && (
                             <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mr-2">
                               <button 
@@ -1159,7 +1409,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
                           )}
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
                 );
               })()}
@@ -1177,12 +1428,23 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 <Activity className="w-6 h-6 text-pink-600" />
                 Chorégraphies & Danse
               </h3>
-              <button 
-                onClick={() => setIsChoreosModalOpen(false)}
-                className="p-1 text-pink-400 hover:text-pink-700 hover:bg-pink-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                {isAdmin && selectedPackItems.length > 0 && selectedPackItems.some(i => i.type === 'choreo') && (
+                  <button 
+                    onClick={() => handleOpenCreatePack('choreos')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  >
+                    <Store className="w-4 h-4" />
+                    Créer Pack ({selectedPackItems.filter(i => i.type === 'choreo').length})
+                  </button>
+                )}
+                <button 
+                  onClick={() => { setIsChoreosModalOpen(false); setSelectedPackItems([]); }}
+                  className="p-1 text-pink-400 hover:text-pink-700 hover:bg-pink-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             
             <div className="flex border-b bg-gray-50">
@@ -1218,30 +1480,42 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 }
                 return (
                   <div className="space-y-3">
-                    {filteredList.map((item, idx) => (
-                      <div key={idx} className="p-3 bg-gray-50 rounded-lg border border-gray-100 flex items-center justify-between group hover:border-pink-200 transition-colors">
-                        <div className="flex-1 mr-2 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
-                            {item.audioUrl && (
-                              <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded hover:bg-pink-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                                Écouter
-                              </a>
+                    {filteredList.map((item, idx) => {
+                      const isSelected = selectedPackItems.some(i => i.id === item.id);
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border flex items-center justify-between group transition-colors ${isSelected ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100 hover:border-pink-200'}`}>
+                          <div className="flex-1 mr-2 min-w-0 flex items-center gap-3">
+                            {isAdmin && (item.type === 'choreo' || item.type === 'section') && (
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => toggleItemSelection(item)}
+                                className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                              />
                             )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                                {item.audioUrl && (
+                                  <a href={item.audioUrl} target="_blank" rel="noreferrer" className="text-[10px] font-bold bg-pink-100 text-pink-700 px-2 py-0.5 rounded hover:bg-pink-200 transition-colors flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                                    Écouter
+                                  </a>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-gray-500">
+                                  {item.date && typeof item.date !== 'number' ? new Date(item.date.seconds * 1000).toLocaleDateString('fr-FR') : (item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date inconnue')}
+                                </span>
+                                {item.isGlobal && (
+                                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+                                    Par {item.authorName}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-gray-500">
-                              {item.date && typeof item.date !== 'number' ? new Date(item.date.seconds * 1000).toLocaleDateString('fr-FR') : (item.date ? new Date(item.date).toLocaleDateString('fr-FR') : 'Date inconnue')}
-                            </span>
-                            {item.isGlobal && (
-                              <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
-                                Par {item.authorName}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center">
+                          
+                          <div className="flex items-center">
                           {item.isExternal ? (
                             <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
                               <Globe className="w-4 h-4" />
@@ -1268,6 +1542,112 @@ export default function GlobalHealthStats({ userData, associationData }) {
                           )}
                         </div>
                       </div>
+                    );
+                  })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Culture Modal */}
+      {isCultureModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-amber-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-700">
+                  <BookOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Fiches Culture</h3>
+                  <p className="text-sm text-gray-500">{stats.latestCulture?.length || 0} fiches disponibles</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {isAdmin && selectedPackItems.length > 0 && selectedPackItems.some(i => i.type === 'culture') && (
+                  <button 
+                    onClick={() => handleOpenCreatePack('culture')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  >
+                    <Store className="w-4 h-4" />
+                    Créer Pack ({selectedPackItems.filter(i => i.type === 'culture').length})
+                  </button>
+                )}
+                <button onClick={() => { setIsCultureModalOpen(false); setSelectedPackItems([]); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-white">
+              {(() => {
+                const filteredList = stats.latestCulture || [];
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      Aucune fiche culturelle.
+                    </div>
+                  );
+                }
+
+                const groupedByCat = filteredList.reduce((acc, item) => {
+                  const cat = item.categorieFiche || 'Général';
+                  if (!acc[cat]) acc[cat] = [];
+                  acc[cat].push(item);
+                  return acc;
+                }, {});
+                
+                return (
+                  <div className="space-y-6">
+                    {Object.keys(groupedByCat).sort().map(catName => (
+                      <div key={catName} className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-amber-50 px-4 py-3 border-b border-gray-200 font-bold text-amber-900 flex justify-between items-center">
+                          <span>{catName}</span>
+                          <span className="text-xs bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full">{groupedByCat[catName].length} fiches</span>
+                        </div>
+                        <div className="divide-y divide-gray-100 bg-white">
+                          {groupedByCat[catName].map((item, idx) => {
+                            const isSelected = selectedPackItems.some(i => i.id === item.id);
+                            return (
+                              <div key={idx} className={`p-4 transition-colors flex items-center justify-between group ${isSelected ? 'bg-amber-50' : 'hover:bg-gray-50'}`}>
+                                <div className="flex-1 mr-2 min-w-0 flex items-center gap-3">
+                                  {isAdmin && (
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isSelected}
+                                      onChange={() => toggleItemSelection(item)}
+                                      className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                                    />
+                                  )}
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-[10px] text-gray-400">
+                                        {item.date ? new Date(item.date).toLocaleDateString('fr-FR') : ''}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center">
+                                <button 
+                                  onClick={() => handlePublishVaral(item)}
+                                  disabled={item.isPublic}
+                                  className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default opacity-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                  title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                                >
+                                  <Globe className="w-4 h-4" />
+                                </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 );
@@ -1276,6 +1656,205 @@ export default function GlobalHealthStats({ userData, associationData }) {
           </div>
         </div>
       )}
+
+      {/* Fabrication Modal */}
+      {isFabricationModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-orange-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-700">
+                  <Hammer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Tutos Fabrication</h3>
+                  <p className="text-sm text-gray-500">{stats.latestFabrication?.length || 0} créations disponibles</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {isAdmin && selectedPackItems.length > 0 && selectedPackItems.some(i => i.type === 'fabrication') && (
+                  <button 
+                    onClick={() => handleOpenCreatePack('fabrication')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  >
+                    <Store className="w-4 h-4" />
+                    Créer Pack ({selectedPackItems.filter(i => i.type === 'fabrication').length})
+                  </button>
+                )}
+                <button onClick={() => { setIsFabricationModalOpen(false); setSelectedPackItems([]); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-white">
+              {(() => {
+                const filteredList = stats.latestFabrication || [];
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      Aucune fiche de fabrication.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {filteredList.map((item, idx) => {
+                      const isSelected = selectedPackItems.some(i => i.id === item.id);
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border flex items-center justify-between group transition-colors ${isSelected ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100 hover:border-orange-200'}`}>
+                          <div className="flex-1 mr-2 min-w-0 flex items-center gap-3">
+                            {isAdmin && (
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => toggleItemSelection(item)}
+                                className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                              />
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-bold text-gray-500 bg-gray-200 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                                  {item.sourceCollection === 'instrument_models' ? 'Modèle Tuto' : 'Document'}
+                                </span>
+                                <span className="text-[10px] text-gray-400">
+                                  {item.date ? new Date(item.date).toLocaleDateString('fr-FR') : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                          <button 
+                            onClick={() => handlePublishVaral(item)}
+                            disabled={item.isPublic}
+                            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default opacity-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                            title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                          >
+                            <Globe className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toadas Modal */}
+      {isToadasModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl flex flex-col overflow-hidden max-h-[85vh]">
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-yellow-50/50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-100 rounded-xl flex items-center justify-center text-yellow-700">
+                  <Mic className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Toadas</h3>
+                  <p className="text-sm text-gray-500">{stats.latestToadas?.length || 0} toadas disponibles</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {isAdmin && selectedPackItems.length > 0 && selectedPackItems.some(i => i.type === 'toada') && (
+                  <button 
+                    onClick={() => handleOpenCreatePack('toadas')}
+                    className="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors shadow-sm"
+                  >
+                    <Store className="w-4 h-4" />
+                    Créer Pack ({selectedPackItems.filter(i => i.type === 'toada').length})
+                  </button>
+                )}
+                <button onClick={() => { setIsToadasModalOpen(false); setSelectedPackItems([]); }} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-5 overflow-y-auto flex-1 bg-white">
+              {(() => {
+                const filteredList = stats.latestToadas || [];
+                if (filteredList.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      Aucune toada.
+                    </div>
+                  );
+                }
+                return (
+                  <div className="space-y-3">
+                    {filteredList.map((item, idx) => {
+                      const isSelected = selectedPackItems.some(i => i.id === item.id);
+                      return (
+                        <div key={idx} className={`p-3 rounded-lg border flex items-center justify-between group transition-colors ${isSelected ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-100 hover:border-yellow-200'}`}>
+                          <div className="flex-1 mr-2 min-w-0 flex items-center gap-3">
+                            {isAdmin && (
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => toggleItemSelection(item)}
+                                className="w-4 h-4 text-amber-600 rounded border-gray-300 focus:ring-amber-500 cursor-pointer"
+                              />
+                            )}
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-gray-800 truncate">{item.label}</h4>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] text-gray-400">
+                                  {item.date ? new Date(item.date).toLocaleDateString('fr-FR') : ''}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center">
+                            <button 
+                              onClick={() => handlePublishVaral(item)}
+                              disabled={item.isPublic}
+                              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default opacity-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                              title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
+                            >
+                              <Globe className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Create Pack */}
+      <CreatePackModal 
+        isOpen={isCreatePackModalOpen}
+        onClose={() => { setIsCreatePackModalOpen(false); setSelectedPackItems([]); }}
+        selectedItems={selectedPackItems.filter(i => {
+          if (currentPackType === 'rhythms') return i.type === 'rhythm' || i.type === 'section';
+          if (currentPackType === 'choreos') return i.type === 'choreo';
+          if (currentPackType === 'culture') return i.type === 'culture';
+          if (currentPackType === 'fabrication') return i.type === 'fabrication';
+          if (currentPackType === 'toadas') return i.type === 'toada';
+          return false;
+        })}
+        packType={currentPackType}
+        authorUid={userData?.uid}
+        onSuccess={() => {
+          showToast("Pack Premium créé et publié dans la Boutique !");
+          setSelectedPackItems([]);
+        }}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (
