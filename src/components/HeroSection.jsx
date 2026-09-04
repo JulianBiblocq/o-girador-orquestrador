@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../services/firebase';
+import { fetchHeroMetrics } from '../services/cmsService';
 
 export default function HeroSection({ activeUniverse, onNavigate }) {
   const { t } = useLanguage();
