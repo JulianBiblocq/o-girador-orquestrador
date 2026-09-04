@@ -6,6 +6,8 @@ import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
 import AxePointsBadge from './AxePointsBadge';
 import LeaveReviewModal from './espace-client/LeaveReviewModal';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../services/firebase';
 
 export default function Header({ 
   activeUniverse, 
@@ -21,6 +23,50 @@ export default function Header({
   const [universeDropdownOpen, setUniverseDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [launchingApp, setLaunchingApp] = useState(null);
+
+  const handleAppLaunch = async (e, url, appKey) => {
+    e.preventDefault();
+    if (launchingApp) return;
+
+    if (!currentUser || appKey === 'mostrador') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setLaunchingApp(appKey);
+    const newTab = window.open('', '_blank');
+
+    let finalUrl = url;
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (isLocal) {
+      if (appKey === 'organizador') finalUrl = 'http://localhost:5173';
+      else if (appKey === 'sequenciador') finalUrl = 'http://localhost:5174';
+      else if (appKey === 'dancador') finalUrl = 'http://localhost:5175';
+    }
+
+    try {
+      const getSSOToken = httpsCallable(functions, 'getCrossAppAuthToken');
+      const res = await getSSOToken();
+      const customToken = res.data?.customToken;
+
+      if (customToken) {
+        const targetUrl = new URL(finalUrl);
+        targetUrl.searchParams.set('ssoToken', customToken);
+        if (newTab) newTab.location.href = targetUrl.toString();
+        else window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+      } else {
+        if (newTab) newTab.location.href = finalUrl;
+        else window.open(finalUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.warn("[Hub SSO] Erreur génération token SSO :", err);
+      if (newTab) newTab.location.href = finalUrl;
+      else window.open(finalUrl, '_blank', 'noopener,noreferrer');
+    } finally {
+      setLaunchingApp(null);
+    }
+  };
 
   const currentUniverseObj = universData.universes.find(u => u.id === activeUniverse) || universData.universes[0];
 
@@ -208,10 +254,28 @@ export default function Header({
                     >
                       Accéder à mon espace
                     </button>
-                    <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Organizador</a>
+                    <a 
+                      href="https://organizador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+                      className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'organizador' ? 'Connexion en cours...' : 'Organizador'}
+                    </a>
                     <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Mostrador (Vitrine)</a>
-                    <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Sequenciador</a>
-                    <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10">Dançador</a>
+                    <a 
+                      href="https://sequenciador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+                      className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'sequenciador' ? 'Connexion en cours...' : 'Sequenciador'}
+                    </a>
+                    <a 
+                      href="https://dancador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+                      className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10 ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'dancador' ? 'Connexion en cours...' : 'Dançador'}
+                    </a>
                     <button
                       onClick={() => {
                         setShowReviewModal(true);
@@ -443,10 +507,28 @@ export default function Header({
                     >
                       Accéder à mon espace
                     </button>
-                    <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Organizador</a>
+                    <a 
+                      href="https://organizador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+                      className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'organizador' ? 'Connexion en cours...' : 'Organizador'}
+                    </a>
                     <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Mostrador</a>
-                    <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Sequenciador</a>
-                    <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1">Dançador</a>
+                    <a 
+                      href="https://sequenciador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+                      className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'sequenciador' ? 'Connexion en cours...' : 'Sequenciador'}
+                    </a>
+                    <a 
+                      href="https://dancador.o-girador.com" 
+                      onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+                      className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1 ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
+                    >
+                      {launchingApp === 'dancador' ? 'Connexion en cours...' : 'Dançador'}
+                    </a>
                     <button 
                       onClick={() => { setShowReviewModal(true); setMobileMenuOpen(false); }}
                       className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1"

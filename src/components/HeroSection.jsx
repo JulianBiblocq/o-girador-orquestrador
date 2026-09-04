@@ -2,14 +2,53 @@ import React from 'react';
 import { PlayCircle, Sparkles, ArrowRight, LayoutDashboard } from 'lucide-react';
 import universData from '../data/univers.json';
 import { useLanguage } from '../hooks/useLanguage';
-import { fetchHeroMetrics } from '../services/cmsService';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
+import { httpsCallable } from 'firebase/functions';
+import { functions } from '../services/firebase';
 
 export default function HeroSection({ activeUniverse, onNavigate }) {
   const { t } = useLanguage();
   const universeObj = universData.universes.find(u => u.id === activeUniverse) || universData.universes[0];
 
+  const { currentUser } = useAuth();
   const [cmsMetrics, setCmsMetrics] = useState(null);
+  const [launchingApp, setLaunchingApp] = useState(null);
+
+  const handleAppLaunch = async (e, url, appKey) => {
+    e.preventDefault();
+    if (launchingApp) return;
+
+    if (!currentUser || appKey === 'mostrador' || appKey === 'hub') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setLaunchingApp(appKey);
+    const newTab = window.open('', '_blank');
+
+    try {
+      const getSSOToken = httpsCallable(functions, 'getCrossAppAuthToken');
+      const res = await getSSOToken();
+      const customToken = res.data?.customToken;
+
+      if (customToken) {
+        const targetUrl = new URL(url);
+        targetUrl.searchParams.set('ssoToken', customToken);
+        if (newTab) newTab.location.href = targetUrl.toString();
+        else window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
+      } else {
+        if (newTab) newTab.location.href = url;
+        else window.open(url, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.warn("[Hero SSO] Erreur SSO fallback direct :", err);
+      if (newTab) newTab.location.href = url;
+      else window.open(url, '_blank', 'noopener,noreferrer');
+    } finally {
+      setLaunchingApp(null);
+    }
+  };
 
   useEffect(() => {
     fetchHeroMetrics().then(m => {
@@ -67,7 +106,11 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 max-w-5xl mx-auto">
-          <a href="https://organizador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
+          <a 
+            href="https://organizador.o-girador.com" 
+            onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+            className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
+          >
             <img src="/logos/organizador.png" alt="Organizador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#4a2e1b] font-cordel leading-tight">{getMetric('manager', 'hero.metrics.manager')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('managerSub', 'hero.metrics.managerSub')}</div>
@@ -77,12 +120,20 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
             <div className="text-xl font-black text-[#d2691e] font-cordel leading-tight">{getMetric('vitrine', 'hero.metrics.vitrine')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('vitrineSub', 'hero.metrics.vitrineSub')}</div>
           </a>
-          <a href="https://sequenciador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
+          <a 
+            href="https://sequenciador.o-girador.com" 
+            onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+            className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
+          >
             <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#18181b] font-cordel leading-tight">{getMetric('sequenceur', 'hero.metrics.sequenceur')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('sequenceurSub', 'hero.metrics.sequenceurSub')}</div>
           </a>
-          <a href="https://dancador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
+          <a 
+            href="https://dancador.o-girador.com" 
+            onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+            className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
+          >
             <img src="/logos/dancador.png" alt="Dançador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#991b1b] font-cordel leading-tight">{getMetric('dancador', 'hero.metrics.dancador')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('dancadorSub', 'hero.metrics.dancadorSub')}</div>

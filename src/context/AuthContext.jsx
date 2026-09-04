@@ -3,7 +3,8 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   signInWithPopup, 
-  signOut 
+  signOut,
+  signInWithCustomToken 
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -19,6 +20,41 @@ export function AuthProvider({ children }) {
   const [isProvisioning, setIsProvisioning] = useState(false);
 
   useEffect(() => {
+    // Détection et traitement du SSO Custom Token
+    const searchParams = new URLSearchParams(window.location.search);
+    const ssoToken = searchParams.get('ssoToken');
+    let isSSOPending = Boolean(ssoToken);
+
+    if (ssoToken) {
+      // Nettoyage immédiat de l'URL pour ne pas laisser traîner le jeton dans l'historique
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('ssoToken');
+      window.history.replaceState({}, document.title, cleanUrl.toString());
+
+      let tokenUid = null;
+      try {
+        const parts = ssoToken.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+          tokenUid = payload.uid || payload.sub || null;
+        }
+      } catch (_) {}
+
+      if (auth.currentUser && tokenUid && auth.currentUser.uid === tokenUid) {
+        isSSOPending = false;
+      } else {
+        setLoading(true);
+        signInWithCustomToken(auth, ssoToken)
+          .catch((err) => {
+            console.warn("[Orchestrad'Or SSO] Erreur custom token :", err);
+            setLoading(false);
+          })
+          .finally(() => {
+            isSSOPending = false;
+          });
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
@@ -71,8 +107,13 @@ export function AuthProvider({ children }) {
       } else {
         setUserData(null);
         setIsAdmin(false);
+        if (!isSSOPending) {
+          setLoading(false);
+        }
       }
-      setLoading(false);
+      if (user) {
+        setLoading(false);
+      }
     });
 
     return () => unsubscribe();
