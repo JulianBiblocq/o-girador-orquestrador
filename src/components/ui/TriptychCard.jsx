@@ -1,5 +1,6 @@
 import React from 'react';
-import { Disc3, Calendar, Globe, Github, Footprints, LayoutDashboard } from 'lucide-react';
+import { Disc3, Calendar, Globe, Footprints, LayoutDashboard } from 'lucide-react';
+import { Github } from './SocialIcons';
 import { useLanguage } from '../../hooks/useLanguage';
 
 export default function TriptychCard({ type }) {

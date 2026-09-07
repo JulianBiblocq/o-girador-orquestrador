@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { db, storage } from '../../../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { UploadCloud, CheckCircle2, Loader2, Image as ImageIcon, Save, MapPin, Share2, Facebook, Instagram, Youtube, Globe } from 'lucide-react';
+import { UploadCloud, CheckCircle2, Loader2, Image as ImageIcon, Save, MapPin, Share2, Globe } from 'lucide-react';
+import { Facebook, Instagram, Youtube } from '../../ui/SocialIcons';
 
 export default function TabIdentity({ associationData, groupId }) {
   

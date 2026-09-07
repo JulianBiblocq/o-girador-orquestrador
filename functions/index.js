@@ -1,10 +1,14 @@
 const functions = require('firebase-functions');
-const admin = require('firebase-admin');
+const { initializeApp, getApps } = require('firebase-admin/app');
+const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 const express = require('express');
 const cors = require('cors');
 
-admin.initializeApp();
-const db = admin.firestore();
+// Initialisation modulaire de Firebase Admin SDK
+if (!getApps().length) {
+  initializeApp();
+}
+const db = getFirestore();
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -17,6 +21,13 @@ const API_KEY = process.env.VITE_OGIRADOR_HUB_API_KEY || "o-girador-telemetry-se
 const apiKeyAuth = (req, res, next) => {
   const key = req.headers['x-api-key'] || req.query.apiKey;
   if (!key || key !== API_KEY) {
+    console.warn("[Auth] Accès non autorisé sur l'API Hub:", {
+      ip: req.ip,
+      method: req.method,
+      path: req.originalUrl,
+      hasApiKeyHeader: !!req.headers['x-api-key'],
+      hasApiKeyQuery: !!req.query.apiKey
+    });
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing API Key' });
   }
   next();
@@ -28,10 +39,11 @@ app.post('/submit', apiKeyAuth, async (req, res) => {
     const { collectionType, data } = payload;
     
     if (!collectionType || !data) {
+      console.warn("[Validation] Payload incomplet reçu dans /submit:", { payload });
       return res.status(400).json({ error: 'Missing collectionType or data' });
     }
 
-    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+    const timestamp = FieldValue.serverTimestamp();
 
     if (collectionType === 'crash') {
       // Groupement des erreurs (Crash)
@@ -48,54 +60,64 @@ app.post('/submit', apiKeyAuth, async (req, res) => {
         // Le crash existe déjà, on incrémente
         const docId = snapshot.docs[0].id;
         await errorRef.doc(docId).update({
-          occurrencesCount: admin.firestore.FieldValue.increment(1),
+          occurrencesCount: FieldValue.increment(1),
           lastSeenAt: timestamp,
-          // Optionnel : on pourrait stocker les derniers `groupId` dans un tableau
         });
+        console.log(`[Crash] Occurrence incrémentée pour doc ${docId} (app: ${appId})`);
         return res.status(200).json({ success: true, message: 'Crash occurrence updated' });
       } else {
         // Nouveau crash
-        await errorRef.add({
+        const newDoc = await errorRef.add({
           ...data,
           occurrencesCount: 1,
           createdAt: timestamp,
           lastSeenAt: timestamp,
           status: 'new'
         });
-        return res.status(201).json({ success: true, message: 'New crash registered' });
+        console.log(`[Crash] Nouveau crash enregistré avec l'ID: ${newDoc.id} (app: ${appId})`);
+        return res.status(201).json({ success: true, message: 'New crash registered', id: newDoc.id });
       }
     } 
     else if (collectionType === 'ticket') {
-      await db.collection('hub_tickets').add({
+      const newDoc = await db.collection('hub_tickets').add({
         ...data,
         createdAt: timestamp,
         status: data.status || 'new'
       });
-      return res.status(201).json({ success: true, message: 'Ticket created' });
+      console.log(`[Ticket] Nouveau ticket support créé: ${newDoc.id}`);
+      return res.status(201).json({ success: true, message: 'Ticket created', id: newDoc.id });
     }
     else if (collectionType === 'review') {
-      await db.collection('hub_reviews').add({
+      const newDoc = await db.collection('hub_reviews').add({
         ...data,
         createdAt: timestamp
       });
-      return res.status(201).json({ success: true, message: 'Review created' });
+      console.log(`[Review] Nouvel avis créé: ${newDoc.id}`);
+      return res.status(201).json({ success: true, message: 'Review created', id: newDoc.id });
     }
     else if (collectionType === 'telemetry') {
-      await db.collection('hub_telemetry_daily').add({
+      const newDoc = await db.collection('hub_telemetry_daily').add({
         ...data,
         timestamp: timestamp
       });
-      return res.status(201).json({ success: true, message: 'Telemetry logged' });
+      console.log(`[Telemetry] Métrique enregistrée: ${newDoc.id}`);
+      return res.status(201).json({ success: true, message: 'Telemetry logged', id: newDoc.id });
     }
     else {
+      console.warn(`[Validation] Type de collection non reconnu: ${collectionType}`);
       return res.status(400).json({ error: 'Invalid collectionType' });
     }
 
   } catch (error) {
-    console.error("Erreur Ingestion Télémétrie:", error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error("[Erreur Ingestion Télémétrie /submit]:", error);
+    return res.status(500).json({ error: 'Internal Server Error', details: error.message });
   }
 });
 
-// Expose the API
+// Route de diagnostic / santé (healthcheck)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', service: 'o-girador-hub-telemetry', nodeVersion: process.version });
+});
+
+// Expose the API via Firebase Functions
 exports.telemetry = functions.https.onRequest(app);

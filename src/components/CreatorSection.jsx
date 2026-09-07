@@ -1,5 +1,6 @@
 import React from 'react';
-import { User, Music, Code, Heart, Sparkles, Github, Mail, Globe, ArrowLeft, Disc } from 'lucide-react';
+import { User, Music, Code, Heart, Sparkles, Mail, Globe, ArrowLeft, Disc } from 'lucide-react';
+import { Github } from './ui/SocialIcons';
 
 export default function CreatorSection({ onNavigateHome }) {
   const projects = [

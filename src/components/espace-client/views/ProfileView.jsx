@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { db, storage } from '../../../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { ArrowLeft, Save, Building2, Globe, MapPin, Mail, Instagram, Facebook, Link as LinkIcon, Shield, Eye, EyeOff, CheckCircle2, Phone, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Globe, MapPin, Mail, Link as LinkIcon, Shield, Eye, EyeOff, CheckCircle2, Phone, UploadCloud, Image as ImageIcon } from 'lucide-react';
+import { Facebook, Instagram } from '../../ui/SocialIcons';
 
 export default function ProfileView({ associationData, userData, onBack }) {
   const [loading, setLoading] = useState(false);

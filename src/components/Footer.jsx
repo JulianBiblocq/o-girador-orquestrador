@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart, Github, Globe, Compass, ArrowUp, Lock, ShieldCheck } from 'lucide-react';
+import { Heart, Globe, Compass, ArrowUp, Lock, ShieldCheck } from 'lucide-react';
+import { Github } from './ui/SocialIcons';
 import universData from '../data/univers.json';
 import { useAuth } from '../hooks/useAuth';
 
