@@ -279,7 +279,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
       </section>
 
       {/* Section 2.25 : La Banque de Partage */}
-      <TerreiroSharedBank userData={userData} />
+      <TerreiroSharedBank userData={userData} associationData={associationData} />
 
       {/* Section 2.5 : Le Mur d'Échanges */}
       <section className="bg-[#fdf6e7] rounded-xl border border-[#e6d5c3] shadow-sm p-6">

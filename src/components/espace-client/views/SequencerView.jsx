@@ -5,6 +5,8 @@ import { ref, listAll } from 'firebase/storage';
 import { ArrowLeft, Plus, Music, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import LZString from 'lz-string';
 import { awardAxePoints } from '../../../services/gamificationService';
+import DeleteConfirmModal from '../modals/DeleteConfirmModal';
+import { deleteAudioResource } from '../../../services/audioDeletionService';
 
 export default function SequencerView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
@@ -12,6 +14,8 @@ export default function SequencerView({ userData, associationData, onBack }) {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -59,8 +63,6 @@ export default function SequencerView({ userData, associationData, onBack }) {
       showToast("Cette création est déjà publique !");
       return;
     }
-
-    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
 
     try {
       const isEligible = isValidForPoints(item);
@@ -124,22 +126,29 @@ export default function SequencerView({ userData, associationData, onBack }) {
     }
   };
 
-  const handleDelete = async (item) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer le rythme "${item.title}" ?`)) return;
+  const requestDelete = (item) => {
+    setItemToDelete(item);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
 
     try {
-      if (item.source === 'firestore') {
-        await deleteDoc(doc(db, 'presets', item.id));
-      } else {
-        showToast("Impossible de supprimer un ancien fichier Storage ici.");
-        return;
-      }
+      await deleteAudioResource(itemToDelete, {
+        groupId: userData?.groupId,
+        collection: 'presets'
+      });
       
-      setItems(items.filter(i => i.id !== item.id));
-      showToast("Rythme supprimé avec succès !");
+      // Filtrage immédiat du state local pour un retour visuel instantané
+      setItems(prevItems => prevItems.filter(i => i.id !== itemToDelete.id));
+      showToast("Le fichier audio a bien été retiré du catalogue.");
+      setItemToDelete(null);
     } catch (error) {
       console.error("Erreur suppression:", error);
       showToast("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -205,7 +214,10 @@ export default function SequencerView({ userData, associationData, onBack }) {
               isAudio,
               isPublic: !!publishedData?.isPublic,
               rewardClaimed: !!publishedData?.rewardClaimed,
-              dateCreation: parseInt(rawName.split('_')[0]) || 0
+              dateCreation: parseInt(rawName.split('_')[0]) || 0,
+              storagePath: `documents/${userData.groupId}/sequencer/${rawName}`,
+              source: 'storage',
+              type: 'storage'
             };
           })
         );
@@ -256,12 +268,15 @@ export default function SequencerView({ userData, associationData, onBack }) {
                isAudio: false,
                isPublic: data.visibility === 'public' || data.visibility === 'admin_global' || !!publishedData?.isPublic,
                rewardClaimed: !!publishedData?.rewardClaimed,
-               dateCreation: data.createdAt || 0,
-               orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
-               source: 'firestore',
-               originalData: parsedData,
-               tempo: data.tempo
-             });
+                dateCreation: data.createdAt || 0,
+                orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
+                source: 'firestore',
+                originalData: parsedData,
+                tempo: data.tempo,
+                audioUrl: data.audioUrl,
+                storagePath: data.storagePath,
+                collection: 'presets'
+              });
           };
           
           firestoreItemsMap.forEach(processFirestoreDoc);
@@ -420,7 +435,7 @@ export default function SequencerView({ userData, associationData, onBack }) {
                       {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
                     </button>
                     <button 
-                      onClick={() => handleDelete(item)}
+                      onClick={() => requestDelete(item)}
                       className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-500 hover:bg-red-50 transition-all"
                       title="Supprimer"
                     >
@@ -500,6 +515,16 @@ export default function SequencerView({ userData, associationData, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Modale de confirmation de suppression intégrée Cordel */}
+      <DeleteConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => { if (!isDeleting) setItemToDelete(null); }}
+        onConfirm={confirmDelete}
+        itemName={itemToDelete?.title}
+        itemType="le rythme"
+        isDeleting={isDeleting}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

@@ -4,17 +4,19 @@ import { getFirestore } from 'firebase/firestore';
 import { getFunctions } from 'firebase/functions';
 import { getStorage } from 'firebase/storage';
 
+const env = (typeof import.meta !== 'undefined' && import.meta.env) || (typeof process !== 'undefined' && process.env) || {};
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyMockKeyForDevOnly",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "o-girador.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "o-girador-dev",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "o-girador-dev.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "00000000000",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:00000000000:web:mockid"
+  apiKey: env.VITE_FIREBASE_API_KEY || "AIzaSyMockKeyForDevOnly",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || "o-girador.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || "o-girador-dev",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || "o-girador-dev.appspot.com",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || "00000000000",
+  appId: env.VITE_FIREBASE_APP_ID || "1:00000000000:web:mockid"
 };
 
 // Log un avertissement discret si les clés Firebase ne sont pas encore définies dans .env
-if (!import.meta.env.VITE_FIREBASE_API_KEY) {
+if (!env.VITE_FIREBASE_API_KEY && typeof window !== 'undefined') {
   console.warn("⚠️ [O Girador Firebase] Aucune variable VITE_FIREBASE_API_KEY détectée. Définissez vos clés dans un fichier .env à la racine.");
 }
 
@@ -29,6 +31,8 @@ export const functions = getFunctions(app);
 export const storage = getStorage(app);
 
 // Persistance de l'authentification dans le navigateur
-setPersistence(auth, browserLocalPersistence).catch((err) => {
-  console.error("Firebase Auth - Erreur de persistance :", err);
-});
+if (typeof window !== 'undefined') {
+  setPersistence(auth, browserLocalPersistence).catch((err) => {
+    console.error("Firebase Auth - Erreur de persistance :", err);
+  });
+}

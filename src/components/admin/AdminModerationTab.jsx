@@ -1,253 +1,181 @@
+/**
+ * Onglet d'administration du Terreiro : Modération, navette éditoriale et validation des ressources.
+ */
+
 import React, { useState, useEffect } from 'react';
-import { db } from '../../services/firebase';
-import { collection, query, where, getDocs, doc, getDoc, updateDoc, writeBatch } from 'firebase/firestore';
-import { ShieldAlert, Music, Activity, Trash2, EyeOff, Loader2 } from 'lucide-react';
+import { db } from '../../services/firebase.js';
+import { collection, getDocs } from 'firebase/firestore';
+import { CheckCircle2, AlertTriangle, XCircle, Clock, ShieldCheck, Loader2, Sparkles, Filter } from 'lucide-react';
+import { approveResource, requestResourceRevision, rejectResource } from '../../services/resourceService.js';
+import { inferDefaultTier } from '../../utils/axeTiers.js';
+import EditorialReviewModal from './EditorialReviewModal.jsx';
+
+const STATUS_BADGES = {
+  pending_review: { label: 'En attente', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
+  published: { label: 'Publié', bg: 'bg-green-100 text-green-800 border-green-200' },
+  needs_revision: { label: 'Ajustements demandés', bg: 'bg-orange-100 text-orange-800 border-orange-200' },
+  rejected: { label: 'Rejeté', bg: 'bg-red-100 text-red-800 border-red-200' },
+  draft: { label: 'Brouillon', bg: 'bg-gray-100 text-gray-700 border-gray-200' }
+};
 
 export default function AdminModerationTab() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('pending_review');
   const [processingId, setProcessingId] = useState(null);
+  const [reviewModalItem, setReviewModalItem] = useState(null);
 
-  useEffect(() => {
-    fetchPublicItems();
-  }, []);
-
-  const fetchPublicItems = async () => {
+  const fetchItems = async () => {
     setLoading(true);
     try {
-      const rhythmsRef = collection(db, 'rhythms');
-      const qRhythms = query(rhythmsRef, where('isPublic', '==', true));
-      const snapRhythms = await getDocs(qRhythms);
-      
-      const choroRef = collection(db, 'choreographies');
-      const qChoro = query(choroRef, where('isPublic', '==', true));
-      const snapChoro = await getDocs(qChoro);
-      
-      const docsRef = collection(db, 'documents');
-      const qDocs = query(docsRef, where('isPublic', '==', true));
-      const snapDocs = await getDocs(qDocs);
-      
-      const modelsRef = collection(db, 'instrument_models');
-      const qModels = query(modelsRef, where('isPublic', '==', true));
-      const snapModels = await getDocs(qModels);
-      
-      const allItems = [];
-      
-      snapRhythms.forEach(doc => {
-        const data = doc.data();
-        allItems.push({
-          id: doc.id,
-          collection: 'rhythms',
-          type: 'Audio',
-          title: data.title || 'Rythme Sans Nom',
-          authorName: data.authorName || data.groupId || 'Inconnu',
-          groupId: data.groupId,
-          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
+      const collections = ['rhythms', 'choreographies', 'documents', 'instrument_models'];
+      const snaps = await Promise.all(collections.map(c => getDocs(collection(db, c))));
+      const fetched = [];
+
+      snaps.forEach((snap, idx) => {
+        const colName = collections[idx];
+        snap.forEach(docSnap => {
+          const d = docSnap.data();
+          const pubStatus = d.publicationStatus || (d.isPublic ? 'published' : 'pending_review');
+          fetched.push({
+            id: docSnap.id,
+            collection: colName,
+            title: d.title || d.titre || d.nom || d.name || 'Sans titre',
+            authorName: d.authorName || 'Inconnu',
+            authorGroupId: d.authorGroupId || d.groupId,
+            tier: d.tier || inferDefaultTier(colName, d.type),
+            publicationStatus: pubStatus,
+            isPublic: Boolean(d.isPublic),
+            rewardClaimed: Boolean(d.rewardClaimed),
+            createdAt: d.createdAt?.toMillis ? d.createdAt.toMillis() : Date.now()
+          });
         });
       });
-      
-      snapChoro.forEach(doc => {
-        const data = doc.data();
-        allItems.push({
-          id: doc.id,
-          collection: 'choreographies',
-          type: 'Chorégraphie',
-          title: data.title || 'Chorégraphie Sans Nom',
-          authorName: data.authorName || data.groupId || 'Inconnu',
-          groupId: data.groupId,
-          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
-        });
-      });
-      
-      snapDocs.forEach(doc => {
-        const data = doc.data();
-        allItems.push({
-          id: doc.id,
-          collection: 'documents',
-          type: 'Document (Varal)',
-          title: data.titre || 'Document Sans Titre',
-          authorName: data.authorName || data.authorGroupId || data.groupId || 'Inconnu',
-          groupId: data.authorGroupId || data.groupId,
-          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
-        });
-      });
-      
-      snapModels.forEach(doc => {
-        const data = doc.data();
-        allItems.push({
-          id: doc.id,
-          collection: 'instrument_models',
-          type: 'Modèle Fabrication',
-          title: data.nom || 'Modèle Sans Nom',
-          authorName: data.authorName || data.authorGroupId || data.groupId || 'Inconnu',
-          groupId: data.authorGroupId || data.groupId,
-          createdAt: data.createdAt?.toMillis ? data.createdAt.toMillis() : Date.now()
-        });
-      });
-      
-      // Trier du plus récent au plus ancien
-      allItems.sort((a, b) => b.createdAt - a.createdAt);
-      
-      setItems(allItems);
-    } catch (error) {
-      console.error("Erreur lors de la récupération du catalogue:", error);
+
+      fetched.sort((a, b) => b.createdAt - a.createdAt);
+      setItems(fetched);
+    } catch (err) {
+      console.error("Erreur récupération modération:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRevoke = async (item) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir retirer "${item.title}" du catalogue public ? L'association perdra 50 points de Karma.`)) {
-      return;
-    }
+  useEffect(() => { fetchItems(); }, []);
 
+  const handleApprove = async (item) => {
+    if (!window.confirm(`Approuver et publier "${item.title}" ? La prime d'Axé sera versée au groupe.`)) return;
     setProcessingId(item.id);
     try {
-      // 1. Mettre à jour l'item pour isPublic: false
-      const itemRef = doc(db, item.collection, item.id);
-      
-      // 2. Récupérer l'association pour réduire les points
-      let newPoints = 0;
-      if (item.groupId) {
-        const assocRef = doc(db, 'associations', item.groupId);
-        const assocSnap = await getDoc(assocRef);
-        
-        if (assocSnap.exists()) {
-          const currentPoints = assocSnap.data().contributionPoints || 0;
-          newPoints = Math.max(0, currentPoints - 50); // Ne pas descendre sous zéro
-          
-          const batch = writeBatch(db);
-          batch.update(itemRef, { isPublic: false });
-          batch.update(assocRef, { contributionPoints: newPoints });
-          await batch.commit();
-        } else {
-          // Si l'association n'existe plus, on met juste à jour l'item
-          await updateDoc(itemRef, { isPublic: false });
-        }
-      } else {
-        await updateDoc(itemRef, { isPublic: false });
-      }
-
-      // 3. Mise à jour de l'UI localement
-      setItems(prev => prev.filter(i => i.id !== item.id));
-
-    } catch (error) {
-      console.error("Erreur lors de la révocation:", error);
-      alert("Une erreur est survenue lors de l'opération.");
+      await approveResource(item.collection, item.id);
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, publicationStatus: 'published', isPublic: true, rewardClaimed: true } : i));
+    } catch (err) {
+      alert("Erreur lors de l'approbation : " + err.message);
     } finally {
       setProcessingId(null);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-[#4a2e1b]">
-        <Loader2 className="w-8 h-8 animate-spin mb-4" />
-        <p className="font-bold">Chargement du catalogue public...</p>
-      </div>
-    );
-  }
+  const handleReviewSubmit = async (reviewData) => {
+    if (!reviewModalItem) return;
+    await requestResourceRevision(reviewModalItem.collection, reviewModalItem.id, reviewData);
+    setItems(prev => prev.map(i => i.id === reviewModalItem.id ? { ...i, publicationStatus: 'needs_revision', isPublic: false } : i));
+  };
+
+  const handleReject = async (item) => {
+    if (!window.confirm(`Voulez-vous vraiment rejeter ou retirer "${item.title}" ?`)) return;
+    setProcessingId(item.id);
+    try {
+      await rejectResource(item.collection, item.id, 'Contenu rejeté par la modération.');
+      setItems(prev => prev.map(i => i.id === item.id ? { ...i, publicationStatus: 'rejected', isPublic: false } : i));
+    } catch (err) {
+      alert("Erreur lors du rejet : " + err.message);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const filteredItems = items.filter(i => statusFilter === 'all' || i.publicationStatus === statusFilter);
+  const pendingCount = items.filter(i => i.publicationStatus === 'pending_review').length;
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="border-b border-gray-200 bg-gray-50/50 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center text-amber-700">
-              <ShieldAlert className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">Modération du Catalogue Public</h3>
-              <p className="text-sm text-gray-500">
-                Gérez les contenus publiés par les associations. Les contenus révoqués font perdre 50 points de Karma à leur auteur.
-              </p>
-            </div>
-          </div>
-          <div className="bg-white px-4 py-2 border border-gray-200 rounded-lg font-bold text-sm text-gray-700 shadow-sm">
-            {items.length} contenu{items.length !== 1 && 's'} public{items.length !== 1 && 's'}
-          </div>
+    <div className="space-y-6">
+      {/* Barre de filtrage */}
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl border border-gray-200">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setStatusFilter('pending_review')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${statusFilter === 'pending_review' ? 'bg-amber-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >
+            <Clock className="w-3.5 h-3.5" /> En attente ({pendingCount})
+          </button>
+          <button
+            onClick={() => setStatusFilter('published')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${statusFilter === 'published' ? 'bg-green-700 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" /> Publiés
+          </button>
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${statusFilter === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+          >
+            Tous ({items.length})
+          </button>
         </div>
+        <span className="text-xs text-gray-500 font-medium">{filteredItems.length} ressource(s) affichée(s)</span>
+      </div>
 
-        {items.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center bg-gray-50/30">
-            <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-            <h4 className="font-bold text-xl text-gray-900 mb-2">✅ Aucun contenu public pour le moment</h4>
-            <p className="text-gray-500 max-w-sm mx-auto">
-              Tout est sous contrôle. Lorsqu'une association publiera un rythme ou une chorégraphie, il apparaîtra ici.
-            </p>
-          </div>
+      {/* Tableau des ressources */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        {loading ? (
+          <div className="p-12 text-center text-amber-900"><Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" /> Chargement...</div>
+        ) : filteredItems.length === 0 ? (
+          <div className="p-12 text-center text-gray-500">Aucune ressource dans cet état.</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200 text-xs uppercase tracking-wider text-gray-500 font-bold">
-                  <th className="p-4">Création</th>
-                  <th className="p-4">Type</th>
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase border-b border-gray-200">
+                <tr>
+                  <th className="p-4">Ressource</th>
                   <th className="p-4">Auteur</th>
+                  <th className="p-4">Palier</th>
+                  <th className="p-4">Statut</th>
                   <th className="p-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {items.map(item => (
-                  <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="p-4">
-                      <p className="font-bold text-gray-900 truncate max-w-xs" title={item.title}>
-                        {item.title}
-                      </p>
-                    </td>
-                    <td className="p-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
-                        item.type === 'Audio' ? 'bg-blue-100 text-blue-700' : 
-                        item.type === 'Chorégraphie' ? 'bg-purple-100 text-purple-700' :
-                        item.type === 'Modèle Fabrication' ? 'bg-amber-100 text-amber-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {item.type === 'Audio' ? <Music className="w-3.5 h-3.5" /> : 
-                         item.type === 'Chorégraphie' ? <Activity className="w-3.5 h-3.5" /> : 
-                         null}
-                        {item.type}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className="text-sm font-medium text-gray-700 bg-gray-100 px-2 py-1 rounded">
-                        {item.authorName}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <button
-                        onClick={() => handleRevoke(item)}
-                        disabled={processingId === item.id}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all border ${
-                          processingId === item.id 
-                            ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                            : 'bg-white border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300'
-                        }`}
-                        title="Retirer du catalogue public"
-                      >
-                        {processingId === item.id ? (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Traitement...
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="w-4 h-4" />
-                            Révoquer
-                          </>
+                {filteredItems.map(item => {
+                  const badge = STATUS_BADGES[item.publicationStatus] || STATUS_BADGES.draft;
+                  const isBusy = processingId === item.id;
+                  return (
+                    <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="p-4 font-bold text-gray-900 truncate max-w-xs">{item.title}</td>
+                      <td className="p-4 text-gray-600 font-medium">{item.authorName}</td>
+                      <td className="p-4"><span className="px-2 py-0.5 rounded bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">{item.tier}</span></td>
+                      <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${badge.bg}`}>{badge.label}</span></td>
+                      <td className="p-4 text-right space-x-2">
+                        {item.publicationStatus !== 'published' && (
+                          <button onClick={() => handleApprove(item)} disabled={isBusy} className="px-2.5 py-1 rounded bg-green-600 text-white font-bold text-xs hover:bg-green-700 transition-colors" title="Approuver & Publier">
+                            {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Approuver'}
+                          </button>
                         )}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <button onClick={() => setReviewModalItem(item)} disabled={isBusy} className="px-2.5 py-1 rounded bg-amber-50 text-amber-800 border border-amber-300 font-bold text-xs hover:bg-amber-100" title="Proposer un ajustement">
+                          Ajuster
+                        </button>
+                        <button onClick={() => handleReject(item)} disabled={isBusy} className="px-2.5 py-1 rounded bg-red-50 text-red-700 border border-red-200 font-bold text-xs hover:bg-red-100" title="Rejeter">
+                          Rejeter
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
+      <EditorialReviewModal isOpen={Boolean(reviewModalItem)} onClose={() => setReviewModalItem(null)} item={reviewModalItem} onSubmit={handleReviewSubmit} />
     </div>
   );
 }

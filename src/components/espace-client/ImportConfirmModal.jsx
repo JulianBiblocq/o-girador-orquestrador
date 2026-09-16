@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { db } from '../../services/firebase';
 import { doc, getDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { DownloadCloud, Loader2, X, AlertCircle } from 'lucide-react';
+import { buildResourceCreateData } from '../../services/resourceModel';
 
 export default function ImportConfirmModal({ isOpen, onClose, importParams, associationData, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -29,19 +30,31 @@ export default function ImportConfirmModal({ isOpen, onClose, importParams, asso
       const originalData = docSnap.data();
       const originalAuthor = originalData.authorName || 'Inconnu';
 
-      // Création du duplicata pour l'association courante
-      const newData = {
+      // Création du duplicata standardisé pour l'association courante
+      const baseData = {
         ...originalData,
         groupId: associationData.groupId,
-        authorName: associationData.name || associationData.nom || 'Notre Association',
-        title: `${originalData.title || 'Création'} (Importé de ${originalAuthor})`,
-        isPublic: false, // Forcer en privé par défaut lors de l'import
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        title: `${originalData.title || 'Création'} (Importé de ${originalAuthor})`
       };
+      delete baseData.id;
 
-      // Supprimer l'ID pour que Firebase en génère un nouveau
-      delete newData.id;
+      const newData = buildResourceCreateData(
+        baseData,
+        {
+          authorGroupId: associationData.groupId,
+          authorName: associationData.name || associationData.nom || 'Notre Association'
+        },
+        {
+          collectionName,
+          originalSourceId: import_id,
+          originalAuthorName: originalAuthor,
+          isRemix: false,
+          publicationStatus: 'draft'
+        }
+      );
+
+      newData.createdAt = serverTimestamp();
+      newData.updatedAt = serverTimestamp();
 
       await addDoc(collection(db, collectionName), newData);
 

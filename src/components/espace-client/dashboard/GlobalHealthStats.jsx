@@ -5,10 +5,14 @@ import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
 import CreatePackModal from '../modals/CreatePackModal';
+import DeleteConfirmModal from '../modals/DeleteConfirmModal';
+import { deleteAudioResource } from '../../../services/audioDeletionService';
 import { awardAxePoints } from '../../../services/gamificationService';
 import presetsDump from '../../../presets_dump.json';
 
 export default function GlobalHealthStats({ userData, associationData }) {
+  const [rhythmToDelete, setRhythmToDelete] = useState(null);
+  const [isDeletingRhythm, setIsDeletingRhythm] = useState(false);
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
     if (associationData?.appAccess?.[packId] === true) return true;
@@ -80,7 +84,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
   };
 
   const handleImportPublicCatalog = async () => {
-    if (!window.confirm("Importer les rythmes par défaut dans le catalogue public ?")) return;
     try {
       showToast("Importation en cours...");
       
@@ -119,23 +122,32 @@ export default function GlobalHealthStats({ userData, associationData }) {
     }
   };
 
-  const handleDeleteRhythm = async (item) => {
-    if (!window.confirm(`Voulez-vous vraiment supprimer "${item.label}" ?`)) return;
+  const requestDeleteRhythm = (item) => {
+    setRhythmToDelete(item);
+  };
+
+  const confirmDeleteRhythm = async () => {
+    if (!rhythmToDelete) return;
+    setIsDeletingRhythm(true);
 
     try {
-      if (item.type === 'section' || item.type === 'rhythm') {
-        await deleteDoc(doc(db, 'presets', item.id));
-      } else if (item.type === 'storage') {
-        alert("Impossible de supprimer un ancien fichier Storage depuis cette interface.");
-        return;
-      }
+      await deleteAudioResource(rhythmToDelete, {
+        groupId: userData?.groupId,
+        collection: rhythmToDelete.collection || (rhythmToDelete.type === 'section' || rhythmToDelete.type === 'rhythm' ? 'presets' : 'presets')
+      });
       
-      const newRhythms = stats.latestRhythms.filter(r => r.id !== item.id);
-      setStats(prev => ({ ...prev, latestRhythms: newRhythms }));
-      showToast("Rythme supprimé avec succès !");
+      // Filtrage immédiat du state local pour un retour visuel instantané
+      setStats(prev => ({
+        ...prev,
+        latestRhythms: prev.latestRhythms.filter(r => r.id !== rhythmToDelete.id)
+      }));
+      showToast("Le fichier audio a bien été retiré du catalogue.");
+      setRhythmToDelete(null);
     } catch (error) {
       console.error("Erreur suppression:", error);
       showToast("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setIsDeletingRhythm(false);
     }
   };
 
@@ -176,7 +188,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
       showToast("Cette création est déjà publique !");
       return;
     }
-    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
 
     try {
       const isEligible = true; // Simplified for the modal, or we can check originalData.measures etc.
@@ -253,7 +264,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
       showToast("Cette création est déjà publique !");
       return;
     }
-    if (!window.confirm("Voulez-vous vraiment publier cette création dans le Terreiro ?")) return;
 
     try {
       const creationRef = doc(db, 'choreographies', item.id);
@@ -291,7 +301,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
       showToast("Cette fiche est déjà publique !");
       return;
     }
-    if (!window.confirm("Voulez-vous vraiment publier cette fiche dans le Terreiro ?")) return;
 
     try {
       const creationRef = doc(db, item.sourceCollection, item.id);
@@ -502,7 +511,9 @@ export default function GlobalHealthStats({ userData, associationData }) {
                  label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''), 
                  date: parseInt(item.name.split('_')[0]) || 0,
                  type: isJson ? 'section' : 'storage',
-                 isPublic: false
+                 isPublic: false,
+                 storagePath: `documents/${userData.groupId}/sequencer/${item.name}`,
+                 source: 'storage'
                });
             });
           } catch (storageErr) {
@@ -558,7 +569,10 @@ export default function GlobalHealthStats({ userData, associationData }) {
                 isPublic: isPublic,
                 rewardClaimed: data.rewardClaimed || false,
                 orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
-                originalData: parsedData
+                originalData: parsedData,
+                audioUrl: data.audioUrl,
+                storagePath: data.storagePath,
+                collection: 'presets'
               });
             });
           }
@@ -1400,7 +1414,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
 
                           {!item.isExternal && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); handleDeleteRhythm(item); }}
+                              onClick={(e) => { e.stopPropagation(); requestDeleteRhythm(item); }}
                               className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
                               title="Supprimer"
                             >
@@ -1854,6 +1868,16 @@ export default function GlobalHealthStats({ userData, associationData }) {
           showToast("Pack Premium créé et publié dans la Boutique !");
           setSelectedPackItems([]);
         }}
+      />
+
+      {/* Modale de confirmation de suppression Cordel */}
+      <DeleteConfirmModal
+        isOpen={!!rhythmToDelete}
+        onClose={() => { if (!isDeletingRhythm) setRhythmToDelete(null); }}
+        onConfirm={confirmDeleteRhythm}
+        itemName={rhythmToDelete?.label}
+        itemType="le rythme"
+        isDeleting={isDeletingRhythm}
       />
 
       {/* Toast Notification */}
