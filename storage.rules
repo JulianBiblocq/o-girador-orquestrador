@@ -1,0 +1,174 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ==========================================
+    // FONCTIONS UTILITAIRES DE SÉCURITÉ
+    // ==========================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    // ==========================================
+    // 1. UTILISATEURS & PROFILS
+    // ==========================================
+
+    // Photos de profil / Avatars : lecture publique (trombinoscope/vitrine), écriture par le propriétaire ou un admin
+    match /avatars/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() 
+        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre')
+        && isImage()
+        && request.resource.size < 5 * 1024 * 1024;
+      allow delete: if isAuthenticated() 
+        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre');
+    }
+
+    // ==========================================
+    // 2. SÉQUENCIAD'OR (Audio, Bounces & Signaux)
+    // ==========================================
+
+    // Signaux visuels du Mestre / Xilogravures Cordel (max 5 Mo)
+    match /sinais/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() 
+        && isImage() 
+        && request.resource.size < 5 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Bounces audio & extraits pour le catalogue et le Terreiro
+    match /bounces/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() 
+        && (isAudio() || request.resource.contentType.matches('video/webm'))
+        && request.resource.size < 30 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Enregistrements vocaux / Toadas
+    match /vocalRecordings/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() 
+        && isAudio()
+        && request.resource.size < 20 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 3. DANÇAD'OR (Chorégraphies & Vidéos)
+    // ==========================================
+
+    // Extraits vidéo et boucles chorégraphiques pour les prévisualisations
+    match /exports_danse/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() 
+        && isVideo()
+        && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 4. ORGANIZAD'OR & GESTION MULTI-TENANT
+    // ==========================================
+
+    // Justificatifs de notes de frais des adhérents (CONFIDENTIEL - max 15 Mo)
+    match /associations/{groupId}/expenses/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() 
+        && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Fichiers vitrine directs (Logos, dossiers de presse, images hero)
+    match /associations/{groupId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Sous-dossiers vitrine & médias généraux (hors sous-dossier sensible "expenses")
+    match /associations/{groupId}/{folder}/{allPaths=**} {
+      allow read: if folder != 'expenses';
+      allow create, update: if isAuthenticated() && folder != 'expenses';
+      allow delete: if isAuthenticated() && folder != 'expenses';
+    }
+
+    // Documents internes (Varal, partitions, comptes-rendus)
+    match /documents/{groupId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.size < 25 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Médias des ateliers / Workshops
+    match /workshops_media/{groupId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Studio social & médias en attente de validation
+    match /studio_validation/{groupId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.size < 30 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Justificatifs de commandes
+    match /orders/{groupId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Justificatifs de trésorerie (Opérations bancaires)
+    match /transactions/{groupId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Images partagées dans le Forum / Salons
+    match /forum_images/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() 
+        && isImage() 
+        && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // Médias génériques vidéo et image
+    match /videos/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isVideo() && request.resource.size < 100 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    match /images/{allPaths=**} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isImage() && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if isAuthenticated();
+    }
+
+    // ==========================================
+    // 5. RÈGLE PAR DÉFAUT (VERROUILLAGE TOTAL)
+    // ==========================================
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
