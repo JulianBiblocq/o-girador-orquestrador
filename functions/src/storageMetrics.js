@@ -89,25 +89,30 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
     bucket = getStorage().bucket();
   }
 
-  // 4. Constitution des 6 préfixes isolés par groupe à scanner
-  const targetPrefixes = new Set([
-    `associations/${groupId}/`,
-    `documents/${groupId}/`,
-    `workshops_media/${groupId}/`,
-    `studio_validation/${groupId}/`,
-    `orders/${groupId}/`,
-    `transactions/${groupId}/`
-  ]);
+  // 4. Constitution des préfixes isolés par groupe à scanner
+  const groupVariants = Array.from(new Set([
+    groupId,
+    rawGroupId.trim(),
+    ...(groupId.includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+  ]));
 
-  // Tolérance pour les fichiers historiques avec casse brute
-  if (rawGroupId.trim() !== groupId) {
-    const raw = rawGroupId.trim();
-    targetPrefixes.add(`associations/${raw}/`);
-    targetPrefixes.add(`documents/${raw}/`);
-    targetPrefixes.add(`workshops_media/${raw}/`);
-    targetPrefixes.add(`studio_validation/${raw}/`);
-    targetPrefixes.add(`orders/${raw}/`);
-    targetPrefixes.add(`transactions/${raw}/`);
+  const folderBases = [
+    'associations',
+    'documents',
+    'brandings',
+    'exports_danse',
+    'forum_images',
+    'transactions',
+    'workshops_media',
+    'studio_validation',
+    'orders'
+  ];
+
+  const targetPrefixes = new Set();
+  for (const variant of groupVariants) {
+    for (const base of folderBases) {
+      targetPrefixes.add(`${base}/${variant}/`);
+    }
   }
 
   // 5. Parcours et agrégation des octets avec déduplication
@@ -130,9 +135,17 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
   }
 
   // 6. Détermination du quota actuel ou déduction dynamique
-  const assocRef = db.collection('associations').doc(groupId);
-  const assocSnap = await assocRef.get();
-  const assocData = assocSnap.exists ? (assocSnap.data() || {}) : {};
+  let assocData = {};
+  let foundDocId = groupId;
+
+  for (const variant of groupVariants) {
+    const snap = await db.collection('associations').doc(variant).get();
+    if (snap.exists) {
+      assocData = snap.data() || {};
+      foundDocId = variant;
+      break;
+    }
+  }
 
   let quotaBytes = null;
   if (assocData.storage && Number(assocData.storage.quotaBytes) > 0) {
@@ -144,14 +157,21 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
     quotaBytes = resolveDefaultQuota(assocData.unlockedPacks);
   }
 
-  // 7. Mise à jour atomique dans Firestore
+  // 7. Mise à jour atomique dans Firestore pour toutes les variantes d'ID connues
   const storageUpdate = {
     usedBytes: totalBytes,
     lastCalculatedAt: FieldValue.serverTimestamp(),
     quotaBytes: quotaBytes
   };
 
-  await assocRef.set({ storage: storageUpdate }, { merge: true });
+  const targetDocs = Array.from(new Set([groupId, foundDocId, ...(groupId.includes('sam') ? ['Samambaia', 'samambaia'] : [])]));
+  for (const docId of targetDocs) {
+    try {
+      await db.collection('associations').doc(docId).set({ storage: storageUpdate }, { merge: true });
+    } catch (err) {
+      console.warn(`[StorageMetrics] Erreur écriture storage pour doc ${docId}:`, err.message);
+    }
+  }
 
   console.log(`[StorageMetrics] Quota recalculé pour ${groupId} : ${totalBytes} / ${quotaBytes} octets.`);
 

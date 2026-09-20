@@ -741,7 +741,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
         const { storage } = await import('../../../services/firebase');
 
         // A. exports_danse
-        const paths = [`exports_danse/tenant_local`, `exports_danse/${groupId}`];
+        const paths = [`exports_danse/tenant_local`, ...groupVariants.map(g => `exports_danse/${g}`)];
         for (const path of paths) {
           try {
             const folderRef = ref(storage, path);
@@ -776,7 +776,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
 
         // B. Fichiers Audio Séquenceur (Storage)
         try {
-          const folderRef = ref(storage, `documents/${groupId}/sequencer`);
+          const primaryGroup = groupVariants[0] || 'Samambaia';
+          const folderRef = ref(storage, `documents/${primaryGroup}/sequencer`);
           const res = await listAll(folderRef);
           const storageItems = [];
           res.items.forEach(item => {
@@ -787,7 +788,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
               date: parseInt(item.name.split('_')[0]) || 0,
               type: isJson ? 'section' : 'storage',
               isPublic: false,
-              storagePath: `documents/${groupId}/sequencer/${item.name}`,
+              storagePath: `documents/${primaryGroup}/sequencer/${item.name}`,
               source: 'storage'
             });
           });
