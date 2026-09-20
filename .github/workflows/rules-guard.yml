@@ -70,25 +70,28 @@ jobs:
           path: o-girador-organizador
         continue-on-error: true
 
-      - name: 📥 Extraire Dançad'Or
+      # Dançad'Or étant un dépôt privé, son extraction n'est tentée que si un secret DANCADOR_TOKEN est configuré
+      - name: 📥 Extraire Dançad'Or (si token présent)
+        if: ${{ env.DANCADOR_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
           repository: JulianBiblocq/O-GIRADOR-DANCA
+          token: ${{ secrets.DANCADOR_TOKEN }}
           path: o-girador-dancador
         continue-on-error: true
 
       # 3. Configuration de l'environnement Java (Pré-requis Émulateurs Firebase)
       - name: ☕ Configurer Java 21 LTS (Headless Émulateurs)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
-      # 4. Configuration de Node.js 20 LTS
-      - name: 🟢 Configurer Node.js 20 LTS
+      # 4. Configuration de Node.js 22 LTS
+      - name: 🟢 Configurer Node.js 22 LTS
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
           cache-dependency-path: o-girador-orquestrador/package-lock.json
 
