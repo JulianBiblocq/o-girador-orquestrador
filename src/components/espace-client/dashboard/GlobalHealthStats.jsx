@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, onSnapshot, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or, limit } from 'firebase/firestore';
 import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2, BookOpen, Hammer, Mic, Store } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
