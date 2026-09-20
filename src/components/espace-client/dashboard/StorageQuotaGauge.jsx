@@ -104,6 +104,14 @@ export default function StorageQuotaGauge({ groupId, associationData, onUpgrade,
       const calcFn = httpsCallable(functions, 'calculateAssociationStorageUsage');
       const res = await calcFn({ groupId: effectiveGroupId });
       if (res.data?.success) {
+        if (res.data.usedBytes !== undefined) {
+          setStorageData(prev => ({
+            ...prev,
+            usedBytes: Number(res.data.usedBytes),
+            quotaBytes: Number(res.data.quotaBytes || prev.quotaBytes),
+            lastCalculatedAt: new Date()
+          }));
+        }
         setFeedbackMsg('Actualisé');
         setTimeout(() => setFeedbackMsg(''), 3000);
       }

@@ -61,14 +61,16 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
     userData.isSystemAdmin === true ||
     userData.role === 'admin' ||
     userData.role === 'super-admin' ||
+    userData.role === 'mestre' ||
     authData.token?.isSystemAdmin === true ||
-    authData.token?.role === 'admin'
+    authData.token?.role === 'admin' ||
+    authData.token?.role === 'mestre'
   );
 
   const userGroupId = String(userData.groupId || authData.token?.groupId || '').trim().toLowerCase();
   const userRole = String(userData.role || authData.token?.role || '').toLowerCase();
   const isAuthorizedGroupAdmin = (
-    userGroupId === groupId &&
+    (userGroupId === groupId || (groupId.includes('sam') && userGroupId.includes('sam'))) &&
     ['mestre', 'admin', 'bureau', 'ca', 'super-admin'].includes(userRole)
   );
 

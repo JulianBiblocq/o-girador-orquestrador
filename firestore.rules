@@ -811,6 +811,22 @@ service cloud.firestore {
       allow write: if (isAdminOrMestre() || (getUserData().keys().hasAny(['canWriteDansador']) && getUserData().canWriteDansador == true)) && (resource == null || getUserData().get('groupId', '').lower() == resource.data.get('tenantId', '').lower() || getUserData().get('groupId', '').lower() == request.resource.data.get('tenantId', '').lower());
     }
 
+    match /user_dance_audio_files/{fileId} {
+      allow read: if isAuthenticated() && (
+        isSystemAdmin() ||
+        resource == null ||
+        resource.data.userId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && (
+        isSystemAdmin() ||
+        request.resource.data.userId == request.auth.uid
+      );
+      allow update, delete: if isAuthenticated() && (
+        isSystemAdmin() ||
+        resource.data.userId == request.auth.uid
+      );
+    }
+
     // =========================================================================
     // 10. SÉQUENCIAD'OR : MOTEUR AUDIO, PATTERNS, BALANÇOS & SIGNAUX
     // =========================================================================
