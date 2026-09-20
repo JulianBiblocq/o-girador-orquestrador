@@ -199,3 +199,8 @@ exports.getCrossAppAuthToken = onCall({ cors: true }, async (request) => {
 // Calcul et suivi des quotas de stockage par association
 const { calculateAssociationStorageUsage } = require('./src/storageMetrics');
 exports.calculateAssociationStorageUsage = calculateAssociationStorageUsage;
+
+// Provisioning rapide de comptes invités et professionnels
+const { adminCreateGuestUser } = require('./src/adminGuestUser');
+exports.adminCreateGuestUser = adminCreateGuestUser;
+

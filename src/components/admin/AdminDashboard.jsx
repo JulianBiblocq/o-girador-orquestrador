@@ -7,6 +7,7 @@ import AssociationTable from './AssociationTable';
 import AccessMatrixTable from './AccessMatrixTable';
 import SoftLockSimulator from './SoftLockSimulator';
 import AssociationModal from './AssociationModal';
+import AdminGuestModal from './AdminGuestModal';
 import BugTrackerTab from './BugTrackerTab';
 import AnalyticsTab from './AnalyticsTab';
 import TicketsTab from './TicketsTab';
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'matrix' | 'simulator'
   const [modalOpen, setModalOpen] = useState(false);
+  const [guestModalOpen, setGuestModalOpen] = useState(false);
   const [editingAssoc, setEditingAssoc] = useState(null);
 
   const handleOpenCreate = () => {
@@ -108,6 +110,7 @@ export default function AdminDashboard() {
           warningCount={warningCount}
           expiredCount={expiredCount}
           onOpenCreate={handleOpenCreate}
+          onOpenGuestModal={() => setGuestModalOpen(true)}
           onReload={reload}
         />
 
@@ -309,12 +312,17 @@ export default function AdminDashboard() {
           <NewsletterTab />
         )}
 
-        {/* Modal */}
+        {/* Modales */}
         <AssociationModal
           isOpen={modalOpen}
           initialData={editingAssoc}
           onClose={() => setModalOpen(false)}
           onSave={handleSaveAssoc}
+        />
+
+        <AdminGuestModal
+          isOpen={guestModalOpen}
+          onClose={() => setGuestModalOpen(false)}
         />
 
       </div>

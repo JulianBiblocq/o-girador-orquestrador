@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Plus, RefreshCw } from 'lucide-react';
+import { Shield, Plus, RefreshCw, UserPlus } from 'lucide-react';
 import { useLanguage } from '../../hooks/useLanguage';
 
 export default function AdminMetricsHeader({ 
@@ -8,6 +8,7 @@ export default function AdminMetricsHeader({
   warningCount, 
   expiredCount, 
   onOpenCreate, 
+  onOpenGuestModal,
   onReload 
 }) {
   const { t } = useLanguage();
@@ -28,10 +29,18 @@ export default function AdminMetricsHeader({
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
+          <button
+            onClick={onOpenGuestModal}
+            className="px-4 py-2.5 bg-[#4a2e1b] hover:bg-[#382214] text-[#fdf6e7] font-bold text-xs rounded-lg transition-all shadow flex items-center gap-2 cursor-pointer border border-[#8b4513]"
+            title="Inviter un professionnel ou créer un compte testeur"
+          >
+            <UserPlus className="w-4 h-4 text-amber-300" />
+            <span>+ Inviter Pro / Testeur</span>
+          </button>
           <button
             onClick={onOpenCreate}
-            className="px-5 py-2.5 bg-[#8b4513] hover:bg-[#6e370f] text-[#fdf6e7] font-bold text-xs rounded-lg transition-all shadow flex items-center gap-2 cursor-pointer border border-[#4a2e1b]"
+            className="px-4 py-2.5 bg-[#8b4513] hover:bg-[#6e370f] text-[#fdf6e7] font-bold text-xs rounded-lg transition-all shadow flex items-center gap-2 cursor-pointer border border-[#4a2e1b]"
           >
             <Plus className="w-4 h-4" />
             <span>{t('admin.newBtn')}</span>
