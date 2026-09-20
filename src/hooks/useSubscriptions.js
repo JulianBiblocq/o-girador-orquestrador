@@ -11,7 +11,21 @@ export function useSubscriptions() {
   useEffect(() => {
     setLoading(true);
     const unsubscribe = subscribeToAssociations((data) => {
-      setAssociations(data);
+      // Dédoublonnage robuste par clé insensible à la casse
+      const deduplicatedMap = new Map();
+      (data || []).forEach(assoc => {
+        if (!assoc) return;
+        const key = String(assoc.name || assoc.nom || assoc.id || '').trim().toLowerCase();
+        if (!deduplicatedMap.has(key)) {
+          deduplicatedMap.set(key, assoc);
+        } else {
+          const current = deduplicatedMap.get(key);
+          if (assoc.id === 'Samambaia' || Object.keys(assoc).length > Object.keys(current).length) {
+            deduplicatedMap.set(key, assoc);
+          }
+        }
+      });
+      setAssociations(Array.from(deduplicatedMap.values()));
       setLoading(false);
     });
     return () => unsubscribe();
