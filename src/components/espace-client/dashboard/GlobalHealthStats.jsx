@@ -17,6 +17,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [isDeletingRhythm, setIsDeletingRhythm] = useState(false);
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
+    if (userData?.isSystemAdmin === true || userData?.role === 'super-admin' || userData?.role === 'mestre') return true;
     if (associationData?.appAccess?.[packId] === true) return true;
     const packs = associationData?.unlockedPacks || [];
 
@@ -340,12 +341,22 @@ export default function GlobalHealthStats({ userData, associationData }) {
   // Écouteurs temps réel Firestore (onSnapshot) — Hub & Cockpit
   // ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const groupId = userData?.groupId;
+    const rawGroupId = userData?.groupId || associationData?.groupId;
     const uid = userData?.uid;
-    if (!groupId && !uid) {
+    if (!rawGroupId && !uid) {
       setLoading(false);
       return;
     }
+
+    const canonicalGroupId = rawGroupId ? String(rawGroupId).trim().toLowerCase() : '';
+    const isSamambaia = canonicalGroupId === 'samambaia' || canonicalGroupId.includes('sammbia') || userData?.mestreId === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1';
+    const effectiveMestreId = userData?.mestreId || (isSamambaia ? 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' : null);
+
+    const groupVariants = Array.from(new Set([
+      rawGroupId,
+      canonicalGroupId,
+      ...(isSamambaia ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+    ])).filter(Boolean);
 
     const unsubs = [];
 
@@ -367,8 +378,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
     };
 
     // ── 1. Users (Membres Actifs & Pupitres) ──
-    if (groupId) {
-      const qUsers = query(collection(db, 'users'), where('groupId', '==', groupId));
+    if (groupVariants.length > 0) {
+      const qUsers = query(collection(db, 'users'), where('groupId', 'in', groupVariants));
       unsubs.push(onSnapshot(qUsers, (snapshot) => {
         const pupitreCounts = {};
         let activeMembersCount = 0;
@@ -394,8 +405,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
     }
 
     // ── 2. Events (Événements à venir) ──
-    if (groupId) {
-      const qEvents = query(collection(db, 'events'), where('groupId', '==', groupId));
+    if (groupVariants.length > 0) {
+      const qEvents = query(collection(db, 'events'), where('groupId', 'in', groupVariants));
       unsubs.push(onSnapshot(qEvents, (snapshot) => {
         const today = todayStr();
         const upcomingEvents = [];
@@ -490,10 +501,28 @@ export default function GlobalHealthStats({ userData, associationData }) {
       }, (error) => console.warn('[Realtime Hub] Target presets error:', error.message)));
     }
 
+    // Presets rattachés au groupe
+    if (groupVariants.length > 0) {
+      const qGroupPresets = query(collection(db, 'presets'), where('groupId', 'in', groupVariants), limit(100));
+      unsubs.push(onSnapshot(qGroupPresets, (snapshot) => {
+        snapshot.forEach(d => presetsMap.set(d.id, d));
+        rebuildRhythmsFromPresets();
+      }, (error) => console.warn('[Realtime Hub] Group presets error:', error.message)));
+    }
+
+    // Presets du Mestre de l'association
+    if (effectiveMestreId && effectiveMestreId !== uid) {
+      const qMestrePresets = query(collection(db, 'presets'), where('mestreId', '==', effectiveMestreId), limit(100));
+      unsubs.push(onSnapshot(qMestrePresets, (snapshot) => {
+        snapshot.forEach(d => presetsMap.set(d.id, d));
+        rebuildRhythmsFromPresets();
+      }, (error) => console.warn('[Realtime Hub] Mestre presets error:', error.message)));
+    }
+
     // ── 3.5 Audio Masters ──
-    if (groupId || uid) {
+    if (groupVariants.length > 0 || uid) {
       const qAudioMasters = query(collection(db, 'audio_masters'), or(
-        where('tenantId', '==', groupId || '__none__'),
+        where('tenantId', 'in', groupVariants.length > 0 ? groupVariants : ['__none__']),
         where('mestreId', '==', uid || '__none__')
       ));
       unsubs.push(onSnapshot(qAudioMasters, (snapshot) => {
@@ -587,14 +616,23 @@ export default function GlobalHealthStats({ userData, associationData }) {
             isPublic: false
           });
         });
-        choreoAudioList.current = items;
+      choreoAudioList.current = items;
+      rebuildChoreosFromFirestore();
+    }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
+  }
+
+    // Chorégraphies du groupe
+    if (groupVariants.length > 0) {
+      const qGroupChoreo = query(collection(db, 'choreographies'), where('authorGroupId', 'in', groupVariants));
+      unsubs.push(onSnapshot(qGroupChoreo, (snapshot) => {
+        snapshot.forEach(d => choreosMap.set(d.id, d));
         rebuildChoreosFromFirestore();
-      }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
+      }, (error) => console.warn('[Realtime Hub] Group choreos error:', error.message)));
     }
 
     // ── 5. Newsletter Subscribers ──
-    if (groupId) {
-      const qNewsletter = query(collection(db, 'newsletter_subscribers'), where('groupId', '==', groupId));
+    if (groupVariants.length > 0) {
+      const qNewsletter = query(collection(db, 'newsletter_subscribers'), where('groupId', 'in', groupVariants));
       unsubs.push(onSnapshot(qNewsletter, (snapshot) => {
         const subscribersList = [];
         snapshot.forEach(docSnap => {
@@ -630,8 +668,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
       }));
     };
 
-    if (groupId) {
-      const qDocs = query(collection(db, 'documents'), where('groupId', '==', groupId));
+    if (groupVariants.length > 0) {
+      const qDocs = query(collection(db, 'documents'), where('groupId', 'in', groupVariants));
       unsubs.push(onSnapshot(qDocs, (snapshot) => {
         const items = [];
         snapshot.forEach(docSnap => {
@@ -673,7 +711,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
         rebuildVarals();
       }, (error) => console.warn('[Realtime Hub] Documents error:', error.message)));
 
-      const qModels = query(collection(db, 'instrument_models'), where('groupId', '==', groupId));
+      const qModels = query(collection(db, 'instrument_models'), where('groupId', 'in', groupVariants));
       unsubs.push(onSnapshot(qModels, (snapshot) => {
         const items = [];
         snapshot.forEach(docSnap => {

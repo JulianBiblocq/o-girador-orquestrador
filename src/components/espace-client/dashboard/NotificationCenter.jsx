@@ -31,11 +31,16 @@ export default function NotificationCenter({ userData }) {
     }
 
     const unsubs = [];
-    const groupId = userData.groupId;
+    const rawGid = userData.groupId;
+    const groupVariants = Array.from(new Set([
+      rawGid,
+      rawGid ? String(rawGid).trim().toLowerCase() : '',
+      ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+    ])).filter(Boolean);
 
     // 1. Écoute des nouveaux membres
     try {
-      const qUsers = query(collection(db, 'users'), where('groupId', '==', groupId), where('isNew', '==', true));
+      const qUsers = query(collection(db, 'users'), where('groupId', 'in', groupVariants), where('isNew', '==', true));
       const unsubUsers = onSnapshot(qUsers, (snap) => {
         setPendingCount(snap.size);
       }, () => setPendingCount(0));
@@ -55,7 +60,7 @@ export default function NotificationCenter({ userData }) {
       try {
         const qRev = query(
           collection(db, name),
-          where('authorGroupId', '==', groupId),
+          where('authorGroupId', 'in', groupVariants),
           where('publicationStatus', '==', 'needs_revision')
         );
 

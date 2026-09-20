@@ -21,10 +21,17 @@ export default function TabAnalytics({ associationData, userData }) {
         return;
       }
       
+      const rawGid = userData.groupId;
+      const groupVariants = Array.from(new Set([
+        rawGid,
+        rawGid ? String(rawGid).trim().toLowerCase() : '',
+        ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+      ])).filter(Boolean);
+
       try {
         // 1. Récupération de tous les membres pour les effectifs et pupitres
         const usersRef = collection(db, 'users');
-        const qUsers = query(usersRef, where('groupId', '==', userData.groupId));
+        const qUsers = query(usersRef, where('groupId', 'in', groupVariants));
         const usersSnap = await getDocs(qUsers);
         
         let count = 0;
@@ -69,7 +76,7 @@ export default function TabAnalytics({ associationData, userData }) {
         const eventsRef = collection(db, 'events');
         const qEvents = query(
           eventsRef, 
-          where('groupId', '==', userData.groupId)
+          where('groupId', 'in', groupVariants)
         );
         
         const eventsSnap = await getDocs(qEvents);

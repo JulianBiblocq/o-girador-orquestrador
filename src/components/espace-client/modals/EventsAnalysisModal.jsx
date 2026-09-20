@@ -27,7 +27,14 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
     }
     setLoading(true);
 
-    const qEvents = query(collection(db, 'events'), where('groupId', '==', groupId));
+    const rawGid = groupId;
+    const groupVariants = Array.from(new Set([
+      rawGid,
+      rawGid ? String(rawGid).trim().toLowerCase() : '',
+      ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+    ])).filter(Boolean);
+
+    const qEvents = query(collection(db, 'events'), where('groupId', 'in', groupVariants));
     const unsub = onSnapshot(qEvents, (snapshot) => {
       const tzOffset = (new Date()).getTimezoneOffset() * 60000;
       const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];

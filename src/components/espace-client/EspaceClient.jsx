@@ -29,16 +29,37 @@ export default function EspaceClient({ onNavigateHome }) {
   const [importParams, setImportParams] = useState(null);
   const [showImportModal, setShowImportModal] = useState(false);
 
-  // Fetch de l'association en temps réel
+  // Fetch de l'association en temps réel avec tolérance de casse
   useEffect(() => {
     let unsubscribe = () => {};
-    if (userData?.groupId) {
+    let unsubAlt = () => {};
+    const rawGid = userData?.groupId;
+
+    if (rawGid) {
       try {
-        const docRef = doc(db, 'associations', userData.groupId);
+        const canonical = String(rawGid).trim();
+        const docRef = doc(db, 'associations', canonical);
         unsubscribe = onSnapshot(docRef, (docSnap) => {
           if (docSnap.exists()) {
-            setAssociationData(docSnap.data());
+            setAssociationData({ id: docSnap.id, ...docSnap.data() });
+            setLoadingAssoc(false);
+          } else {
+            // Tentative avec variante de casse (ex: 'Samambaia' vs 'samambaia')
+            const altGid = canonical.toLowerCase() === 'samambaia' ? 'Samambaia' : canonical.toLowerCase();
+            if (altGid !== canonical) {
+              const altRef = doc(db, 'associations', altGid);
+              unsubAlt = onSnapshot(altRef, (altSnap) => {
+                if (altSnap.exists()) {
+                  setAssociationData({ id: altSnap.id, ...altSnap.data() });
+                }
+                setLoadingAssoc(false);
+              }, () => setLoadingAssoc(false));
+            } else {
+              setLoadingAssoc(false);
+            }
           }
+        }, (error) => {
+          console.error("Erreur récupération association:", error);
           setLoadingAssoc(false);
         });
       } catch (error) {
@@ -48,7 +69,10 @@ export default function EspaceClient({ onNavigateHome }) {
     } else {
       setLoadingAssoc(false);
     }
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubAlt();
+    };
   }, [userData]);
 
   useEffect(() => {

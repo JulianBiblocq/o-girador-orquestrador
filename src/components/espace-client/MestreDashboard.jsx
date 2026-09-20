@@ -42,7 +42,7 @@ export default function MestreDashboard({ associationData, userData, onNavigateH
         </div>
 
         {/* ZONE 3 : Mon Abonnement, Boutique & Jauge de Stockage */}
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 flex flex-col gap-6">
           <SubscriptionPanel associationData={associationData} setActiveTab={setActiveTab} onNavigateHome={onNavigateHome} />
           <StorageQuotaGauge 
             groupId={userData?.groupId || associationData?.groupId} 

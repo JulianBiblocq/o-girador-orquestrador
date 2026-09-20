@@ -16,20 +16,42 @@ import {
 } from '../../../utils/storageTiers';
 
 export default function StorageQuotaGauge({ groupId, associationData, onUpgrade, className = '' }) {
-  const effectiveGroupId = String(groupId || associationData?.groupId || '').trim().toLowerCase();
+  const rawGroupId = String(groupId || associationData?.groupId || '').trim();
+  const canonicalGroupId = rawGroupId.toLowerCase();
+  const effectiveGroupId = canonicalGroupId === 'samambaia' ? 'Samambaia' : rawGroupId;
   
   const [storageData, setStorageData] = useState({
-    usedBytes: 0,
-    quotaBytes: inferQuotaFromPacks(associationData?.unlockedPacks),
-    lastCalculatedAt: null
+    usedBytes: Number(associationData?.storage?.usedBytes || 0),
+    quotaBytes: Number(associationData?.storage?.quotaBytes || inferQuotaFromPacks(associationData?.unlockedPacks)),
+    lastCalculatedAt: associationData?.storage?.lastCalculatedAt || null
   });
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
+
+  // Synchronisation immédiate avec les props d'associationData
+  useEffect(() => {
+    if (associationData) {
+      if (associationData.storage) {
+        setStorageData(prev => ({
+          ...prev,
+          usedBytes: Number(associationData.storage.usedBytes || 0),
+          quotaBytes: Number(associationData.storage.quotaBytes || inferQuotaFromPacks(associationData.unlockedPacks)),
+          lastCalculatedAt: associationData.storage.lastCalculatedAt
+        }));
+      } else if (associationData.unlockedPacks) {
+        setStorageData(prev => ({
+          ...prev,
+          quotaBytes: inferQuotaFromPacks(associationData.unlockedPacks)
+        }));
+      }
+    }
+  }, [associationData]);
 
   // Écoute en temps réel du document association
   useEffect(() => {
     if (!effectiveGroupId) return;
 
+    let unsubAlt = () => {};
     const unsub = onSnapshot(doc(db, 'associations', effectiveGroupId), (snap) => {
       if (snap.exists()) {
         const data = snap.data();
@@ -45,12 +67,31 @@ export default function StorageQuotaGauge({ groupId, associationData, onUpgrade,
             quotaBytes: inferQuotaFromPacks(data.unlockedPacks || associationData?.unlockedPacks)
           }));
         }
+      } else {
+        const altId = effectiveGroupId.toLowerCase();
+        if (altId !== effectiveGroupId) {
+          unsubAlt = onSnapshot(doc(db, 'associations', altId), (altSnap) => {
+            if (altSnap.exists()) {
+              const data = altSnap.data();
+              if (data.storage) {
+                setStorageData({
+                  usedBytes: Number(data.storage.usedBytes || 0),
+                  quotaBytes: Number(data.storage.quotaBytes || inferQuotaFromPacks(data.unlockedPacks)),
+                  lastCalculatedAt: data.storage.lastCalculatedAt
+                });
+              }
+            }
+          });
+        }
       }
     }, (err) => {
       console.warn("[StorageQuotaGauge] Erreur d'écoute Firestore :", err.message);
     });
 
-    return () => unsub();
+    return () => {
+      unsub();
+      unsubAlt();
+    };
   }, [effectiveGroupId, associationData?.unlockedPacks]);
 
   // Recalcul manuel déclenché par l'administrateur ou le Mestre

@@ -46,7 +46,7 @@ export default function SubscriptionPanel({ associationData, setActiveTab, onNav
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full h-full animate-pulse flex flex-col justify-between">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 w-full animate-pulse flex flex-col justify-between">
         <div>
           <div className="w-12 h-12 bg-gray-200 rounded-lg mb-4"></div>
           <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -66,7 +66,7 @@ export default function SubscriptionPanel({ associationData, setActiveTab, onNav
   const lockedFeatures = [...new Set(lockedFeaturesRaw)].slice(0, 2);
 
   return (
-    <div className="bg-gradient-to-br from-[#fdf6e7] to-white rounded-xl border border-[#d2691e]/20 shadow-sm p-6 w-full h-full flex flex-col justify-between relative overflow-hidden group">
+    <div className="bg-gradient-to-br from-[#fdf6e7] to-white rounded-xl border border-[#d2691e]/20 shadow-sm p-6 w-full flex flex-col justify-between relative overflow-hidden group">
       {/* Texture bg */}
       <div className="absolute inset-0 opacity-[0.03] bg-[url('/assets/texture.png')] mix-blend-overlay pointer-events-none"></div>
       
