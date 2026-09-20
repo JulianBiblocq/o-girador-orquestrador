@@ -1,54 +1,58 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { ArrowLeft, Plus, Calendar, Edit3, ExternalLink } from 'lucide-react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 export default function OrganizadorView({ userData, onBack }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEventsModalOpen, setIsEventsModalOpen] = useState(false);
 
+  const handleOpenOrganizador = (path = '') => {
+    const url = getEcosystemUrl('organizador', path);
+    launchCrossApp(url, { appKey: 'organizador', appLabel: "Organizad'Or" });
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!userData?.groupId) return;
-      
-      try {
-        const ref = collection(db, 'events');
-        const q = query(ref, where('groupId', '==', userData.groupId));
-        const snap = await getDocs(q);
-        
-        const todayStr = new Date().toISOString().split('T')[0];
-        let docs = [];
-        
-        snap.forEach(docSnap => {
-          const evt = docSnap.data();
-          let dateStr = '';
-          if (evt.date && typeof evt.date.toDate === 'function') {
-            dateStr = evt.date.toDate().toLocaleDateString('en-CA');
-          } else if (evt.date && typeof evt.date === 'string') {
-            dateStr = evt.date.split('T')[0];
-          } else if (evt.dateString) {
-            dateStr = evt.dateString.split('T')[0];
-          }
-          
-          if (dateStr && dateStr >= todayStr) {
-            docs.push({ id: docSnap.id, ...evt, normalizedDateStr: dateStr });
-          }
-        });
-        
-        // Tri en mémoire par date croissante (prochains événements d'abord)
-        docs.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
-        
-        setItems(docs.slice(0, 3));
-      } catch (error) {
-        console.error("Erreur fetch events:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    if (!userData?.groupId) {
+      setLoading(false);
+      return;
+    }
+
+    const q = query(collection(db, 'events'), where('groupId', '==', userData.groupId));
+    const unsub = onSnapshot(q, (snapshot) => {
+      const todayStr = new Date().toISOString().split('T')[0];
+      let docs = [];
+
+      snapshot.forEach(docSnap => {
+        const evt = docSnap.data();
+        let dateStr = '';
+        if (evt.date && typeof evt.date.toDate === 'function') {
+          dateStr = evt.date.toDate().toLocaleDateString('en-CA');
+        } else if (evt.date && typeof evt.date === 'string') {
+          dateStr = evt.date.split('T')[0];
+        } else if (evt.dateString) {
+          dateStr = evt.dateString.split('T')[0];
+        }
+
+        if (dateStr && dateStr >= todayStr) {
+          docs.push({ id: docSnap.id, ...evt, normalizedDateStr: dateStr });
+        }
+      });
+
+      // Tri en mémoire par date croissante (prochains événements d'abord)
+      docs.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
+
+      setItems(docs.slice(0, 3));
+      setLoading(false);
+    }, (error) => {
+      console.warn('[Realtime OrganizadorView] Error:', error.message);
+      setLoading(false);
+    });
+
+    return () => unsub();
   }, [userData?.groupId]);
 
   const formatDate = (dateStr) => {
@@ -87,7 +91,8 @@ export default function OrganizadorView({ userData, onBack }) {
             Ouvrir l'agenda complet
           </button>
           <a 
-            href="https://organizador.o-girador.com" 
+            href={getEcosystemUrl('organizador')} 
+            onClick={(e) => { e.preventDefault(); handleOpenOrganizador(); }}
             target="_blank" 
             rel="noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-[#d2691e] hover:bg-[#b05819] text-white font-bold text-sm rounded-lg transition-colors shadow-md"
@@ -131,7 +136,8 @@ export default function OrganizadorView({ userData, onBack }) {
             <Calendar className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium mb-4">Aucun événement à venir.</p>
             <a 
-              href="https://organizador.o-girador.com" 
+              href={getEcosystemUrl('organizador')} 
+              onClick={(e) => { e.preventDefault(); handleOpenOrganizador(); }}
               target="_blank" 
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 font-bold text-sm rounded-lg transition-colors"

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, LayoutDashboard, Flame, Settings, Store, Sparkles, X } from 'lucide-react';
+import { getEcosystemUrl } from '../../constants/ecosystemUrls';
 
 export default function MestreTopBar({ associationData, activeTab, setActiveTab }) {
   const [lockedAppClicked, setLockedAppClicked] = useState(null);
@@ -49,7 +50,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       desc: 'Gestion & Association',
       iconUrl: '/logos/organizador.png',
       isOwned: hasPack('manager'),
-      url: 'https://organizador.o-girador.com',
+      url: getEcosystemUrl('organizador'),
       colorActive: 'bg-[#fdf6e7] border-[#d4b895]',
       colorHover: 'hover:bg-[#fdf6e7] hover:border-[#d4b895]',
       textActive: 'text-[#4a2e1b]',
@@ -63,7 +64,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       desc: 'Création Audio',
       iconUrl: '/logos/sequenciador.png',
       isOwned: hasPack('sequenceur'),
-      url: 'https://sequenciador.o-girador.com',
+      url: getEcosystemUrl('sequenciador'),
       colorActive: 'bg-[#1a1a1a] border-[#000000]',
       colorHover: 'hover:bg-[#1a1a1a] hover:border-[#000000]',
       textActive: 'text-white',
@@ -77,7 +78,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       desc: 'Studio Chorégraphique',
       iconUrl: '/logos/dancador.png',
       isOwned: hasPack('dancador'),
-      url: 'https://dancador.o-girador.com',
+      url: getEcosystemUrl('dancador'),
       colorActive: 'bg-[#b22222] border-[#8b0000]',
       colorHover: 'hover:bg-[#b22222] hover:border-[#8b0000]',
       textActive: 'text-white',
@@ -91,7 +92,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       desc: 'Site Public',
       iconUrl: '/logos/mostrador.png',
       isOwned: hasPack('vitrine'),
-      url: 'https://mostrador.o-girador.com',
+      url: getEcosystemUrl('mostrador'),
       colorActive: 'bg-[#d2691e] border-[#b05819]',
       colorHover: 'hover:bg-[#d2691e] hover:border-[#b05819]',
       textActive: 'text-white',

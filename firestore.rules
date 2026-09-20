@@ -32,7 +32,10 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           (
             resource.data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() ||
-            (getUserData().get('groupId', '').lower() == 'samambaia' && resource.data.get('groupId', '').lower() == 'samambaia')
+            (
+              (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+              resource.data.get('groupId', '').lower() == 'samambaia'
+            )
           )
         )
       );
@@ -46,7 +49,10 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           (
             resource.data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() ||
-            (getUserData().get('groupId', '').lower() == 'samambaia' && resource.data.get('groupId', '').lower() == 'samambaia')
+            (
+              (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+              resource.data.get('groupId', '').lower() == 'samambaia'
+            )
           )
         )
       );
@@ -90,7 +96,7 @@ service cloud.firestore {
         (
           getUserData().get('mestreId', '') == docMestreId ||
           (
-            getUserData().get('groupId', '').lower() == 'samambaia' &&
+            (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
             (docMestreId == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' || docMestreId == 'Samambaia' || docMestreId == 'samambaia' || docMestreId.lower() == 'samambaia')
           )
         );
@@ -262,8 +268,14 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Lecture permise à tout utilisateur authentifié (nécessaire pour les listes de membres par groupe et trombinoscope)
-      allow read: if isAuthenticated();
+      // Règle d'or : Tout utilisateur authentifié a le droit ABSOLU et DIRECT de lire son propre profil,
+      // ainsi que les membres de son association (trombinoscope, annuaire) ou administrateur système
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isDocSameGroup() || 
+        isSystemAdmin() ||
+        request.auth.uid == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1'
+      );
       allow create: if isAuthenticated() && (
         isAdminOrMestre() || (
           request.auth.uid == userId && (
@@ -291,26 +303,24 @@ service cloud.firestore {
         )
       );
       allow update: if isAuthenticated() && (
-        isAdminOrMestre() || (
-          request.auth.uid == userId && (
-            (
-              resource.data.get('onboardingCompleted', false) == false &&
-              (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
-              (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
-              (!request.resource.data.keys().hasAny(['paymentStatus']) || request.resource.data.paymentStatus == 'unpaid') &&
-              (!request.resource.data.keys().hasAny(['canWriteSequenciador']) || request.resource.data.canWriteSequenciador == false) &&
-              (!request.resource.data.keys().hasAny(['canWriteDansador']) || request.resource.data.canWriteDansador == false) &&
-              (!request.resource.data.keys().hasAny(['canWriteOrchestrador']) || request.resource.data.canWriteOrchestrador == false) &&
-              (!request.resource.data.keys().hasAny(['tags']) || request.resource.data.tags == resource.data.get('tags', []) || request.resource.data.tags.size() == 0) &&
-              (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel == 'active')
-            ) || (
-              !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-                'paymentStatus', 'role', 'isSystemAdmin', 'hasAccessLogistique', 'groupId', 'adhesionBase', 'selectedOptions', 'tags', 'statutActuel', 'isNew',
-                'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
-              ])
-            )
+        // Super-Admin système ou UID Mestre Fondateur
+        isSystemAdmin() ||
+        request.auth.uid == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' ||
+        // Autoriser la migration si le compte était super-admin ou est déjà mestre/admin
+        (request.auth.uid == userId && (
+          resource.data.get('role', '').lower() in ['mestre', 'admin', 'super-admin', 'superadmin'] ||
+          isAdminOrMestre()
+        )) ||
+        // Mise à jour standard par le membre (profil personnel hors privilèges)
+        (request.auth.uid == userId && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'role', 'isSystemAdmin', 'hasAccessLogistique', 'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
+          ]) && (
+            !request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) ||
+            request.resource.data.get('groupId', '').lower() == 'samambaia'
           )
-        ) || (
+        )) || (
+          // Membres dépendants
           resource.data.managedBy == request.auth.uid &&
           resource.data.isDependent == true && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny([
@@ -406,12 +416,21 @@ service cloud.firestore {
       }
 
       match /rhythmMetadata/{rhythmId} {
-        allow read, write: if isAdminOrMestre() && getUserData().get('groupId', '').lower() == assocId.lower();
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() || 
+          getUserData().get('groupId', '').lower() == assocId.lower() ||
+          (assocId.lower() == 'samambaia' && getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1')
+        );
+        allow write: if isAdminOrMestre() && getUserData().get('groupId', '').lower() == assocId.lower();
       }
 
       // Classeur central du répertoire de la troupe (morceaux de la saison, chantiers, archives)
       match /repertoire/{pieceId} {
-        allow read: if isAuthenticated() && (isSystemAdmin() || getUserData().get('groupId', '').lower() == assocId.lower());
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() || 
+          getUserData().get('groupId', '').lower() == assocId.lower() ||
+          (assocId.lower() == 'samambaia' && getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1')
+        );
         allow write: if (isSystemAdmin() || getUserData().get('groupId', '').lower() == assocId.lower()) && canManageRepertoire();
       }
 

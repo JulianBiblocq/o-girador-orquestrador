@@ -2,6 +2,7 @@ import React from 'react';
 import NotificationCenter from './dashboard/NotificationCenter';
 import GlobalHealthStats from './dashboard/GlobalHealthStats';
 import SubscriptionPanel from './dashboard/SubscriptionPanel';
+import StorageQuotaGauge from './dashboard/StorageQuotaGauge';
 
 export default function MestreDashboard({ associationData, userData, onNavigateHome, setActiveTab }) {
   const isFreemium = !associationData?.unlockedPacks || associationData.unlockedPacks.length === 0;
@@ -40,9 +41,14 @@ export default function MestreDashboard({ associationData, userData, onNavigateH
           <GlobalHealthStats userData={userData} associationData={associationData} />
         </div>
 
-        {/* ZONE 3 : Mon Abonnement & Boutique */}
-        <div className="lg:col-span-1">
+        {/* ZONE 3 : Mon Abonnement, Boutique & Jauge de Stockage */}
+        <div className="lg:col-span-1 space-y-6">
           <SubscriptionPanel associationData={associationData} setActiveTab={setActiveTab} onNavigateHome={onNavigateHome} />
+          <StorageQuotaGauge 
+            groupId={userData?.groupId || associationData?.groupId} 
+            associationData={associationData}
+            onUpgrade={() => setActiveTab('boutique')}
+          />
         </div>
 
       </div>

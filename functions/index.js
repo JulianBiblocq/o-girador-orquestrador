@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getAuth } = require('firebase-admin/auth');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const express = require('express');
 const cors = require('cors');
 
@@ -33,13 +35,23 @@ const apiKeyAuth = (req, res, next) => {
   next();
 };
 
-app.post('/submit', apiKeyAuth, async (req, res) => {
+app.post(['/', '/submit'], apiKeyAuth, async (req, res) => {
   try {
-    const payload = req.body;
-    const { collectionType, data } = payload;
+    let { collectionType, data } = req.body || {};
+
+    // Tolérance pour les payloads d'erreurs non encapsulés ({ type, message, ... })
+    if (!collectionType && req.body?.type) {
+      collectionType = req.body.type;
+      data = {
+        appId: req.body.appId || 'organizador',
+        errorMessage: req.body.message || req.body.errorMessage,
+        stackTrace: req.body.stack || req.body.stackTrace,
+        ...req.body
+      };
+    }
     
     if (!collectionType || !data) {
-      console.warn("[Validation] Payload incomplet reçu dans /submit:", { payload });
+      console.warn("[Validation] Payload incomplet reçu dans /submit:", { payload: req.body });
       return res.status(400).json({ error: 'Missing collectionType or data' });
     }
 
@@ -121,3 +133,69 @@ app.get('/health', (req, res) => {
 
 // Expose the API via Firebase Functions
 exports.telemetry = functions.https.onRequest(app);
+
+
+/**
+ * Cloud Function HTTPS Callable (v2) : getCrossAppAuthToken
+ * Permet à un utilisateur connecté de forger un jeton d'authentification personnalisé (customToken)
+ * enrichi avec ses revendications (role, groupId, displayName) pour naviguer de façon fluide et
+ * transparente entre les applications de la suite O Girador sans rupture de session (SSO Cross-App).
+ */
+exports.getCrossAppAuthToken = onCall({ cors: true }, async (request) => {
+  const authData = request.auth || (request.context && request.context.auth);
+  if (!authData || !authData.uid) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Vous devez être authentifié pour obtenir un jeton SSO."
+    );
+  }
+
+  const uid = authData.uid;
+
+  try {
+    let role = 'membre';
+    let groupId = '';
+    let displayName = authData.token?.name || '';
+
+    // 1. Récupération du profil Firestore de l'utilisateur
+    try {
+      const userDoc = await getFirestore().collection("users").doc(uid).get();
+      if (userDoc.exists) {
+        const userData = userDoc.data() || {};
+        role = userData.role || role;
+        groupId = userData.groupId || '';
+        displayName = userData.displayName || `${userData.prenom || ''} ${userData.nom || ''}`.trim() || displayName;
+      }
+    } catch (profileErr) {
+      console.warn(`[SSO] Avertissement: Impossible d'accéder au profil Firestore pour ${uid} :`, profileErr);
+    }
+
+    // 2. Constitution des revendications personnalisées
+    const customClaims = {
+      role: role,
+      groupId: typeof groupId === 'string' ? groupId.trim().toLowerCase() : (groupId || ''),
+    };
+    if (displayName) {
+      customClaims.displayName = displayName;
+    }
+
+    // 3. Forge du jeton sécurisé via Firebase Admin SDK
+    const customToken = await getAuth().createCustomToken(uid, customClaims);
+
+    return {
+      success: true,
+      token: customToken,
+      customToken: customToken
+    };
+  } catch (error) {
+    console.error(`[SSO] Erreur lors de la création du customToken pour l'UID ${uid} :`, error);
+    throw new HttpsError(
+      "internal",
+      `Impossible de forger le jeton d'authentification SSO : ${error.message || error}`
+    );
+  }
+});
+
+// Calcul et suivi des quotas de stockage par association
+const { calculateAssociationStorageUsage } = require('./src/storageMetrics');
+exports.calculateAssociationStorageUsage = calculateAssociationStorageUsage;

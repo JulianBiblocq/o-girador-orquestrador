@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Music, PlayCircle } from 'lucide-react';
 import { awardAxePoints } from '../../../services/gamificationService';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 export default function DancadorView({ userData, associationData, onBack }) {
   const [items, setItems] = useState([]);
@@ -14,6 +16,11 @@ export default function DancadorView({ userData, associationData, onBack }) {
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleOpenDancador = (path = '') => {
+    const url = getEcosystemUrl('dancador', path);
+    launchCrossApp(url, { appKey: 'dancador', appLabel: "Dançad'Or" });
   };
 
   const handleShare = (id) => {
@@ -67,46 +74,47 @@ export default function DancadorView({ userData, associationData, onBack }) {
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!userData?.groupId) return;
-      
-      try {
-        const ref = collection(db, 'choreographies');
-        const q = query(ref, where('groupId', '==', userData.groupId));
-        const snap = await getDocs(q);
-        
-        let docs = [];
-        snap.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-        
-        // Tri en mémoire
-        docs.sort((a, b) => {
-          const dateA = a.dateCreation?.toMillis?.() || a.dateCreation || 0;
-          const dateB = b.dateCreation?.toMillis?.() || b.dateCreation || 0;
-          return dateB - dateA;
-        });
-        
-        setItems(docs.slice(0, 3));
+    if (!userData?.groupId) {
+      setLoading(false);
+      return;
+    }
 
-        // Fetch audios
-        const audiosRef = collection(db, 'audio_masters');
-        const qAudios = query(audiosRef, where('tenantId', '==', userData.groupId));
-        const snapAudios = await getDocs(qAudios);
-        let audioDocs = [];
-        snapAudios.forEach(doc => audioDocs.push({ id: doc.id, ...doc.data() }));
-        audioDocs.sort((a, b) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-          return dateB - dateA;
-        });
-        setAudios(audioDocs.slice(0, 3));
-      } catch (error) {
-        console.error("Erreur fetch choreographies:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    const unsubs = [];
+
+    // Choreographies listener
+    const qChoreo = query(collection(db, 'choreographies'), where('groupId', '==', userData.groupId));
+    unsubs.push(onSnapshot(qChoreo, (snapshot) => {
+      let docs = [];
+      snapshot.forEach(docSnap => docs.push({ id: docSnap.id, ...docSnap.data() }));
+
+      // Tri en mémoire
+      docs.sort((a, b) => {
+        const dateA = a.dateCreation?.toMillis?.() || a.dateCreation || 0;
+        const dateB = b.dateCreation?.toMillis?.() || b.dateCreation || 0;
+        return dateB - dateA;
+      });
+
+      setItems(docs.slice(0, 3));
+      setLoading(false);
+    }, (error) => {
+      console.warn('[Realtime DancadorView] Choreos error:', error.message);
+      setLoading(false);
+    }));
+
+    // Audio masters listener
+    const qAudios = query(collection(db, 'audio_masters'), where('tenantId', '==', userData.groupId));
+    unsubs.push(onSnapshot(qAudios, (snapshot) => {
+      let audioDocs = [];
+      snapshot.forEach(docSnap => audioDocs.push({ id: docSnap.id, ...docSnap.data() }));
+      audioDocs.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      setAudios(audioDocs.slice(0, 3));
+    }, (error) => console.warn('[Realtime DancadorView] Audio masters error:', error.message)));
+
+    return () => unsubs.forEach(u => typeof u === 'function' && u());
   }, [userData?.groupId]);
 
   return (
@@ -133,7 +141,8 @@ export default function DancadorView({ userData, associationData, onBack }) {
             Voir tout le catalogue
           </button>
           <a 
-            href="https://dancador.o-girador.com" 
+            href={getEcosystemUrl('dancador')} 
+            onClick={(e) => { e.preventDefault(); handleOpenDancador(); }}
             target="_blank" 
             rel="noreferrer"
             className="flex items-center gap-2 px-4 py-2 bg-[#d2691e] hover:bg-[#b05819] text-white font-bold text-sm rounded-lg transition-colors shadow-md"
@@ -186,7 +195,8 @@ export default function DancadorView({ userData, associationData, onBack }) {
             <Activity className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium mb-4">Vous n'avez pas encore créé de chorégraphie.</p>
             <a 
-              href="https://dancador.o-girador.com" 
+              href={getEcosystemUrl('dancador')} 
+              onClick={(e) => { e.preventDefault(); handleOpenDancador(); }}
               target="_blank" 
               rel="noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 bg-pink-100 text-pink-700 hover:bg-pink-200 font-bold text-sm rounded-lg transition-colors"

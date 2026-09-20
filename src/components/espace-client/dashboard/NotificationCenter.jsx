@@ -8,6 +8,8 @@ import { db } from '../../../services/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Bell, ArrowRight, CheckCircle2, MessageSquareText, Sparkles } from 'lucide-react';
 import ResourceEditorModal from '../modals/ResourceEditorModal.jsx';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 const REASON_BADGES = {
   incomplete_technical: 'Précisions techniques',
@@ -173,7 +175,11 @@ export default function NotificationCenter({ userData }) {
             </div>
           </div>
           <a
-            href="https://organizador.o-girador.com/membres"
+            href={getEcosystemUrl('organizador', '/membres')}
+            onClick={(e) => {
+              e.preventDefault();
+              launchCrossApp(getEcosystemUrl('organizador', '/membres'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+            }}
             target="_blank"
             rel="noreferrer"
             className="w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 text-white font-bold text-sm rounded-lg hover:bg-orange-600 transition-colors shadow-sm"

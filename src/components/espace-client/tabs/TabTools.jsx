@@ -4,6 +4,9 @@ import packsData from '../../../data/packs.json';
 import tarifsData from '../../../data/tarifs.json';
 import { useCart } from '../../../context/CartContext';
 import { useCurrency } from '../../../context/CurrencyContext';
+import StorageQuotaGauge from '../dashboard/StorageQuotaGauge';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 export default function TabTools({ associationData, userData }) {
   const { addToCart, cartItems } = useCart();
@@ -18,16 +21,23 @@ export default function TabTools({ associationData, userData }) {
   const getAppUrl = (targetApp) => {
     switch(targetApp) {
       case 'manager':
-        return 'https://organizador.o-girador.com';
+        return getEcosystemUrl('organizador');
       case 'sequenceur':
-        return 'https://sequenciador.o-girador.com';
+        return getEcosystemUrl('sequenciador');
       case 'dancador':
-        return 'https://dancador.o-girador.com';
+        return getEcosystemUrl('dancador');
       case 'vitrine':
-        return `https://mostrador.o-girador.com/${userData?.groupId || ''}`;
+        return getEcosystemUrl('mostrador', userData?.groupId || '');
       default:
         return '#';
     }
+  };
+
+  const handleLaunchApp = (e, appId) => {
+    e.preventDefault();
+    const url = getAppUrl(appId);
+    const appKey = appId === 'manager' ? 'organizador' : appId === 'sequenceur' ? 'sequenciador' : appId;
+    launchCrossApp(url, { appKey, appLabel: appKey });
   };
 
   // --- PLANS & FORFAITS ---
@@ -255,6 +265,7 @@ export default function TabTools({ associationData, userData }) {
                     <li key={app.id}>
                       <a 
                         href={getAppUrl(app.id)} 
+                        onClick={(e) => handleLaunchApp(e, app.id)}
                         target="_blank" 
                         rel="noreferrer" 
                         className="flex items-center justify-between p-3 rounded-lg border border-amber-900/10 bg-white hover:bg-amber-50 transition-colors group cursor-pointer shadow-sm hover:shadow"
@@ -296,6 +307,14 @@ export default function TabTools({ associationData, userData }) {
             </ul>
           </div>
 
+        </div>
+
+        {/* Jauge d'administration de quota de stockage Cordel */}
+        <div className="mt-6">
+          <StorageQuotaGauge 
+            groupId={userData?.groupId || associationData?.groupId} 
+            associationData={associationData} 
+          />
         </div>
       </section>
 

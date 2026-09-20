@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { ArrowLeft, Plus, Globe, Edit3, ExternalLink } from 'lucide-react';
 
 export default function VitrineView({ userData, onBack }) {
@@ -9,60 +9,60 @@ export default function VitrineView({ userData, onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!userData?.groupId) return;
-      
-      try {
-        const ref = collection(db, 'announcements');
-        const q = query(ref, where('groupId', '==', userData.groupId));
-        const snap = await getDocs(q);
-        
-        let docs = [];
-        snap.forEach(doc => docs.push({ id: doc.id, ...doc.data() }));
-        
-        // Tri en mémoire par date décroissante
-        docs.sort((a, b) => {
-          const dateA = a.date?.toMillis?.() || a.createdAt?.toMillis?.() || a.date || a.createdAt || 0;
-          const dateB = b.date?.toMillis?.() || b.createdAt?.toMillis?.() || b.date || b.createdAt || 0;
-          return dateB - dateA;
-        });
-        
-        setItems(docs.slice(0, 3));
+    if (!userData?.groupId) {
+      setLoading(false);
+      return;
+    }
 
-        // Fetch events for vitrine
-        const eventsRef = collection(db, 'events');
-        const qEvents = query(eventsRef, where('groupId', '==', userData.groupId));
-        const snapEvents = await getDocs(qEvents);
-        
-        let eventsDocs = [];
-        const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-        const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
-        snapEvents.forEach(docSnap => {
-          const evt = docSnap.data();
-          let dateStr = '';
-          if (evt.date && typeof evt.date.toDate === 'function') {
-            dateStr = evt.date.toDate().toLocaleDateString('en-CA');
-          } else if (evt.date && typeof evt.date === 'string') {
-            dateStr = evt.date.split('T')[0];
-          } else if (evt.dateString) {
-            dateStr = evt.dateString.split('T')[0];
-          }
-          
-          if (dateStr && dateStr >= todayStr) {
-            eventsDocs.push({ id: docSnap.id, ...evt, normalizedDateStr: dateStr });
-          }
-        });
-        
-        eventsDocs.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
-        setEvents(eventsDocs.slice(0, 3));
-      } catch (error) {
-        console.error("Erreur fetch announcements:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    const unsubs = [];
+
+    // Announcements listener
+    const qAnnouncements = query(collection(db, 'announcements'), where('groupId', '==', userData.groupId));
+    unsubs.push(onSnapshot(qAnnouncements, (snapshot) => {
+      let docs = [];
+      snapshot.forEach(docSnap => docs.push({ id: docSnap.id, ...docSnap.data() }));
+
+      // Tri en mémoire par date décroissante
+      docs.sort((a, b) => {
+        const dateA = a.date?.toMillis?.() || a.createdAt?.toMillis?.() || a.date || a.createdAt || 0;
+        const dateB = b.date?.toMillis?.() || b.createdAt?.toMillis?.() || b.date || b.createdAt || 0;
+        return dateB - dateA;
+      });
+
+      setItems(docs.slice(0, 3));
+      setLoading(false);
+    }, (error) => {
+      console.warn('[Realtime VitrineView] Announcements error:', error.message);
+      setLoading(false);
+    }));
+
+    // Events listener
+    const qEvents = query(collection(db, 'events'), where('groupId', '==', userData.groupId));
+    unsubs.push(onSnapshot(qEvents, (snapshot) => {
+      let eventsDocs = [];
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+      snapshot.forEach(docSnap => {
+        const evt = docSnap.data();
+        let dateStr = '';
+        if (evt.date && typeof evt.date.toDate === 'function') {
+          dateStr = evt.date.toDate().toLocaleDateString('en-CA');
+        } else if (evt.date && typeof evt.date === 'string') {
+          dateStr = evt.date.split('T')[0];
+        } else if (evt.dateString) {
+          dateStr = evt.dateString.split('T')[0];
+        }
+
+        if (dateStr && dateStr >= todayStr) {
+          eventsDocs.push({ id: docSnap.id, ...evt, normalizedDateStr: dateStr });
+        }
+      });
+
+      eventsDocs.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
+      setEvents(eventsDocs.slice(0, 3));
+    }, (error) => console.warn('[Realtime VitrineView] Events error:', error.message)));
+
+    return () => unsubs.forEach(u => typeof u === 'function' && u());
   }, [userData?.groupId]);
 
   return (

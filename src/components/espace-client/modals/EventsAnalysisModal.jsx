@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, MapPin, Loader2, AlertCircle, TrendingUp, History } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 const getTypeColor = (type) => {
   const t = type?.toLowerCase() || '';
@@ -19,65 +21,61 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
   const [typeCounts, setTypeCounts] = useState({});
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      if (!groupId) return;
-      setLoading(true);
-      
-      try {
-        const eventsRef = collection(db, 'events');
-        // Simple query without compound index ordering
-        const qEvents = query(eventsRef, where('groupId', '==', groupId));
-        const eventsSnap = await getDocs(qEvents);
-        
-        const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-        const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
-        const upcoming = [];
-        const past = [];
-        const counts = {};
+    if (!groupId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
 
-        eventsSnap.forEach(docSnap => {
-          const evt = docSnap.data();
-          let dateStr = '';
-          
-          if (evt.date && typeof evt.date.toDate === 'function') {
-            dateStr = evt.date.toDate().toLocaleDateString('en-CA');
-          } else if (evt.date && typeof evt.date === 'string') {
-            dateStr = evt.date.split('T')[0];
-          } else if (evt.dateString) {
-            dateStr = evt.dateString.split('T')[0];
+    const qEvents = query(collection(db, 'events'), where('groupId', '==', groupId));
+    const unsub = onSnapshot(qEvents, (snapshot) => {
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+      const upcoming = [];
+      const past = [];
+      const counts = {};
+
+      snapshot.forEach(docSnap => {
+        const evt = docSnap.data();
+        let dateStr = '';
+
+        if (evt.date && typeof evt.date.toDate === 'function') {
+          dateStr = evt.date.toDate().toLocaleDateString('en-CA');
+        } else if (evt.date && typeof evt.date === 'string') {
+          dateStr = evt.date.split('T')[0];
+        } else if (evt.dateString) {
+          dateStr = evt.dateString.split('T')[0];
+        }
+
+        const eventItem = { ...evt, id: docSnap.id, normalizedDateStr: dateStr };
+
+        if (dateStr) {
+          if (dateStr >= todayStr) {
+            upcoming.push(eventItem);
+          } else {
+            past.push(eventItem);
           }
-          
-          const eventItem = { ...evt, id: docSnap.id, normalizedDateStr: dateStr };
-          
-          if (dateStr) {
-            if (dateStr >= todayStr) {
-              upcoming.push(eventItem);
-            } else {
-              past.push(eventItem);
-            }
-          }
+        }
 
-          // Comptage par type
-          const tType = evt.type || 'Autre';
-          counts[tType] = (counts[tType] || 0) + 1;
-        });
+        // Comptage par type
+        const tType = evt.type || 'Autre';
+        counts[tType] = (counts[tType] || 0) + 1;
+      });
 
-        // Tri local
-        upcoming.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
-        past.sort((a, b) => b.normalizedDateStr.localeCompare(a.normalizedDateStr)); // Descending pour le passé
+      // Tri local
+      upcoming.sort((a, b) => a.normalizedDateStr.localeCompare(b.normalizedDateStr));
+      past.sort((a, b) => b.normalizedDateStr.localeCompare(a.normalizedDateStr));
 
-        setUpcomingEvents(upcoming);
-        setPastEvents(past);
-        setTypeCounts(counts);
+      setUpcomingEvents(upcoming);
+      setPastEvents(past);
+      setTypeCounts(counts);
+      setLoading(false);
+    }, (error) => {
+      console.warn('[Realtime EventsModal] Error:', error.message);
+      setLoading(false);
+    });
 
-      } catch (error) {
-        console.error("Erreur lors de l'analyse des événements:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
+    return () => unsub();
   }, [groupId]);
 
   const formatDate = (dateStr) => {
@@ -158,7 +156,11 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
                       {upcomingEvents.map(evt => (
                         <a 
                           key={evt.id} 
-                          href="https://organizador.o-girador.com" 
+                          href={getEcosystemUrl('organizador')} 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+                          }}
                           target="_blank" 
                           rel="noreferrer"
                           className="block bg-white p-4 rounded-xl border border-gray-100 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all relative overflow-hidden group cursor-pointer"
@@ -204,7 +206,11 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
                       {pastEvents.map(evt => (
                         <a 
                           key={evt.id}
-                          href="https://organizador.o-girador.com"
+                          href={getEcosystemUrl('organizador')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+                          }}
                           target="_blank"
                           rel="noreferrer"
                           className="block bg-white p-3 rounded-xl border border-gray-100 shadow-sm relative overflow-hidden hover:border-gray-300 hover:shadow-md transition-all cursor-pointer"

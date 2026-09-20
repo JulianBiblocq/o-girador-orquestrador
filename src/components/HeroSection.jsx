@@ -4,8 +4,8 @@ import universData from '../data/univers.json';
 import { useLanguage } from '../hooks/useLanguage';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../services/firebase';
+import { launchCrossApp } from '../utils/crossAppAuth';
+import { getEcosystemUrl } from '../constants/ecosystemUrls';
 import { fetchHeroMetrics } from '../services/cmsService';
 
 export default function HeroSection({ activeUniverse, onNavigate }) {
@@ -20,32 +20,10 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
     e.preventDefault();
     if (launchingApp) return;
 
-    if (!currentUser || appKey === 'mostrador' || appKey === 'hub') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
     setLaunchingApp(appKey);
-    const newTab = window.open('', '_blank');
-
     try {
-      const getSSOToken = httpsCallable(functions, 'getCrossAppAuthToken');
-      const res = await getSSOToken();
-      const customToken = res.data?.customToken;
-
-      if (customToken) {
-        const targetUrl = new URL(url);
-        targetUrl.searchParams.set('ssoToken', customToken);
-        if (newTab) newTab.location.href = targetUrl.toString();
-        else window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
-      } else {
-        if (newTab) newTab.location.href = url;
-        else window.open(url, '_blank', 'noopener,noreferrer');
-      }
-    } catch (err) {
-      console.warn("[Hero SSO] Erreur SSO fallback direct :", err);
-      if (newTab) newTab.location.href = url;
-      else window.open(url, '_blank', 'noopener,noreferrer');
+      const destination = url || getEcosystemUrl(appKey);
+      await launchCrossApp(destination, { appKey, appLabel: appKey });
     } finally {
       setLaunchingApp(null);
     }
@@ -108,22 +86,22 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 max-w-5xl mx-auto">
           <a 
-            href="https://organizador.o-girador.com" 
-            onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+            href={getEcosystemUrl('organizador')} 
+            onClick={(e) => handleAppLaunch(e, getEcosystemUrl('organizador'), "organizador")}
             className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
           >
             <img src="/logos/organizador.png" alt="Organizador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#4a2e1b] font-cordel leading-tight">{getMetric('manager', 'hero.metrics.manager')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('managerSub', 'hero.metrics.managerSub')}</div>
           </a>
-          <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
+          <a href={getEcosystemUrl('mostrador')} target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logos/mostrador.png" alt="Mostrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full" />
             <div className="text-xl font-black text-[#d2691e] font-cordel leading-tight">{getMetric('vitrine', 'hero.metrics.vitrine')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('vitrineSub', 'hero.metrics.vitrineSub')}</div>
           </a>
           <a 
-            href="https://sequenciador.o-girador.com" 
-            onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+            href={getEcosystemUrl('sequenciador')} 
+            onClick={(e) => handleAppLaunch(e, getEcosystemUrl('sequenciador'), "sequenciador")}
             className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
           >
             <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
@@ -131,15 +109,15 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
             <div className="text-xs text-gray-700 mt-2">{getMetric('sequenceurSub', 'hero.metrics.sequenceurSub')}</div>
           </a>
           <a 
-            href="https://dancador.o-girador.com" 
-            onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+            href={getEcosystemUrl('dancador')} 
+            onClick={(e) => handleAppLaunch(e, getEcosystemUrl('dancador'), "dancador")}
             className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
           >
             <img src="/logos/dancador.png" alt="Dançador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#991b1b] font-cordel leading-tight">{getMetric('dancador', 'hero.metrics.dancador')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('dancadorSub', 'hero.metrics.dancadorSub')}</div>
           </a>
-          <a href="https://o-girador.com" target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
+          <a href={getEcosystemUrl('hub')} target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
             <img src="/logo_rond.png" alt="Orquestrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full border border-[#8b4513]/20" />
             <div className="text-xl font-black text-[#8b4513] font-cordel leading-tight">{getMetric('terreiro', 'hero.metrics.terreiro')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('terreiroSub', 'hero.metrics.terreiroSub')}</div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
-import { collection, query, where, getDocs, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or } from 'firebase/firestore';
+import { collection, query, where, getDocs, onSnapshot, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or } from 'firebase/firestore';
 import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2, BookOpen, Hammer, Mic, Store } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
@@ -9,6 +9,8 @@ import DeleteConfirmModal from '../modals/DeleteConfirmModal';
 import { deleteAudioResource } from '../../../services/audioDeletionService';
 import { awardAxePoints } from '../../../services/gamificationService';
 import presetsDump from '../../../presets_dump.json';
+import { launchCrossApp } from '../../../utils/crossAppAuth';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 
 export default function GlobalHealthStats({ userData, associationData }) {
   const [rhythmToDelete, setRhythmToDelete] = useState(null);
@@ -334,512 +336,448 @@ export default function GlobalHealthStats({ userData, associationData }) {
     }
   };
 
+  // ────────────────────────────────────────────────────────────────
+  // Écouteurs temps réel Firestore (onSnapshot) — Hub & Cockpit
+  // ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const fetchStats = async () => {
-      if (!userData?.groupId) {
-        setLoading(false);
-        return;
+    const groupId = userData?.groupId;
+    const uid = userData?.uid;
+    if (!groupId && !uid) {
+      setLoading(false);
+      return;
+    }
+
+    const unsubs = [];
+
+    // ── Helper : extraction d'une date normalisée ──
+    const extractDateStr = (evt) => {
+      if (evt.date && typeof evt.date.toDate === 'function') {
+        return evt.date.toDate().toLocaleDateString('en-CA');
+      } else if (evt.date && typeof evt.date === 'string') {
+        return evt.date.split('T')[0];
+      } else if (evt.dateString) {
+        return evt.dateString.split('T')[0];
       }
+      return '';
+    };
 
-      // Helper to swallow individual permission errors
-      const safeGetDocs = async (q) => {
-        try {
-          return await getDocs(q);
-        } catch (e) {
-          if (e.code !== 'permission-denied') {
-            console.warn("Info fetch:", e.message);
-          }
-          return null; // Return null if failed
-        }
-      };
+    const todayStr = () => {
+      const tzOffset = (new Date()).getTimezoneOffset() * 60000;
+      return (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
+    };
 
-      try {
-        // 1. Fetch Users (Membres Actifs) + Pupitres
-        const usersRef = collection(db, 'users');
-        // Fetch all users for the group and filter in JS to exactly match Organizador logic
-        const qUsers = query(usersRef, where('groupId', '==', userData.groupId));
-        const usersSnap = await safeGetDocs(qUsers);
-        
-        let pupitresArray = [];
+    // ── 1. Users (Membres Actifs & Pupitres) ──
+    if (groupId) {
+      const qUsers = query(collection(db, 'users'), where('groupId', '==', groupId));
+      unsubs.push(onSnapshot(qUsers, (snapshot) => {
+        const pupitreCounts = {};
         let activeMembersCount = 0;
-        if (usersSnap) {
-          const pupitreCounts = {};
-          usersSnap.forEach(docSnap => {
-            const user = docSnap.data();
-            if (!user) return;
-            // Match Organizador (Trombinoscope) logic: only hide explicitly archived members
-            if (user.statutActuel === 'archived') return;
-            
-            activeMembersCount++;
-            
-            let insts = [];
-            if (user.instrument) insts.push(user.instrument);
-            else if (Array.isArray(user.instrumentsJoues) && user.instrumentsJoues.length > 0) insts = user.instrumentsJoues;
-            
-            if (insts.length > 0) {
-              insts.forEach(inst => {
-                if (typeof inst === 'string') {
-                  const cleanInst = inst.trim();
-                  pupitreCounts[cleanInst] = (pupitreCounts[cleanInst] || 0) + 1;
-                }
-              });
+        snapshot.forEach(docSnap => {
+          const user = docSnap.data();
+          if (!user || user.statutActuel === 'archived') return;
+          activeMembersCount++;
+          let insts = [];
+          if (user.instrument) insts.push(user.instrument);
+          else if (Array.isArray(user.instrumentsJoues) && user.instrumentsJoues.length > 0) insts = user.instrumentsJoues;
+          insts.forEach(inst => {
+            if (typeof inst === 'string') {
+              const cleanInst = inst.trim();
+              pupitreCounts[cleanInst] = (pupitreCounts[cleanInst] || 0) + 1;
             }
           });
-          
-          pupitresArray = Object.keys(pupitreCounts)
-            .map(name => ({ label: name, count: pupitreCounts[name] }))
-            .sort((a, b) => b.count - a.count); // Keep all for modal
-        }
-
-        // 2. Fetch Events
-        const eventsRef = collection(db, 'events');
-        const qEvents = query(eventsRef, where('groupId', '==', userData.groupId));
-        const eventsSnap = await safeGetDocs(qEvents);
-        
-        let upcomingEventsCount = 0;
-        let nextEvent = null;
-        let latestEventsArray = [];
-        if (eventsSnap) {
-          const tzOffset = (new Date()).getTimezoneOffset() * 60000;
-          const todayStr = (new Date(Date.now() - tzOffset)).toISOString().split('T')[0];
-          const upcomingEvents = [];
-          
-          eventsSnap.forEach(docSnap => {
-            const evt = docSnap.data();
-            let dateStr = '';
-            if (evt.date && typeof evt.date.toDate === 'function') {
-              dateStr = evt.date.toDate().toLocaleDateString('en-CA');
-            } else if (evt.date && typeof evt.date === 'string') {
-              dateStr = evt.date.split('T')[0];
-            } else if (evt.dateString) {
-              dateStr = evt.dateString.split('T')[0];
-            }
-            if (dateStr && dateStr >= todayStr) {
-              upcomingEvents.push({ ...evt, id: docSnap.id, dateStr });
-            }
-          });
-          
-          upcomingEvents.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
-          upcomingEventsCount = upcomingEvents.length;
-          nextEvent = upcomingEventsCount > 0 ? (upcomingEvents[0].title || upcomingEvents[0].nom || 'Événement') : null;
-          latestEventsArray = upcomingEvents.slice(0, 3);
-        }
-
-        // 2.5 Fetch Audio Masters (Bandes Son du Séquenceur)
-        let audioMasters = [];
-        try {
-          const audioMastersRef = collection(db, 'audio_masters');
-          const qAudioMasters = query(audioMastersRef, or(
-            where('tenantId', '==', userData.groupId),
-            where('mestreId', '==', userData.uid)
-          ));
-          const snapAudioMasters = await safeGetDocs(qAudioMasters);
-          if (snapAudioMasters) {
-            snapAudioMasters.forEach(docSnap => {
-              const data = docSnap.data();
-              audioMasters.push({
-                id: docSnap.id,
-                label: data.nom || 'Master Audio',
-                date: data.createdAt ? new Date(data.createdAt).getTime() : 0,
-                type: 'storage',
-                isPublic: false,
-                audioUrl: data.audioUrl,
-                bpm: data.bpm
-              });
-            });
-          }
-        } catch (err) {
-          console.warn('Error fetching audio_masters from Firestore:', err);
-        }
-
-        // Direct Storage fallback (exports_danse)
-        try {
-          const { ref, listAll, getDownloadURL, getMetadata } = await import('firebase/storage');
-          const { storage } = await import('../../../services/firebase');
-          
-          const paths = [`exports_danse/tenant_local`, `exports_danse/${userData.groupId}`];
-          for (const path of paths) {
-            try {
-              const folderRef = ref(storage, path);
-              const res = await listAll(folderRef);
-              for (const item of res.items) {
-                const baseName = item.name.split('.')[0];
-                if (!audioMasters.some(a => a.id.includes(baseName))) {
-                  try {
-                    const url = await getDownloadURL(item);
-                    let date = Date.now();
-                    try {
-                      const meta = await getMetadata(item);
-                      if (meta.timeCreated) date = new Date(meta.timeCreated).getTime();
-                    } catch (e) {}
-                    
-                    audioMasters.push({
-                      id: item.name,
-                      label: item.name.replace(/\.[^/.]+$/, ''),
-                      date,
-                      type: 'storage',
-                      isPublic: false,
-                      audioUrl: url
-                    });
-                  } catch (itemErr) {
-                    console.warn('Skipping item due to error:', item.name, itemErr);
-                  }
-                }
-              }
-            } catch (e) {
-               // Ignore folder not found
-            }
-          }
-        } catch (err) {
-          console.warn('Error fetching direct storage for exports_danse:', err);
-        }
-
-        // 3. Fetch Rhythms from Storage (Catalogue Séquenceur) & Firestore
-        let rhythmsList = [];
-        try {
-          const { ref, listAll } = await import('firebase/storage');
-          const { storage } = await import('../../../services/firebase');
-          
-          // A. Storage
-          try {
-            const folderRef = ref(storage, `documents/${userData.groupId}/sequencer`);
-            const res = await listAll(folderRef);
-            res.items.forEach(item => {
-               const isJson = /\.json$/i.test(item.name);
-               rhythmsList.push({ 
-                 id: item.name, 
-                 label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''), 
-                 date: parseInt(item.name.split('_')[0]) || 0,
-                 type: isJson ? 'section' : 'storage',
-                 isPublic: false,
-                 storagePath: `documents/${userData.groupId}/sequencer/${item.name}`,
-                 source: 'storage'
-               });
-            });
-          } catch (storageErr) {
-            console.warn('[STORAGE] Error fetching audio files from storage:', storageErr);
-          }
-          
-          // B. Séquences Complètes (Presets)
-          const firestoreItemsMap = new Map();
-
-          try {
-            // 1. Fetch user's own presets
-            const qOwner = query(collection(db, 'presets'), where('ownerId', '==', userData.uid));
-            const ownerSnap = await getDocs(qOwner);
-            ownerSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
-
-            // 2. Fetch public presets
-            const qPublic = query(collection(db, 'presets'), where('visibility', '==', 'public'));
-            const publicSnap = await getDocs(qPublic);
-            publicSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
-            
-            // 3. Fetch presets targeted to this user
-            const qTarget = query(collection(db, 'presets'), where('targetUserId', '==', userData.uid));
-            const targetSnap = await getDocs(qTarget);
-            targetSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
-            
-            // Also fetch 'admin_global' visibility if used
-            const qGlobal = query(collection(db, 'presets'), where('visibility', '==', 'admin_global'));
-            const globalSnap = await getDocs(qGlobal);
-            globalSnap.forEach(doc => firestoreItemsMap.set(doc.id, doc));
-          } catch (presetErr) {
-            console.error('[PRESETS] Error fetching presets:', presetErr.code, presetErr.message);
-          }
-          
-          if (firestoreItemsMap.size > 0) {
-            firestoreItemsMap.forEach(docSnap => {
-              const data = docSnap.data();
-              const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
-              
-              let parsedData = data;
-              if (data.data) {
-                try {
-                  parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
-                } catch (e) {
-                  console.warn("Could not decompress preset data:", e);
-                }
-              }
-
-              rhythmsList.push({
-                id: docSnap.id,
-                label: data.name || data.title || 'Sans titre',
-                date: data.createdAt || 0,
-                type: isPublic ? 'rhythm' : 'section', // rhythm = public tab, section = local tab
-                isPublic: isPublic,
-                rewardClaimed: data.rewardClaimed || false,
-                orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
-                originalData: parsedData,
-                audioUrl: data.audioUrl,
-                storagePath: data.storagePath,
-                collection: 'presets'
-              });
-            });
-          }
-
-          // C. Séquences Publiques Globales
-          const qPublicR = query(collection(db, 'presets'), where('visibility', 'in', ['admin_global', 'public']));
-          const publicSnapR = await safeGetDocs(qPublicR);
-          if (publicSnapR) {
-            publicSnapR.forEach(docSnap => {
-              const data = docSnap.data();
-              // Ne pas ajouter en double si c'est déjà traité (le user est l'owner)
-              if (data.ownerId === userData.uid) return;
-
-              let parsedData = data;
-              if (data.data) {
-                try {
-                  parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
-                } catch (e) {}
-              }
-
-              rhythmsList.push({
-                id: docSnap.id,
-                label: data.name || data.title || 'Sans titre',
-                date: data.createdAt || 0,
-                type: 'rhythm', // On le met dans le catalogue public
-                isPublic: true,
-                rewardClaimed: true, // Non applicable
-                originalData: parsedData,
-                isExternal: true
-              });
-            });
-          }
-          
-          audioMasters.forEach(item => rhythmsList.push(item));
-          
-          rhythmsList.sort((a, b) => {
-            if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
-              return a.orderIndex - b.orderIndex;
-            }
-            return b.date - a.date;
-          });
-        } catch (e) {
-          console.warn("Rhythms fetch error:", e.message);
-        }
-
-        // 4. Fetch Choreographies
-        let choreosList = [];
-        
-        // A. Fichiers Audio Danse (Stockage brut via metadata de l'utilisateur)
-        const choreoStorageRef = collection(db, 'user_dance_audio_files');
-        const qChoreoAudio = query(choreoStorageRef, where('userId', '==', userData.uid));
-        try {
-          const choreoAudioSnap = await safeGetDocs(qChoreoAudio);
-          if (choreoAudioSnap) {
-             choreoAudioSnap.forEach(docSnap => {
-               const item = docSnap.data();
-               const isJson = item.name.endsWith('.json');
-               choreosList.push({
-                 id: docSnap.id,
-                 label: item.name,
-                 date: parseInt(item.name.split('_')[0]) || 0,
-                 type: isJson ? 'section' : 'storage',
-                 isPublic: false
-               });
-             });
-          }
-        } catch (storageErr) {
-          console.warn('[STORAGE] Error fetching choreo audio files from storage:', storageErr);
-        }
-        
-        // B. Séquences Complètes (Choreographies)
-        const choreoItemsMap = new Map();
-        try {
-          const qOwnerChoreo = query(collection(db, 'choreographies'), where('ownerId', '==', userData.uid));
-          const ownerChoreoSnap = await safeGetDocs(qOwnerChoreo);
-          if (ownerChoreoSnap) ownerChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
-          
-          const qPublicChoreo = query(collection(db, 'choreographies'), where('visibility', '==', 'public'));
-          const publicChoreoSnap = await safeGetDocs(qPublicChoreo);
-          if (publicChoreoSnap) publicChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
-          
-          const qTargetChoreo = query(collection(db, 'choreographies'), where('targetUserId', '==', userData.uid));
-          const targetChoreoSnap = await safeGetDocs(qTargetChoreo);
-          if (targetChoreoSnap) targetChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
-          
-          const qGlobalChoreo = query(collection(db, 'choreographies'), where('visibility', '==', 'admin_global'));
-          const globalChoreoSnap = await safeGetDocs(qGlobalChoreo);
-          if (globalChoreoSnap) globalChoreoSnap.forEach(doc => choreoItemsMap.set(doc.id, doc));
-        } catch (choreoErr) {
-          console.error('[CHOREOS] Error fetching choreos:', choreoErr.code, choreoErr.message);
-        }
-        
-        if (choreoItemsMap.size > 0) {
-          choreoItemsMap.forEach(docSnap => {
-            const data = docSnap.data();
-            const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
-            
-            let parsedData = data;
-            if (data.data) {
-              try {
-                parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
-              } catch (e) {}
-            }
-
-            choreosList.push({
-              id: docSnap.id,
-              label: data.name || data.title || 'Sans titre',
-              date: data.createdAt || 0,
-              type: isPublic ? 'choreo' : 'section',
-              isPublic: isPublic,
-              rewardClaimed: data.rewardClaimed || false,
-              orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
-              originalData: parsedData
-            });
-          });
-        }
-        
-        // C. Séquences Publiques Globales Choreos
-        const qPublicChoreo2 = query(collection(db, 'choreographies'), where('visibility', 'in', ['admin_global', 'public']));
-        const publicChoreoSnap2 = await safeGetDocs(qPublicChoreo2);
-        if (publicChoreoSnap2) {
-          publicChoreoSnap2.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.ownerId === userData.uid) return;
-
-            let parsedData = data;
-            if (data.data) {
-              try {
-                parsedData = JSON.parse(LZString.decompressFromBase64(data.data));
-              } catch (e) {}
-            }
-
-            choreosList.push({
-              id: docSnap.id,
-              label: data.name || data.title || 'Sans titre',
-              date: data.createdAt || 0,
-              type: 'choreo',
-              isPublic: true,
-              rewardClaimed: true,
-              orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
-              originalData: parsedData,
-              isGlobal: true,
-              authorName: data.authorName || 'Inconnu'
-            });
-          });
-        }
-        
-        audioMasters.forEach(item => choreosList.push(item));
-        
-        choreosList.sort((a, b) => {
-          if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
-            return a.orderIndex - b.orderIndex;
-          }
-          return b.date - a.date;
         });
+        const pupitresArray = Object.keys(pupitreCounts)
+          .map(name => ({ label: name, count: pupitreCounts[name] }))
+          .sort((a, b) => b.count - a.count);
+        setStats(prev => ({ ...prev, activeMembers: activeMembersCount, pupitres: pupitresArray }));
+      }, (error) => console.warn('[Realtime Hub] Users error:', error.message)));
+    }
 
-        // 5. Fetch Newsletter Subscribers
-        let subscribersList = [];
-        const newsletterRef = collection(db, 'newsletter_subscribers');
-        const qNewsletter = query(newsletterRef, where('groupId', '==', userData.groupId));
-        const newsletterSnap = await safeGetDocs(qNewsletter);
-        if (newsletterSnap) {
-           newsletterSnap.forEach(doc => {
-             const data = doc.data();
-             subscribersList.push({ id: doc.id, label: data.email || data.name || 'Abonné', date: data.createdAt?.toMillis?.() || 0 });
-           });
-           subscribersList.sort((a, b) => b.date - a.date);
-        }
-
-        // 6. Fetch Varals (documents & instrument_models)
-        let varalsList = [];
-        try {
-          const qDocs = query(collection(db, 'documents'), where('groupId', '==', userData.groupId));
-          const docsSnap = await safeGetDocs(qDocs);
-          if (docsSnap) {
-            docsSnap.forEach(docSnap => {
-              const data = docSnap.data();
-              if (data.type === 'culture_fiche') {
-                varalsList.push({
-                  id: docSnap.id,
-                  label: data.titre || data.nom || 'Sans titre',
-                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
-                  type: 'culture',
-                  categorieFiche: data.categorieFiche || 'Général',
-                  isPublic: data.isPublic || false,
-                  rewardClaimed: data.rewardClaimed || false,
-                  sourceCollection: 'documents'
-                });
-              } else if (data.type === 'song') {
-                varalsList.push({
-                  id: docSnap.id,
-                  label: data.titre || data.nom || 'Sans titre',
-                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
-                  type: 'toada',
-                  isPublic: data.isPublic || false,
-                  rewardClaimed: data.rewardClaimed || false,
-                  sourceCollection: 'documents'
-                });
-              } else if (data.type === 'fabrication') {
-                varalsList.push({
-                  id: docSnap.id,
-                  label: data.titre || data.nom || 'Sans titre',
-                  date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
-                  type: 'fabrication',
-                  isPublic: data.isPublic || false,
-                  rewardClaimed: data.rewardClaimed || false,
-                  sourceCollection: 'documents'
-                });
-              }
-            });
+    // ── 2. Events (Événements à venir) ──
+    if (groupId) {
+      const qEvents = query(collection(db, 'events'), where('groupId', '==', groupId));
+      unsubs.push(onSnapshot(qEvents, (snapshot) => {
+        const today = todayStr();
+        const upcomingEvents = [];
+        snapshot.forEach(docSnap => {
+          const evt = docSnap.data();
+          const dateStr = extractDateStr(evt);
+          if (dateStr && dateStr >= today) {
+            upcomingEvents.push({ ...evt, id: docSnap.id, dateStr });
           }
-
-          const qModels = query(collection(db, 'instrument_models'), where('groupId', '==', userData.groupId));
-          const modelsSnap = await safeGetDocs(qModels);
-          if (modelsSnap) {
-            modelsSnap.forEach(docSnap => {
-              const data = docSnap.data();
-              varalsList.push({
-                id: docSnap.id,
-                label: data.nom || 'Sans titre',
-                date: data.createdAt?.toMillis?.() || 0,
-                type: 'fabrication',
-                isPublic: data.isPublic || false,
-                rewardClaimed: data.rewardClaimed || false,
-                sourceCollection: 'instrument_models'
-              });
-            });
-          }
-          
-          varalsList.sort((a, b) => b.date - a.date);
-        } catch (varalErr) {
-          console.warn("Varal fetch error:", varalErr.message);
-        }
-
-        const cultureItems = varalsList.filter(v => v.type === 'culture');
-        const fabricationItems = varalsList.filter(v => v.type === 'fabrication');
-        const toadaItems = varalsList.filter(v => v.type === 'toada');
-
-        setStats({
-          activeMembers: activeMembersCount,
-          pupitres: pupitresArray, // Full array
-          upcomingEvents: upcomingEventsCount,
+        });
+        upcomingEvents.sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+        const nextEvent = upcomingEvents.length > 0
+          ? (upcomingEvents[0].title || upcomingEvents[0].nom || 'Événement')
+          : null;
+        setStats(prev => ({
+          ...prev,
+          upcomingEvents: upcomingEvents.length,
           nextEventName: nextEvent,
-          latestEvents: latestEventsArray,
-          totalRhythms: rhythmsList.length,
-          totalChoreos: choreosList.length,
-          totalCulture: cultureItems.length,
-          totalFabrication: fabricationItems.length,
-          totalToadas: toadaItems.length,
-          newsletterSubscribers: subscribersList.length,
-          latestSubscribers: subscribersList,
-          latestRhythms: rhythmsList,
-          latestChoreos: choreosList,
-          latestCulture: cultureItems,
-          latestFabrication: fabricationItems,
-          latestToadas: toadaItems,
-          vitrineViews: associationData?.vitrineViews || 0
+          latestEvents: upcomingEvents.slice(0, 3)
+        }));
+      }, (error) => console.warn('[Realtime Hub] Events error:', error.message)));
+    }
+
+    // ── 3. Presets & Rhythms (Séquences) ──
+    // Chaque sous-requête est écoutée indépendamment et fusionnée via une Map partagée.
+    const presetsMap = new Map();
+    const rebuildRhythmsFromPresets = () => {
+      const rhythmsList = [...storageRhythmsRef.current]; // fichiers Storage (one-shot)
+      presetsMap.forEach(docSnap => {
+        const data = docSnap.data();
+        const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
+        let parsedData = data;
+        if (data.data) {
+          try { parsedData = JSON.parse(LZString.decompressFromBase64(data.data)); } catch (e) {}
+        }
+        rhythmsList.push({
+          id: docSnap.id,
+          label: data.name || data.title || 'Sans titre',
+          date: data.createdAt || 0,
+          type: isPublic ? 'rhythm' : 'section',
+          isPublic,
+          rewardClaimed: data.rewardClaimed || false,
+          orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
+          originalData: parsedData,
+          audioUrl: data.audioUrl,
+          storagePath: data.storagePath,
+          collection: 'presets',
+          isExternal: data.ownerId !== uid
         });
-      } catch (error) {
-        console.error("Erreur inattendue dans fetchStats:", error);
-      } finally {
-        setLoading(false);
+      });
+      // Ajouter les audio masters temps réel
+      audioMastersRef.current.forEach(item => rhythmsList.push(item));
+      rhythmsList.sort((a, b) => {
+        if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
+          return a.orderIndex - b.orderIndex;
+        }
+        return b.date - a.date;
+      });
+      setStats(prev => ({ ...prev, totalRhythms: rhythmsList.length, latestRhythms: rhythmsList }));
+    };
+
+    // Refs mutables pour les données non-temps-réel (Storage) et audio masters
+    const storageRhythmsRef = React.createRef ? { current: [] } : { current: [] };
+    const audioMastersRef = { current: [] };
+
+    if (uid) {
+      const qOwnerPresets = query(collection(db, 'presets'), where('ownerId', '==', uid));
+      unsubs.push(onSnapshot(qOwnerPresets, (snapshot) => {
+        snapshot.forEach(d => presetsMap.set(d.id, d));
+        // Retirer les docs supprimés
+        const activeIds = new Set();
+        snapshot.forEach(d => activeIds.add(d.id));
+        presetsMap.forEach((_, id) => {
+          // Garder les docs qui ne correspondent pas à cette requête (provenant d'autres listeners)
+        });
+        rebuildRhythmsFromPresets();
+      }, (error) => console.warn('[Realtime Hub] Owner presets error:', error.message)));
+    }
+
+    // Presets publics (filtrés par visibilité)
+    const qPublicPresets = query(collection(db, 'presets'), where('visibility', 'in', ['public', 'admin_global']));
+    unsubs.push(onSnapshot(qPublicPresets, (snapshot) => {
+      snapshot.forEach(d => presetsMap.set(d.id, d));
+      rebuildRhythmsFromPresets();
+    }, (error) => console.warn('[Realtime Hub] Public presets error:', error.message)));
+
+    if (uid) {
+      const qTargetPresets = query(collection(db, 'presets'), where('targetUserId', '==', uid));
+      unsubs.push(onSnapshot(qTargetPresets, (snapshot) => {
+        snapshot.forEach(d => presetsMap.set(d.id, d));
+        rebuildRhythmsFromPresets();
+      }, (error) => console.warn('[Realtime Hub] Target presets error:', error.message)));
+    }
+
+    // ── 3.5 Audio Masters ──
+    if (groupId || uid) {
+      const qAudioMasters = query(collection(db, 'audio_masters'), or(
+        where('tenantId', '==', groupId || '__none__'),
+        where('mestreId', '==', uid || '__none__')
+      ));
+      unsubs.push(onSnapshot(qAudioMasters, (snapshot) => {
+        const masters = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          masters.push({
+            id: docSnap.id,
+            label: data.nom || 'Master Audio',
+            date: data.createdAt ? new Date(data.createdAt).getTime() : 0,
+            type: 'storage',
+            isPublic: false,
+            audioUrl: data.audioUrl,
+            bpm: data.bpm
+          });
+        });
+        audioMastersRef.current = masters;
+        rebuildRhythmsFromPresets();
+        rebuildChoreosFromFirestore();
+      }, (error) => console.warn('[Realtime Hub] Audio masters error:', error.message)));
+    }
+
+    // ── 4. Choreographies ──
+    const choreosMap = new Map();
+    const choreoAudioList = { current: [] };
+    const rebuildChoreosFromFirestore = () => {
+      const choreosList = [...choreoAudioList.current];
+      choreosMap.forEach(docSnap => {
+        const data = docSnap.data();
+        const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
+        let parsedData = data;
+        if (data.data) {
+          try { parsedData = JSON.parse(LZString.decompressFromBase64(data.data)); } catch (e) {}
+        }
+        choreosList.push({
+          id: docSnap.id,
+          label: data.name || data.title || 'Sans titre',
+          date: data.createdAt || 0,
+          type: isPublic ? 'choreo' : 'section',
+          isPublic,
+          rewardClaimed: data.rewardClaimed || false,
+          orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
+          originalData: parsedData,
+          isGlobal: data.ownerId !== uid,
+          authorName: data.authorName || 'Inconnu'
+        });
+      });
+      audioMastersRef.current.forEach(item => choreosList.push(item));
+      choreosList.sort((a, b) => {
+        if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
+          return a.orderIndex - b.orderIndex;
+        }
+        return b.date - a.date;
+      });
+      setStats(prev => ({ ...prev, totalChoreos: choreosList.length, latestChoreos: choreosList }));
+    };
+
+    if (uid) {
+      const qOwnerChoreo = query(collection(db, 'choreographies'), where('ownerId', '==', uid));
+      unsubs.push(onSnapshot(qOwnerChoreo, (snapshot) => {
+        snapshot.forEach(d => choreosMap.set(d.id, d));
+        rebuildChoreosFromFirestore();
+      }, (error) => console.warn('[Realtime Hub] Owner choreos error:', error.message)));
+    }
+
+    const qPublicChoreo = query(collection(db, 'choreographies'), where('visibility', 'in', ['public', 'admin_global']));
+    unsubs.push(onSnapshot(qPublicChoreo, (snapshot) => {
+      snapshot.forEach(d => choreosMap.set(d.id, d));
+      rebuildChoreosFromFirestore();
+    }, (error) => console.warn('[Realtime Hub] Public choreos error:', error.message)));
+
+    if (uid) {
+      const qTargetChoreo = query(collection(db, 'choreographies'), where('targetUserId', '==', uid));
+      unsubs.push(onSnapshot(qTargetChoreo, (snapshot) => {
+        snapshot.forEach(d => choreosMap.set(d.id, d));
+        rebuildChoreosFromFirestore();
+      }, (error) => console.warn('[Realtime Hub] Target choreos error:', error.message)));
+
+      // Fichiers Audio Danse (metadata)
+      const qChoreoAudio = query(collection(db, 'user_dance_audio_files'), where('userId', '==', uid));
+      unsubs.push(onSnapshot(qChoreoAudio, (snapshot) => {
+        const items = [];
+        snapshot.forEach(docSnap => {
+          const item = docSnap.data();
+          const isJson = item.name?.endsWith('.json');
+          items.push({
+            id: docSnap.id,
+            label: item.name,
+            date: parseInt(item.name?.split('_')[0]) || 0,
+            type: isJson ? 'section' : 'storage',
+            isPublic: false
+          });
+        });
+        choreoAudioList.current = items;
+        rebuildChoreosFromFirestore();
+      }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
+    }
+
+    // ── 5. Newsletter Subscribers ──
+    if (groupId) {
+      const qNewsletter = query(collection(db, 'newsletter_subscribers'), where('groupId', '==', groupId));
+      unsubs.push(onSnapshot(qNewsletter, (snapshot) => {
+        const subscribersList = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          subscribersList.push({
+            id: docSnap.id,
+            label: data.email || data.name || 'Abonné',
+            date: data.createdAt?.toMillis?.() || 0
+          });
+        });
+        subscribersList.sort((a, b) => b.date - a.date);
+        setStats(prev => ({ ...prev, newsletterSubscribers: subscribersList.length, latestSubscribers: subscribersList }));
+      }, (error) => console.warn('[Realtime Hub] Newsletter error:', error.message)));
+    }
+
+    // ── 6. Varals (documents & instrument_models) ──
+    const docsVaralList = { current: [] };
+    const modelsVaralList = { current: [] };
+    const rebuildVarals = () => {
+      const varalsList = [...docsVaralList.current, ...modelsVaralList.current];
+      varalsList.sort((a, b) => b.date - a.date);
+      const cultureItems = varalsList.filter(v => v.type === 'culture');
+      const fabricationItems = varalsList.filter(v => v.type === 'fabrication');
+      const toadaItems = varalsList.filter(v => v.type === 'toada');
+      setStats(prev => ({
+        ...prev,
+        totalCulture: cultureItems.length,
+        totalFabrication: fabricationItems.length,
+        totalToadas: toadaItems.length,
+        latestCulture: cultureItems,
+        latestFabrication: fabricationItems,
+        latestToadas: toadaItems
+      }));
+    };
+
+    if (groupId) {
+      const qDocs = query(collection(db, 'documents'), where('groupId', '==', groupId));
+      unsubs.push(onSnapshot(qDocs, (snapshot) => {
+        const items = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          if (data.type === 'culture_fiche') {
+            items.push({
+              id: docSnap.id,
+              label: data.titre || data.nom || 'Sans titre',
+              date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+              type: 'culture',
+              categorieFiche: data.categorieFiche || 'Général',
+              isPublic: data.isPublic || false,
+              rewardClaimed: data.rewardClaimed || false,
+              sourceCollection: 'documents'
+            });
+          } else if (data.type === 'song') {
+            items.push({
+              id: docSnap.id,
+              label: data.titre || data.nom || 'Sans titre',
+              date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+              type: 'toada',
+              isPublic: data.isPublic || false,
+              rewardClaimed: data.rewardClaimed || false,
+              sourceCollection: 'documents'
+            });
+          } else if (data.type === 'fabrication') {
+            items.push({
+              id: docSnap.id,
+              label: data.titre || data.nom || 'Sans titre',
+              date: data.createdAt?.toMillis?.() || data.dateAjout || 0,
+              type: 'fabrication',
+              isPublic: data.isPublic || false,
+              rewardClaimed: data.rewardClaimed || false,
+              sourceCollection: 'documents'
+            });
+          }
+        });
+        docsVaralList.current = items;
+        rebuildVarals();
+      }, (error) => console.warn('[Realtime Hub] Documents error:', error.message)));
+
+      const qModels = query(collection(db, 'instrument_models'), where('groupId', '==', groupId));
+      unsubs.push(onSnapshot(qModels, (snapshot) => {
+        const items = [];
+        snapshot.forEach(docSnap => {
+          const data = docSnap.data();
+          items.push({
+            id: docSnap.id,
+            label: data.nom || 'Sans titre',
+            date: data.createdAt?.toMillis?.() || 0,
+            type: 'fabrication',
+            isPublic: data.isPublic || false,
+            rewardClaimed: data.rewardClaimed || false,
+            sourceCollection: 'instrument_models'
+          });
+        });
+        modelsVaralList.current = items;
+        rebuildVarals();
+      }, (error) => console.warn('[Realtime Hub] Instrument models error:', error.message)));
+    }
+
+    // ── 7. Vitrine views (synchronisation réactive via associationData) ──
+    setStats(prev => ({ ...prev, vitrineViews: associationData?.vitrineViews || 0 }));
+
+    // ── 8. Chargement unique : fichiers Storage (pas de onSnapshot possible) ──
+    const fetchStorageItems = async () => {
+      try {
+        const { ref, listAll, getDownloadURL, getMetadata } = await import('firebase/storage');
+        const { storage } = await import('../../../services/firebase');
+
+        // A. exports_danse
+        const paths = [`exports_danse/tenant_local`, `exports_danse/${groupId}`];
+        for (const path of paths) {
+          try {
+            const folderRef = ref(storage, path);
+            const res = await listAll(folderRef);
+            for (const item of res.items) {
+              const baseName = item.name.split('.')[0];
+              if (!audioMastersRef.current.some(a => a.id.includes(baseName))) {
+                try {
+                  const url = await getDownloadURL(item);
+                  let date = Date.now();
+                  try {
+                    const meta = await getMetadata(item);
+                    if (meta.timeCreated) date = new Date(meta.timeCreated).getTime();
+                  } catch (e) {}
+                  audioMastersRef.current.push({
+                    id: item.name,
+                    label: item.name.replace(/\.[^/.]+$/, ''),
+                    date,
+                    type: 'storage',
+                    isPublic: false,
+                    audioUrl: url
+                  });
+                } catch (itemErr) {
+                  console.warn('Skipping item due to error:', item.name, itemErr);
+                }
+              }
+            }
+          } catch (e) {
+            // Ignore folder not found
+          }
+        }
+
+        // B. Fichiers Audio Séquenceur (Storage)
+        try {
+          const folderRef = ref(storage, `documents/${groupId}/sequencer`);
+          const res = await listAll(folderRef);
+          const storageItems = [];
+          res.items.forEach(item => {
+            const isJson = /\.json$/i.test(item.name);
+            storageItems.push({
+              id: item.name,
+              label: item.name.replace(/^\d+_/, '').replace(/\.(json|mp3|wav|ogg|m4a|aac)$/i, ''),
+              date: parseInt(item.name.split('_')[0]) || 0,
+              type: isJson ? 'section' : 'storage',
+              isPublic: false,
+              storagePath: `documents/${groupId}/sequencer/${item.name}`,
+              source: 'storage'
+            });
+          });
+          storageRhythmsRef.current = storageItems;
+        } catch (storageErr) {
+          console.warn('[STORAGE] Error fetching audio files from storage:', storageErr);
+        }
+
+        // Déclencher la reconstruction après chargement Storage
+        rebuildRhythmsFromPresets();
+        rebuildChoreosFromFirestore();
+      } catch (err) {
+        console.warn('Error fetching storage items:', err);
       }
     };
 
-    fetchStats();
-  }, [userData?.groupId]);
+    fetchStorageItems();
+
+    // Marquer le chargement initial comme terminé après un court délai
+    // pour laisser les premiers snapshots arriver
+    const loadingTimer = setTimeout(() => setLoading(false), 800);
+
+    // ── Cleanup universel ──
+    return () => {
+      clearTimeout(loadingTimer);
+      unsubs.forEach(u => typeof u === 'function' && u());
+    };
+  }, [userData?.groupId, userData?.uid]);
 
   if (loading) {
     return (
@@ -1350,7 +1288,11 @@ export default function GlobalHealthStats({ userData, associationData }) {
                               {(item.type === 'rhythm' || item.type === 'section') ? (
                                 <div className="flex items-center gap-2">
                                   <a 
-                                    href={`https://sequenciador.o-girador.com/app?loadPreset=${item.id}`}
+                                    href={getEcosystemUrl('sequenciador', `/app?loadPreset=${item.id}`)}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      launchCrossApp(getEcosystemUrl('sequenciador', `/app?loadPreset=${item.id}`), { appKey: 'sequenciador', appLabel: 'le Séquenceur' });
+                                    }}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="font-medium text-gray-800 line-clamp-1 hover:text-purple-600 transition-colors cursor-pointer"

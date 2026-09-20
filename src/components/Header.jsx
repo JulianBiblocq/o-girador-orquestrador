@@ -5,9 +5,8 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
 import AxePointsBadge from './AxePointsBadge';
-import LeaveReviewModal from './espace-client/LeaveReviewModal';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '../services/firebase';
+import { launchCrossApp } from '../utils/crossAppAuth';
+import { getEcosystemUrl } from '../constants/ecosystemUrls';
 
 export default function Header({ 
   activeUniverse, 
@@ -29,40 +28,10 @@ export default function Header({
     e.preventDefault();
     if (launchingApp) return;
 
-    if (!currentUser || appKey === 'mostrador') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
     setLaunchingApp(appKey);
-    const newTab = window.open('', '_blank');
-
-    let finalUrl = url;
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (isLocal) {
-      if (appKey === 'organizador') finalUrl = 'http://localhost:5173';
-      else if (appKey === 'sequenciador') finalUrl = 'http://localhost:5174';
-      else if (appKey === 'dancador') finalUrl = 'http://localhost:5175';
-    }
-
     try {
-      const getSSOToken = httpsCallable(functions, 'getCrossAppAuthToken');
-      const res = await getSSOToken();
-      const customToken = res.data?.customToken;
-
-      if (customToken) {
-        const targetUrl = new URL(finalUrl);
-        targetUrl.searchParams.set('ssoToken', customToken);
-        if (newTab) newTab.location.href = targetUrl.toString();
-        else window.open(targetUrl.toString(), '_blank', 'noopener,noreferrer');
-      } else {
-        if (newTab) newTab.location.href = finalUrl;
-        else window.open(finalUrl, '_blank', 'noopener,noreferrer');
-      }
-    } catch (err) {
-      console.warn("[Hub SSO] Erreur génération token SSO :", err);
-      if (newTab) newTab.location.href = finalUrl;
-      else window.open(finalUrl, '_blank', 'noopener,noreferrer');
+      const destination = url || getEcosystemUrl(appKey);
+      await launchCrossApp(destination, { appKey, appLabel: appKey });
     } finally {
       setLaunchingApp(null);
     }
@@ -255,23 +224,23 @@ export default function Header({
                       Accéder à mon espace
                     </button>
                     <a 
-                      href="https://organizador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+                      href={getEcosystemUrl('organizador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('organizador'), "organizador")}
                       className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'organizador' ? 'Connexion en cours...' : 'Organizador'}
                     </a>
-                    <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Mostrador (Vitrine)</a>
+                    <a href={getEcosystemUrl('mostrador')} target="_blank" rel="noopener noreferrer" className="block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer">Mostrador (Vitrine)</a>
                     <a 
-                      href="https://sequenciador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+                      href={getEcosystemUrl('sequenciador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('sequenciador'), "sequenciador")}
                       className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'sequenciador' ? 'Connexion en cours...' : 'Sequenciador'}
                     </a>
                     <a 
-                      href="https://dancador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+                      href={getEcosystemUrl('dancador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('dancador'), "dancador")}
                       className={`block w-full text-left px-4 py-2 text-xs text-[#4a2e1b] font-semibold hover:bg-[#f4e8cf] transition-colors cursor-pointer border-b border-[#8b4513]/10 ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'dancador' ? 'Connexion en cours...' : 'Dançador'}
@@ -508,23 +477,23 @@ export default function Header({
                       Accéder à mon espace
                     </button>
                     <a 
-                      href="https://organizador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://organizador.o-girador.com", "organizador")}
+                      href={getEcosystemUrl('organizador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('organizador'), "organizador")}
                       className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer ${launchingApp === 'organizador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'organizador' ? 'Connexion en cours...' : 'Organizador'}
                     </a>
-                    <a href="https://mostrador.o-girador.com" target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Mostrador</a>
+                    <a href={getEcosystemUrl('mostrador')} target="_blank" rel="noopener noreferrer" className="text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer">Mostrador</a>
                     <a 
-                      href="https://sequenciador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://sequenciador.o-girador.com", "sequenciador")}
+                      href={getEcosystemUrl('sequenciador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('sequenciador'), "sequenciador")}
                       className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer ${launchingApp === 'sequenciador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'sequenciador' ? 'Connexion en cours...' : 'Sequenciador'}
                     </a>
                     <a 
-                      href="https://dancador.o-girador.com" 
-                      onClick={(e) => handleAppLaunch(e, "https://dancador.o-girador.com", "dancador")}
+                      href={getEcosystemUrl('dancador')} 
+                      onClick={(e) => handleAppLaunch(e, getEcosystemUrl('dancador'), "dancador")}
                       className={`text-left py-1.5 text-[#4a2e1b] text-xs font-semibold hover:text-[#d2691e] transition-colors cursor-pointer border-b border-[#8b4513]/10 pb-2 mb-1 ${launchingApp === 'dancador' ? 'opacity-50 animate-pulse' : ''}`}
                     >
                       {launchingApp === 'dancador' ? 'Connexion en cours...' : 'Dançador'}
