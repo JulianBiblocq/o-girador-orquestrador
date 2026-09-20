@@ -71,7 +71,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [selectedPackItems, setSelectedPackItems] = useState([]);
   const [toastMessage, setToastMessage] = useState(null);
   const [activeRhythmTab, setActiveRhythmTab] = useState('rhythm'); // 'rhythm', 'section', 'storage'
-  const [activeChoreoTab, setActiveChoreoTab] = useState('choreo'); // 'choreo', 'section', 'storage'
+  const [activeChoreoTab, setActiveChoreoTab] = useState('choreo'); // 'choreo', 'section'
   const isAdmin = associationData?.isAdmin || associationData?.role === 'admin' || userData?.role === 'super-admin' || userData?.isSystemAdmin === true;
   const isMestreOrAdmin = Boolean(
     isAdmin ||
@@ -161,14 +161,14 @@ export default function GlobalHealthStats({ userData, associationData }) {
       if (audioMastersRef.current) {
         audioMastersRef.current = audioMastersRef.current.filter(a => a.id !== rhythmToDelete.id);
       }
+      if (choreoAudioListRef.current) {
+        choreoAudioListRef.current = choreoAudioListRef.current.filter(a => a.id !== rhythmToDelete.id);
+      }
 
       // Filtrage immédiat du state local pour un retour visuel instantané
       setStats(prev => ({
         ...prev,
         latestRhythms: prev.latestRhythms.filter(r => r.id !== rhythmToDelete.id),
-        latestChoreos: rhythmToDelete.type === 'storage' 
-          ? prev.latestChoreos.filter(c => c.id !== rhythmToDelete.id) 
-          : prev.latestChoreos,
         totalRhythms: Math.max(0, prev.totalRhythms - 1)
       }));
       showToast(rhythmToDelete.type === 'storage' ? "Le fichier audio a bien été supprimé." : "Le rythme a bien été retiré du catalogue.");
@@ -190,35 +190,21 @@ export default function GlobalHealthStats({ userData, associationData }) {
     setIsDeletingChoreo(true);
 
     try {
-      const targetCollection = choreoToDelete.collection || 
-        (choreoToDelete.type === 'storage' ? 'audio_masters' : 'choreographies');
-
       await deleteAudioResource(choreoToDelete, {
         groupId: userData?.groupId,
-        collection: targetCollection
+        collection: 'choreographies'
       });
       
-      // Filtrage immédiat des références en mémoire
-      if (choreoAudioListRef.current) {
-        choreoAudioListRef.current = choreoAudioListRef.current.filter(c => c.id !== choreoToDelete.id);
-      }
-      if (audioMastersRef.current) {
-        audioMastersRef.current = audioMastersRef.current.filter(a => a.id !== choreoToDelete.id);
-      }
-
       // Filtrage immédiat du state local pour un retour visuel instantané
       setStats(prev => ({
         ...prev,
         latestChoreos: prev.latestChoreos.filter(c => c.id !== choreoToDelete.id),
-        latestRhythms: choreoToDelete.type === 'storage' 
-          ? prev.latestRhythms.filter(r => r.id !== choreoToDelete.id) 
-          : prev.latestRhythms,
         totalChoreos: Math.max(0, prev.totalChoreos - 1)
       }));
-      showToast(choreoToDelete.type === 'storage' ? "Le fichier audio a bien été supprimé." : "La chorégraphie a bien été supprimée.");
+      showToast("La chorégraphie a bien été supprimée.");
       setChoreoToDelete(null);
     } catch (error) {
-      console.error("Erreur suppression chorégraphie/audio:", error);
+      console.error("Erreur suppression chorégraphie:", error);
       showToast("Une erreur est survenue lors de la suppression.");
     } finally {
       setIsDeletingChoreo(false);
@@ -522,7 +508,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
     // Chaque sous-requête est écoutée indépendamment et fusionnée via une Map partagée.
     const presetsMap = new Map();
     const rebuildRhythmsFromPresets = () => {
-      const rhythmsList = [...storageRhythmsRef.current]; // fichiers Storage (one-shot)
+      const rhythmsList = [...storageRhythmsRef.current, ...choreoAudioListRef.current]; // fichiers Storage et audios
       presetsMap.forEach(docSnap => {
         const data = docSnap.data();
         const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
@@ -645,14 +631,13 @@ export default function GlobalHealthStats({ userData, associationData }) {
         });
         audioMastersRef.current = masters;
         rebuildRhythmsFromPresets();
-        rebuildChoreosFromFirestore();
       }, (error) => console.warn('[Realtime Hub] Audio masters error:', error.message)));
     }
 
     // ── 4. Choreographies ──
     const choreosMap = new Map();
     const rebuildChoreosFromFirestore = () => {
-      const choreosList = [...choreoAudioListRef.current];
+      const choreosList = [];
       choreosMap.forEach(docSnap => {
         const data = docSnap.data();
         const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
@@ -688,7 +673,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
           authorName: data.authorName || 'Inconnu'
         });
       });
-      audioMastersRef.current.forEach(item => choreosList.push(item));
       choreosList.sort((a, b) => {
         if (a.orderIndex !== undefined && b.orderIndex !== undefined && a.orderIndex !== 9999 && b.orderIndex !== 9999) {
           return a.orderIndex - b.orderIndex;
@@ -739,7 +723,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
           });
         });
         choreoAudioListRef.current = items;
-        rebuildChoreosFromFirestore();
+        rebuildRhythmsFromPresets();
       }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
     }
 
@@ -1615,12 +1599,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
               >
                 Catalogue {associationData?.name || associationData?.nom || 'Local'} (Privé) ({stats.latestChoreos.filter(r => r.type === 'section').length})
               </button>
-              <button 
-                onClick={() => setActiveChoreoTab('storage')}
-                className={`flex-1 py-3 text-xs font-bold border-b-2 transition-colors ${activeChoreoTab === 'storage' ? 'border-pink-600 text-pink-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
-              >
-                Fichiers audio ({stats.latestChoreos.filter(r => r.type === 'storage').length})
-              </button>
             </div>
             
             <div className="p-5 overflow-y-auto flex-1 bg-white">
@@ -1702,7 +1680,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
                           {/* Bouton Supprimer */}
                           {(() => {
                             const canDeleteItem = userData?.isSystemAdmin || 
-                              (item.isGlobal && !isMestreOrAdmin ? false : (item.ownerId === uid || isMestreOrAdmin || activeChoreoTab === 'storage'));
+                              (item.isGlobal && !isMestreOrAdmin ? false : (item.ownerId === uid || isMestreOrAdmin));
                             
                             if (!canDeleteItem) return null;
                             return (
@@ -2041,13 +2019,13 @@ export default function GlobalHealthStats({ userData, associationData }) {
         isDeleting={isDeletingRhythm}
       />
 
-      {/* Modale de confirmation de suppression Cordel - Chorégraphies & Audios */}
+      {/* Modale de confirmation de suppression Cordel - Chorégraphies */}
       <DeleteConfirmModal
         isOpen={!!choreoToDelete}
         onClose={() => { if (!isDeletingChoreo) setChoreoToDelete(null); }}
         onConfirm={confirmDeleteChoreo}
         itemName={choreoToDelete?.label}
-        itemType={choreoToDelete?.type === 'storage' ? "le fichier audio" : "la chorégraphie"}
+        itemType="la chorégraphie"
         isDeleting={isDeletingChoreo}
       />
 
