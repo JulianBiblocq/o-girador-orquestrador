@@ -5,6 +5,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
 import AxePointsBadge from './AxePointsBadge';
+import LeaveReviewModal from './espace-client/LeaveReviewModal';
 import { launchCrossApp } from '../utils/crossAppAuth';
 import { getEcosystemUrl } from '../constants/ecosystemUrls';
 
