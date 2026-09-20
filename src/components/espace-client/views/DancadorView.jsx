@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, getDocs, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Music, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Activity, Edit3, ExternalLink, Link as LinkIcon, Check, Globe, Music, PlayCircle, Trash2 } from 'lucide-react';
+import DeleteConfirmModal from '../modals/DeleteConfirmModal';
+import { deleteAudioResource } from '../../../services/audioDeletionService';
 import { awardAxePoints } from '../../../services/gamificationService';
 import { launchCrossApp } from '../../../utils/crossAppAuth';
 import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
@@ -12,6 +14,8 @@ export default function DancadorView({ userData, associationData, onBack }) {
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -33,6 +37,30 @@ export default function DancadorView({ userData, associationData, onBack }) {
       });
     } else {
       prompt("Copiez ce lien de partage (Ctrl+C, Entrée) :", url);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteAudioResource(itemToDelete, {
+        groupId: userData?.groupId,
+        collection: itemToDelete.collection || 'choreographies'
+      });
+      if (itemToDelete.collection === 'audio_masters') {
+        setAudios(prev => prev.filter(a => a.id !== itemToDelete.id));
+        showToast("Le fichier audio a bien été supprimé.");
+      } else {
+        setItems(prev => prev.filter(i => i.id !== itemToDelete.id));
+        showToast("La chorégraphie a bien été supprimée.");
+      }
+      setItemToDelete(null);
+    } catch (error) {
+      console.error("Erreur suppression:", error);
+      showToast("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -186,6 +214,13 @@ export default function DancadorView({ userData, associationData, onBack }) {
                   >
                     {copiedId === item.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
                   </button>
+                  <button 
+                    onClick={() => setItemToDelete({ ...item, collection: 'choreographies', type: 'choreo', label: item.title || item.nom })}
+                    className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-500 hover:bg-red-50 transition-colors"
+                    title="Supprimer la chorégraphie"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -247,6 +282,13 @@ export default function DancadorView({ userData, associationData, onBack }) {
                   >
                     {copiedId === audio.id ? <Check className="w-3.5 h-3.5 text-green-500" /> : <LinkIcon className="w-3.5 h-3.5" />}
                   </button>
+                  <button 
+                    onClick={() => setItemToDelete({ ...audio, collection: 'audio_masters', type: 'storage', label: audio.nom })}
+                    className="flex items-center justify-center w-8 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-500 hover:bg-red-50 transition-colors"
+                    title="Supprimer l'audio"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             ))}
@@ -258,6 +300,16 @@ export default function DancadorView({ userData, associationData, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Modale de confirmation de suppression */}
+      <DeleteConfirmModal
+        isOpen={!!itemToDelete}
+        onClose={() => { if (!isDeleting) setItemToDelete(null); }}
+        onConfirm={confirmDelete}
+        itemName={itemToDelete?.label}
+        itemType={itemToDelete?.type === 'storage' ? "le fichier audio" : "la chorégraphie"}
+        isDeleting={isDeleting}
+      />
 
       {/* Toast Notification */}
       {toastMessage && (

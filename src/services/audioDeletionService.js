@@ -49,6 +49,13 @@ export async function deleteAudioResource(item, options = {}) {
           storageRef = storageInstance.refFromURL(item.audioUrl);
         } else if (typeof options._refFromURL === 'function') {
           storageRef = options._refFromURL(storageInstance, item.audioUrl);
+        } else if (item.audioUrl.includes('/o/')) {
+          const match = item.audioUrl.match(/\/o\/([^?]+)/);
+          if (match) {
+            storageRef = makeRef(storageInstance, decodeURIComponent(match[1]));
+          } else {
+            storageRef = makeRef(storageInstance, item.audioUrl);
+          }
         } else {
           storageRef = makeRef(storageInstance, item.audioUrl);
         }

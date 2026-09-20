@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, getDocs, onSnapshot, doc, setDoc, updateDoc, increment, serverTimestamp, deleteDoc, or, limit } from 'firebase/firestore';
-import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Check, Eye, ArrowUp, ArrowDown, Trash2, BookOpen, Hammer, Mic, Store } from 'lucide-react';
+import { Users, Calendar, Music, Mail, Activity, Sparkles, Globe, X, Lock, Unlock, Check, Eye, ArrowUp, ArrowDown, Trash2, BookOpen, Hammer, Mic, Store } from 'lucide-react';
 import LZString from 'lz-string';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
 import CreatePackModal from '../modals/CreatePackModal';
@@ -15,6 +15,11 @@ import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
 export default function GlobalHealthStats({ userData, associationData }) {
   const [rhythmToDelete, setRhythmToDelete] = useState(null);
   const [isDeletingRhythm, setIsDeletingRhythm] = useState(false);
+  const [choreoToDelete, setChoreoToDelete] = useState(null);
+  const [isDeletingChoreo, setIsDeletingChoreo] = useState(false);
+  const storageRhythmsRef = useRef([]);
+  const audioMastersRef = useRef([]);
+  const choreoAudioListRef = useRef([]);
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
     if (userData?.isSystemAdmin === true || userData?.role === 'super-admin' || userData?.role === 'mestre') return true;
@@ -68,6 +73,13 @@ export default function GlobalHealthStats({ userData, associationData }) {
   const [activeRhythmTab, setActiveRhythmTab] = useState('rhythm'); // 'rhythm', 'section', 'storage'
   const [activeChoreoTab, setActiveChoreoTab] = useState('choreo'); // 'choreo', 'section', 'storage'
   const isAdmin = associationData?.isAdmin || associationData?.role === 'admin' || userData?.role === 'super-admin' || userData?.isSystemAdmin === true;
+  const isMestreOrAdmin = Boolean(
+    isAdmin ||
+    userData?.role === 'mestre' ||
+    associationData?.mestreId === userData?.uid ||
+    userData?.uid === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' ||
+    userData?.mestreId === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1'
+  );
   const toggleItemSelection = (item) => {
     setSelectedPackItems(prev => {
       const exists = prev.find(i => i.id === item.id);
@@ -134,23 +146,82 @@ export default function GlobalHealthStats({ userData, associationData }) {
     setIsDeletingRhythm(true);
 
     try {
+      const targetCollection = rhythmToDelete.collection || 
+        (rhythmToDelete.type === 'storage' ? 'audio_masters' : 'presets');
+
       await deleteAudioResource(rhythmToDelete, {
         groupId: userData?.groupId,
-        collection: rhythmToDelete.collection || (rhythmToDelete.type === 'section' || rhythmToDelete.type === 'rhythm' ? 'presets' : 'presets')
+        collection: targetCollection
       });
       
+      // Filtrage immédiat des références en mémoire
+      if (storageRhythmsRef.current) {
+        storageRhythmsRef.current = storageRhythmsRef.current.filter(r => r.id !== rhythmToDelete.id);
+      }
+      if (audioMastersRef.current) {
+        audioMastersRef.current = audioMastersRef.current.filter(a => a.id !== rhythmToDelete.id);
+      }
+
       // Filtrage immédiat du state local pour un retour visuel instantané
       setStats(prev => ({
         ...prev,
-        latestRhythms: prev.latestRhythms.filter(r => r.id !== rhythmToDelete.id)
+        latestRhythms: prev.latestRhythms.filter(r => r.id !== rhythmToDelete.id),
+        latestChoreos: rhythmToDelete.type === 'storage' 
+          ? prev.latestChoreos.filter(c => c.id !== rhythmToDelete.id) 
+          : prev.latestChoreos,
+        totalRhythms: Math.max(0, prev.totalRhythms - 1)
       }));
-      showToast("Le fichier audio a bien été retiré du catalogue.");
+      showToast(rhythmToDelete.type === 'storage' ? "Le fichier audio a bien été supprimé." : "Le rythme a bien été retiré du catalogue.");
       setRhythmToDelete(null);
     } catch (error) {
       console.error("Erreur suppression:", error);
       showToast("Une erreur est survenue lors de la suppression.");
     } finally {
       setIsDeletingRhythm(false);
+    }
+  };
+
+  const requestDeleteChoreo = (item) => {
+    setChoreoToDelete(item);
+  };
+
+  const confirmDeleteChoreo = async () => {
+    if (!choreoToDelete) return;
+    setIsDeletingChoreo(true);
+
+    try {
+      const targetCollection = choreoToDelete.collection || 
+        (choreoToDelete.type === 'storage' ? 'audio_masters' : 'choreographies');
+
+      await deleteAudioResource(choreoToDelete, {
+        groupId: userData?.groupId,
+        collection: targetCollection
+      });
+      
+      // Filtrage immédiat des références en mémoire
+      if (choreoAudioListRef.current) {
+        choreoAudioListRef.current = choreoAudioListRef.current.filter(c => c.id !== choreoToDelete.id);
+      }
+      if (audioMastersRef.current) {
+        audioMastersRef.current = audioMastersRef.current.filter(a => a.id !== choreoToDelete.id);
+      }
+
+      // Filtrage immédiat du state local pour un retour visuel instantané
+      setStats(prev => ({
+        ...prev,
+        latestChoreos: prev.latestChoreos.filter(c => c.id !== choreoToDelete.id),
+        latestRhythms: choreoToDelete.type === 'storage' 
+          ? prev.latestRhythms.filter(r => r.id !== choreoToDelete.id) 
+          : prev.latestRhythms,
+        totalChoreos: Math.max(0, prev.totalChoreos - 1)
+      }));
+      showToast(choreoToDelete.type === 'storage' ? "Le fichier audio a bien été supprimé." : "La chorégraphie a bien été supprimée.");
+      setChoreoToDelete(null);
+    } catch (error) {
+      console.error("Erreur suppression chorégraphie/audio:", error);
+      showToast("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setIsDeletingChoreo(false);
     }
   };
 
@@ -259,6 +330,23 @@ export default function GlobalHealthStats({ userData, associationData }) {
     } catch (error) {
       console.error("Erreur publication:", error);
       showToast("Une erreur est survenue lors de la publication.");
+    }
+  };
+
+  const handleToggleLock = async (item) => {
+    try {
+      const newLockedState = !item.isLocked;
+      await updateDoc(doc(db, 'presets', item.id), {
+        isLocked: newLockedState
+      });
+      setStats(prev => ({
+        ...prev,
+        latestRhythms: prev.latestRhythms.map(r => r.id === item.id ? { ...r, isLocked: newLockedState } : r)
+      }));
+      showToast(newLockedState ? `Morceau "${item.label}" verrouillé (protégé).` : `Morceau "${item.label}" déverrouillé.`);
+    } catch (error) {
+      console.error("Erreur verrouillage:", error);
+      showToast("Erreur lors de la modification du verrou.");
     }
   };
 
@@ -438,23 +526,38 @@ export default function GlobalHealthStats({ userData, associationData }) {
       presetsMap.forEach(docSnap => {
         const data = docSnap.data();
         const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
+        const isPlatformGlobal = data.visibility === 'admin_global';
         let parsedData = data;
         if (data.data) {
           try { parsedData = JSON.parse(LZString.decompressFromBase64(data.data)); } catch (e) {}
         }
+
+        const isCreatedByMe = Boolean(uid && (data.ownerId === uid || data.mestreId === uid));
+        const isGroupDoc = Boolean(
+          (data.groupId && groupVariants.includes(String(data.groupId).toLowerCase())) ||
+          (data.mestreId && (data.mestreId === effectiveMestreId || (isSamambaia && data.mestreId === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1'))) ||
+          isCreatedByMe
+        );
+        const isExternal = !isGroupDoc || isPlatformGlobal;
+
         rhythmsList.push({
           id: docSnap.id,
           label: data.name || data.title || 'Sans titre',
           date: data.createdAt || 0,
           type: isPublic ? 'rhythm' : 'section',
           isPublic,
+          isPlatformGlobal,
+          isGroupDoc,
+          isLocked: Boolean(data.isLocked),
           rewardClaimed: data.rewardClaimed || false,
           orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
           originalData: parsedData,
           audioUrl: data.audioUrl,
           storagePath: data.storagePath,
           collection: 'presets',
-          isExternal: data.ownerId !== uid
+          ownerId: data.ownerId,
+          authorName: data.authorName || 'O Girador',
+          isExternal
         });
       });
       // Ajouter les audio masters temps réel
@@ -468,9 +571,6 @@ export default function GlobalHealthStats({ userData, associationData }) {
       setStats(prev => ({ ...prev, totalRhythms: rhythmsList.length, latestRhythms: rhythmsList }));
     };
 
-    // Refs mutables pour les données non-temps-réel (Storage) et audio masters
-    const storageRhythmsRef = React.createRef ? { current: [] } : { current: [] };
-    const audioMastersRef = { current: [] };
 
     if (uid) {
       const qOwnerPresets = query(collection(db, 'presets'), where('ownerId', '==', uid));
@@ -536,6 +636,10 @@ export default function GlobalHealthStats({ userData, associationData }) {
             type: 'storage',
             isPublic: false,
             audioUrl: data.audioUrl,
+            storagePath: data.storagePath,
+            collection: 'audio_masters',
+            tenantId: data.tenantId,
+            ownerId: data.mestreId || data.ownerId || data.userId || null,
             bpm: data.bpm
           });
         });
@@ -547,26 +651,40 @@ export default function GlobalHealthStats({ userData, associationData }) {
 
     // ── 4. Choreographies ──
     const choreosMap = new Map();
-    const choreoAudioList = { current: [] };
     const rebuildChoreosFromFirestore = () => {
-      const choreosList = [...choreoAudioList.current];
+      const choreosList = [...choreoAudioListRef.current];
       choreosMap.forEach(docSnap => {
         const data = docSnap.data();
         const isPublic = data.visibility === 'public' || data.visibility === 'admin_global';
+        const isPlatformGlobal = data.visibility === 'admin_global';
         let parsedData = data;
         if (data.data) {
           try { parsedData = JSON.parse(LZString.decompressFromBase64(data.data)); } catch (e) {}
         }
+
+        const isCreatedByMe = Boolean(uid && (data.ownerId === uid || data.mestreId === uid));
+        const isGroupDoc = Boolean(
+          (data.groupId && groupVariants.includes(String(data.groupId).toLowerCase())) ||
+          (data.authorGroupId && groupVariants.includes(String(data.authorGroupId).toLowerCase())) ||
+          isCreatedByMe
+        );
+        const isExternal = !isGroupDoc || isPlatformGlobal;
+
         choreosList.push({
           id: docSnap.id,
           label: data.name || data.title || 'Sans titre',
           date: data.createdAt || 0,
           type: isPublic ? 'choreo' : 'section',
           isPublic,
+          isPlatformGlobal,
+          isGroupDoc,
           rewardClaimed: data.rewardClaimed || false,
           orderIndex: data.orderIndex !== undefined ? data.orderIndex : 9999,
           originalData: parsedData,
-          isGlobal: data.ownerId !== uid,
+          collection: 'choreographies',
+          ownerId: data.ownerId,
+          authorGroupId: data.authorGroupId,
+          isGlobal: isExternal,
           authorName: data.authorName || 'Inconnu'
         });
       });
@@ -613,13 +731,17 @@ export default function GlobalHealthStats({ userData, associationData }) {
             label: item.name,
             date: parseInt(item.name?.split('_')[0]) || 0,
             type: isJson ? 'section' : 'storage',
-            isPublic: false
+            isPublic: false,
+            audioUrl: item.url || item.audioUrl,
+            storagePath: item.storagePath,
+            collection: 'user_dance_audio_files',
+            ownerId: item.userId || uid
           });
         });
-      choreoAudioList.current = items;
-      rebuildChoreosFromFirestore();
-    }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
-  }
+        choreoAudioListRef.current = items;
+        rebuildChoreosFromFirestore();
+      }, (error) => console.warn('[Realtime Hub] Dance audio files error:', error.message)));
+    }
 
     // Chorégraphies du groupe
     if (groupVariants.length > 0) {
@@ -762,7 +884,8 @@ export default function GlobalHealthStats({ userData, associationData }) {
                     date,
                     type: 'storage',
                     isPublic: false,
-                    audioUrl: url
+                    audioUrl: url,
+                    storagePath: item.fullPath
                   });
                 } catch (itemErr) {
                   console.warn('Skipping item due to error:', item.name, itemErr);
@@ -1359,7 +1482,7 @@ export default function GlobalHealthStats({ userData, associationData }) {
                             </div>
                           </div>
                           <div className="flex items-center gap-1">
-                          {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && !item.isExternal && (
+                          {(activeRhythmTab === 'rhythm' || activeRhythmTab === 'section') && (!item.isExternal || isMestreOrAdmin) && (
                             <div className="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity mr-2">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); moveRhythmItem(idx, -1, filteredList); }}
@@ -1378,30 +1501,67 @@ export default function GlobalHealthStats({ userData, associationData }) {
                             </div>
                           )}
                           
-                          {item.isExternal ? (
-                            <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
+                          {/* Statut & Publication */}
+                          {activeRhythmTab === 'rhythm' ? (
+                            <div 
+                              className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" 
+                              title={item.isPlatformGlobal ? "Catalogue Global (Rythme officiel)" : `Publié dans le Terreiro (Par ${item.authorName || 'la communauté'})`}
+                            >
                               <Globe className="w-4 h-4" />
                             </div>
-                          ) : (
-                            <button 
-                              onClick={() => handlePublishRhythm(item)}
-                              disabled={item.isPublic}
-                              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isPublic ? 'text-blue-500 bg-blue-50 cursor-default' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                              title={item.isPublic ? "Déjà publié" : "Publier dans le Terreiro"}
-                            >
-                              <Globe className="w-4 h-4" />
-                            </button>
+                          ) : activeRhythmTab === 'section' ? (
+                            item.isPublic ? (
+                              <div className="flex items-center justify-center p-2 rounded-lg text-green-600 bg-green-50" title="Déjà publié dans le Terreiro">
+                                <Globe className="w-4 h-4" />
+                              </div>
+                            ) : (isMestreOrAdmin || item.ownerId === uid) ? (
+                              <button 
+                                onClick={() => handlePublishRhythm(item)}
+                                className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-colors"
+                                title="Publier dans le Terreiro"
+                              >
+                                <Globe className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <div className="flex items-center justify-center p-2 rounded-lg text-amber-600/70 bg-amber-50" title={`Morceau privé du groupe (par ${item.authorName || 'un membre'})`}>
+                                <Lock className="w-4 h-4" />
+                              </div>
+                            )
+                          ) : null}
+
+                          {/* Cadenas Mestre (Verrouillage contre modification / suppression) */}
+                          {activeRhythmTab === 'section' && (
+                            isMestreOrAdmin ? (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleToggleLock(item); }}
+                                className={`flex items-center justify-center p-2 rounded-lg transition-colors ${item.isLocked ? 'text-amber-700 bg-amber-100 hover:bg-amber-200' : 'text-gray-400 hover:text-amber-700 hover:bg-amber-50'}`}
+                                title={item.isLocked ? "Morceau verrouillé par le Mestre (cliquer pour déverrouiller)" : "Verrouiller le morceau (protéger contre modifications/écrasement)"}
+                              >
+                                {item.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                              </button>
+                            ) : item.isLocked ? (
+                              <div className="flex items-center justify-center p-2 text-amber-700 bg-amber-50 rounded-lg" title="Morceau verrouillé par le Mestre">
+                                <Lock className="w-4 h-4" />
+                              </div>
+                            ) : null
                           )}
 
-                          {!item.isExternal && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); requestDeleteRhythm(item); }}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          {/* Bouton Supprimer */}
+                          {(() => {
+                            const canDeleteItem = userData?.isSystemAdmin || 
+                              (item.isPlatformGlobal ? false : (item.ownerId === uid || isMestreOrAdmin || activeRhythmTab === 'storage'));
+                            
+                            if (!canDeleteItem) return null;
+                            return (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); requestDeleteRhythm(item); }}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
@@ -1511,30 +1671,50 @@ export default function GlobalHealthStats({ userData, associationData }) {
                           </div>
                           
                           <div className="flex items-center">
-                          {item.isExternal ? (
-                            <div className="flex items-center justify-center p-2 rounded-lg text-blue-500 bg-blue-50" title="Catalogue Global">
+                          {/* Statut & Publication */}
+                          {activeChoreoTab === 'choreo' ? (
+                            <div 
+                              className="flex items-center justify-center p-2 rounded-lg text-pink-600 bg-pink-50" 
+                              title={item.isGlobal ? "Chorégraphie publique partagée" : "Publié dans le Terreiro"}
+                            >
                               <Globe className="w-4 h-4" />
                             </div>
-                          ) : (
-                            <button 
-                              onClick={() => {}}
-                              disabled={item.isPublic || item.type === 'storage'}
-                              className={`flex items-center justify-center p-2 rounded-lg transition-colors ${(item.isPublic || item.type === 'storage') ? 'text-blue-500 bg-blue-50 cursor-default opacity-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                              title={item.isPublic ? "Déjà publié" : "Publier"}
-                            >
-                              <Globe className="w-4 h-4" />
-                            </button>
-                          )}
+                          ) : activeChoreoTab === 'section' ? (
+                            item.isPublic ? (
+                              <div className="flex items-center justify-center p-2 rounded-lg text-pink-600 bg-pink-50" title="Déjà publié">
+                                <Globe className="w-4 h-4" />
+                              </div>
+                            ) : (isMestreOrAdmin || item.ownerId === uid) ? (
+                              <button 
+                                onClick={() => handlePublishChoreo(item)}
+                                className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-pink-600 hover:bg-pink-50 transition-colors"
+                                title="Publier dans le Terreiro"
+                              >
+                                <Globe className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <div className="flex items-center justify-center p-2 rounded-lg text-pink-600/70 bg-pink-50" title={`Chorégraphie privée (par ${item.authorName || 'un membre'})`}>
+                                <Lock className="w-4 h-4" />
+                              </div>
+                            )
+                          ) : null}
 
-                          {!item.isExternal && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); }}
-                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
-                              title="Supprimer"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
+                          {/* Bouton Supprimer */}
+                          {(() => {
+                            const canDeleteItem = userData?.isSystemAdmin || 
+                              (item.isGlobal && !isMestreOrAdmin ? false : (item.ownerId === uid || isMestreOrAdmin || activeChoreoTab === 'storage'));
+                            
+                            if (!canDeleteItem) return null;
+                            return (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); requestDeleteChoreo(item); }}
+                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-1 opacity-0 group-hover:opacity-100"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     );
@@ -1851,14 +2031,24 @@ export default function GlobalHealthStats({ userData, associationData }) {
         }}
       />
 
-      {/* Modale de confirmation de suppression Cordel */}
+      {/* Modale de confirmation de suppression Cordel - Rythmes & Audios */}
       <DeleteConfirmModal
         isOpen={!!rhythmToDelete}
         onClose={() => { if (!isDeletingRhythm) setRhythmToDelete(null); }}
         onConfirm={confirmDeleteRhythm}
         itemName={rhythmToDelete?.label}
-        itemType="le rythme"
+        itemType={rhythmToDelete?.type === 'storage' ? "le fichier audio" : "le rythme"}
         isDeleting={isDeletingRhythm}
+      />
+
+      {/* Modale de confirmation de suppression Cordel - Chorégraphies & Audios */}
+      <DeleteConfirmModal
+        isOpen={!!choreoToDelete}
+        onClose={() => { if (!isDeletingChoreo) setChoreoToDelete(null); }}
+        onConfirm={confirmDeleteChoreo}
+        itemName={choreoToDelete?.label}
+        itemType={choreoToDelete?.type === 'storage' ? "le fichier audio" : "la chorégraphie"}
+        isDeleting={isDeletingChoreo}
       />
 
       {/* Toast Notification */}
