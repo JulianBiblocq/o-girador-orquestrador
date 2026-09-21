@@ -47,6 +47,7 @@ jobs:
 
     env:
       CI: 'true'
+      DANCADOR_TOKEN: ${{ secrets.DANCADOR_TOKEN }}
 
     steps:
       # 1. Extraction d'Orquestrador (Dépôt SSOT Maître)
@@ -76,7 +77,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: JulianBiblocq/O-GIRADOR-DANCA
-          token: ${{ secrets.DANCADOR_TOKEN }}
+          token: ${{ env.DANCADOR_TOKEN }}
           path: o-girador-dancador
         continue-on-error: true
 
