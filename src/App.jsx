@@ -21,11 +21,13 @@ import PublicCatalogue from './components/PublicCatalogue';
 import LegalView from './components/LegalView';
 import FreeSignupView from './components/FreeSignupView';
 import { Loader2 } from 'lucide-react';
+import { useAppUpdate } from './hooks/useAppUpdate';
 
 // Lazy loading pour le panneau d'administration lourd (/admin)
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 
 function AppContent() {
+  useAppUpdate();
   const [activeUniverse, setActiveUniverse] = useState('maracatu');
   const [activeView, setActiveView] = useState('home'); // 'home' | 'a-propos' | 'tutos' | 'admin' | 'checkout'
   const [activePlan, setActivePlan] = useState(null);
