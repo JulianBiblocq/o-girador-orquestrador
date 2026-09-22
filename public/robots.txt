@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://o-girador.com/sitemap.xml
+Sitemap: https://www.o-girador.com/sitemap.xml

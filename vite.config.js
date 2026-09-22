@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     Sitemap({
-      hostname: 'https://o-girador.com',
+      hostname: 'https://www.o-girador.com',
       dynamicRoutes: ['/', '/a-propos', '/tutos']
     })
   ],
