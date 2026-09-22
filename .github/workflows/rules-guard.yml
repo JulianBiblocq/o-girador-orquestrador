@@ -47,7 +47,7 @@ jobs:
 
     env:
       CI: 'true'
-      DANCADOR_TOKEN: ${{ secrets.DANCADOR_TOKEN }}
+      DANCADOR_TOKEN: ${{ secrets['DANCADOR_TOKEN'] }}
 
     steps:
       # 1. Extraction d'Orquestrador (Dépôt SSOT Maître)
@@ -73,7 +73,7 @@ jobs:
 
       # Dançad'Or étant un dépôt privé, son extraction n'est tentée que si un secret DANCADOR_TOKEN est configuré
       - name: 📥 Extraire Dançad'Or (si token présent)
-        if: ${{ env.DANCADOR_TOKEN != '' }}
+        if: env.DANCADOR_TOKEN != ''
         uses: actions/checkout@v4
         with:
           repository: JulianBiblocq/O-GIRADOR-DANCA
