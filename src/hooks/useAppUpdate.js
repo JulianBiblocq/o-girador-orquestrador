@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export const CURRENT_VERSION = '1.0.2';
+export const CURRENT_VERSION = '1.0.0';
 
 /**
  * Hook de détection de version et purge de cache PWA pour Orquestrad'Or.
