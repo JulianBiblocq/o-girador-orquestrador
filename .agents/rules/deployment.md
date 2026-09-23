@@ -17,3 +17,16 @@ Lorsque l'utilisateur demande de compiler et de déployer le projet (ou lorsqu'i
 *(Note: Si vous utilisez PowerShell et qu'il y a des restrictions d'exécution, utilisez `cmd /c npx firebase-tools deploy --only hosting` ou `cmd /c firebase deploy --only hosting`)*.
 
 Ne présumez jamais qu'un seul déploiement suffit. Vérifiez toujours que les deux environnements sont à jour.
+
+## Règles de Sécurité Firebase — Unique Source de Vérité (SSOT)
+Ce projet (**Orchestrad'Or**) est l'**unique source de vérité (SSOT)** pour les règles de sécurité de l'ensemble de l'écosystème O Girador :
+- `firestore.rules`
+- `storage.rules`
+
+Le déploiement des règles s'effectue exclusivement depuis ce répertoire :
+```bash
+firebase deploy --only firestore:rules
+firebase deploy --only storage
+```
+*(Interdiction formelle pour les applications satellites Organizad'Or, Séquenciad'Or et Dançador de modifier ou déployer des règles).*
+

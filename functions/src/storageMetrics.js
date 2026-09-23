@@ -98,6 +98,8 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
     ...(groupId.includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
   ]));
 
+  // 6 préfixes de stockage isolés surveillés par association :
+  // associations/, documents/, workshops_media/, studio_validation/, orders/, transactions/
   const folderBases = [
     'associations',
     'documents',

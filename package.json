@@ -10,6 +10,8 @@
     "test": "node --test \"src/**/__tests__/**/*.test.js\"",
     "test:ssot": "node scripts/verify-ssot-guard.js",
     "test:rules": "node scripts/run-rules-test.js",
+    "deploy:rules": "firebase deploy --only firestore:rules,storage",
+    "deploy:hosting": "firebase deploy --only hosting",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist && firebase deploy --only hosting"
   },
