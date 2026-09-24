@@ -16,25 +16,25 @@
     "deploy": "gh-pages -d dist && firebase deploy --only hosting"
   },
   "dependencies": {
-    "firebase": "^12.18.0",
+    "firebase": "^12.19.0",
     "leaflet": "^1.9.4",
-    "lucide-react": "^1.41.0",
+    "lucide-react": "^1.48.0",
     "lz-string": "^1.5.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "react-leaflet": "^5.0.0",
     "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
     "@tailwindcss/vite": "^4.3.3",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "firebase-tools": "^15.30.2",
+    "firebase-tools": "^15.31.0",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.3.3",
-    "vite": "^8.2.2",
+    "vite": "^8.3.1",
     "vite-plugin-sitemap": "^0.8.2",
     "vitest": "^5.0.1"
   }
