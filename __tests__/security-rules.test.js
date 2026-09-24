@@ -107,4 +107,69 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
     const selfDoc = userBetaDb.doc('users/user_beta');
     await assertFails(selfDoc.update({ role: 'admin' }));
   });
+
+  it("Autorise la création de son profil avec paymentStatus 'unpaid' ou 'paid'", async () => {
+    const userNew1Db = testEnv.authenticatedContext('user_new1', { email: 'new1@example.com' }).firestore();
+    await assertSucceeds(userNew1Db.doc('users/user_new1').set({
+      role: 'membre',
+      paymentStatus: 'paid',
+      statutActuel: 'active',
+      tags: []
+    }));
+
+    const userNew2Db = testEnv.authenticatedContext('user_new2', { email: 'new2@example.com' }).firestore();
+    await assertSucceeds(userNew2Db.doc('users/user_new2').set({
+      role: 'membre',
+      paymentStatus: 'unpaid',
+      statutActuel: 'active',
+      tags: []
+    }));
+
+    const userNew3Db = testEnv.authenticatedContext('user_new3', { email: 'new3@example.com' }).firestore();
+    await assertFails(userNew3Db.doc('users/user_new3').set({
+      role: 'membre',
+      paymentStatus: 'exempted',
+      statutActuel: 'active',
+      tags: []
+    }));
+  });
+
+  it("Interdit à un membre de modifier son propre paymentStatus sur update", async () => {
+    const userBetaDb = testEnv.authenticatedContext('user_beta').firestore();
+    const selfDoc = userBetaDb.doc('users/user_beta');
+    await assertFails(selfDoc.update({ paymentStatus: 'paid' }));
+  });
+
+  it("Sas pending_payments : autorise le membre propriétaire de l'email à lire et purger son entrée", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.doc('pending_payments/adherent@example.com').set({
+        amountEuros: 120,
+        payerEmail: 'adherent@example.com'
+      });
+    });
+
+    const userDb = testEnv.authenticatedContext('user_adherent', { email: 'adherent@example.com' }).firestore();
+    const pendingRef = userDb.doc('pending_payments/adherent@example.com');
+    await assertSucceeds(pendingRef.get());
+    await assertSucceeds(pendingRef.delete());
+  });
+
+  it("Sas pending_payments : interdit à un membre de créer ou modifier dans le sas", async () => {
+    const userDb = testEnv.authenticatedContext('user_adherent', { email: 'adherent@example.com' }).firestore();
+    const pendingRef = userDb.doc('pending_payments/adherent@example.com');
+    await assertFails(pendingRef.set({ amountEuros: 0 }));
+  });
+
+  it("Sas pending_payments : interdit à un tiers de lire ou supprimer l'entrée d'un autre membre", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await db.doc('pending_payments/target@example.com').set({ amountEuros: 50 });
+    });
+
+    const hackerDb = testEnv.authenticatedContext('user_hacker', { email: 'hacker@example.com' }).firestore();
+    const pendingRef = hackerDb.doc('pending_payments/target@example.com');
+    await assertFails(pendingRef.get());
+    await assertFails(pendingRef.delete());
+  });
 });

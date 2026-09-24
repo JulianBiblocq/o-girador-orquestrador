@@ -97,7 +97,7 @@ service cloud.firestore {
           getUserData().get('mestreId', '') == docMestreId ||
           (
             (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
-            (docMestreId == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' || docMestreId == 'Samambaia' || docMestreId == 'samambaia' || docMestreId.lower() == 'samambaia')
+            (docMestreId == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' || docMestreId == 'Samambaia' || docMestreId == 'samambaia' || docMestreId.lower() == 'samambaia' || docMestreId == 'pFAmvjJWGtaWV0a6i9JcReuiyTJ2')
           )
         );
     }
@@ -109,7 +109,13 @@ service cloud.firestore {
         docGroupId != '' &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         getUserData().get('canWriteSequenciador', false) == true &&
-        getUserData().get('groupId', '').lower() == docGroupId.lower();
+        (
+          getUserData().get('groupId', '').lower() == docGroupId.lower() ||
+          (
+            (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+            docGroupId.lower() == 'samambaia'
+          )
+        );
     }
 
     function canManageEvents() {
@@ -281,7 +287,7 @@ service cloud.firestore {
           request.auth.uid == userId && (
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
-            (!request.resource.data.keys().hasAny(['paymentStatus']) || request.resource.data.paymentStatus == 'unpaid') &&
+            (!request.resource.data.keys().hasAny(['paymentStatus']) || request.resource.data.paymentStatus in ['unpaid', 'paid']) &&
             (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'membre' || request.resource.data.role == 'visiteur' || request.resource.data.role == 'eleve' || (request.resource.data.role == 'mestre' && request.auth.token.email.matches(".*@ogirador\\.com"))) &&
             (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel == 'active') &&
             (!request.resource.data.keys().hasAny(['adhesionBase']) || request.resource.data.adhesionBase == true) &&
@@ -303,6 +309,7 @@ service cloud.firestore {
         )
       );
       allow update: if isAuthenticated() && (
+        isAdminOrMestre() ||
         // Super-Admin système ou UID Mestre Fondateur
         isSystemAdmin() ||
         request.auth.uid == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' ||
@@ -314,7 +321,7 @@ service cloud.firestore {
         // Mise à jour standard par le membre (profil personnel hors privilèges)
         (request.auth.uid == userId && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'role', 'isSystemAdmin', 'hasAccessLogistique', 'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
+            'paymentStatus', 'role', 'isSystemAdmin', 'hasAccessLogistique', 'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
           ]) && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) ||
             request.resource.data.get('groupId', '').lower() == 'samambaia'
@@ -555,11 +562,11 @@ service cloud.firestore {
     }
 
     match /pending_payments/{email} {
-      allow read: if isAuthenticated() && (
+      allow read, delete: if isAuthenticated() && (
         isAdminOrMestre() ||
         (request.auth.token.email != null && request.auth.token.email.lower() == email.lower())
       );
-      allow write: if isAdminOrMestre();
+      allow create, update: if isAdminOrMestre();
     }
 
     // =========================================================================
@@ -853,7 +860,8 @@ service cloud.firestore {
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', '')));
+                        || isSameGroup(request.resource.data.get('mestreId', ''))
+                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
@@ -874,7 +882,8 @@ service cloud.firestore {
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', '')));
+                        || isSameGroup(request.resource.data.get('mestreId', ''))
+                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
@@ -961,7 +970,8 @@ service cloud.firestore {
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', '')));
+                        || isSameGroup(request.resource.data.get('mestreId', ''))
+                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
@@ -981,6 +991,37 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null 
                             && (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.mestreId);
+    }
+
+    // Programmes d'entraînement collectifs (créés par le Séquenceur, lus par Organizad'Or)
+    match /trainings/{trainingId} {
+      // Lecture autorisée aux membres appartenant au même groupe
+      allow read: if isAuthenticated() && (
+        !resource.data.keys().hasAny(['groupId']) || 
+        resource.data.groupId.lower() == getUserData().groupId.lower() ||
+        isSystemAdmin()
+      );
+      
+      // Écriture réservée au Mestre ou Admin de l'association
+      allow write: if isAuthenticated() && (
+        isAdminOrMestre() || isSystemAdmin()
+      );
+    }
+
+    // Suivi individuel des paliers d'aisance par adhérent
+    match /users/{userId}/aisance/{trainingId} {
+      // L'élève lit son propre carnet ; le Mestre et l'Admin peuvent le consulter pour le suivi
+      allow read: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isAdminOrMestre() || 
+        isSystemAdmin()
+      );
+      
+      // L'élève coche et valide uniquement ses propres paliers
+      allow write: if isAuthenticated() && (
+        request.auth.uid == userId || 
+        isSystemAdmin()
+      );
     }
 
     // Signaux visuels du Mestre (gestes, xilogravures Cordel)
