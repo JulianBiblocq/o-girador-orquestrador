@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useCart } from '../context/CartContext';
 import AxePointsBadge from './AxePointsBadge';
 import LeaveReviewModal from './espace-client/LeaveReviewModal';
+import OrquestradorStamp from './common/OrquestradorStamp';
 import { launchCrossApp } from '../utils/crossAppAuth';
 import { getEcosystemUrl } from '../constants/ecosystemUrls';
 
@@ -67,12 +68,10 @@ export default function Header({
             />
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="font-extrabold text-base sm:text-xl text-[#4a2e1b] tracking-wider font-cordel">
+                <span className="font-extrabold text-base sm:text-xl text-[#4a2e1b] tracking-wider font-cordel lino-distressed leading-none">
                   {t('header.title')}
                 </span>
-                <span className="text-[9px] sm:text-[10px] uppercase font-bold bg-[#8b4513] text-[#fdf6e7] px-1.5 sm:px-2 py-0.5 rounded hidden md:inline-block">
-                  {t('header.subtitle')}
-                </span>
+                <OrquestradorStamp size="sm" className="hidden md:inline-flex" />
               </div>
               <p className="text-[10px] sm:text-[11px] text-[#8b4513] font-medium hidden md:block">
                 {t('header.tagline')}

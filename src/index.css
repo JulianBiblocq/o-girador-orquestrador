@@ -38,3 +38,17 @@
   border: 3px solid var(--cordel-border);
   box-shadow: 4px 4px 0px 0px var(--cordel-border);
 }
+
+/* ============================================================================
+   FILTRE D'USURE LINOGRAVURE / XYLOGRAVURE (.lino-distressed)
+   Simule l'encrage artisanal, les micro-aspérités et le tampon écaillé.
+   ============================================================================ */
+.lino-distressed {
+  filter: url(#lino-filter);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: inline-block;
+  letter-spacing: 0.08em;
+  text-shadow: 0.5px 0.5px 0px rgba(139, 42, 26, 0.2);
+}
+
