@@ -80,6 +80,10 @@ service cloud.firestore {
       );
     }
 
+    function isAdmin() {
+      return isSystemAdmin() || isAdminOrMestre();
+    }
+
     function hasAnyTag(tagList) {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -196,6 +200,7 @@ service cloud.firestore {
         isModerator() ||
         channelId == null ||
         channelId in ['general', 'general-annonces'] ||
+        channelId.matches('.*(_general|_general-annonces)$') ||
         (
           channelId != null &&
           exists(/databases/$(database)/documents/forum_channels/$(channelId)) &&
@@ -219,7 +224,7 @@ service cloud.firestore {
         isModerator() ||
         (
           (
-            channelId in ['general', 'general-annonces'] &&
+            (channelId in ['general', 'general-annonces'] || channelId.matches('.*(_general|_general-annonces)$')) &&
             !exists(/databases/$(database)/documents/forum_channels/$(channelId))
           ) ||
           (
@@ -441,6 +446,26 @@ service cloud.firestore {
         allow write: if (isSystemAdmin() || getUserData().get('groupId', '').lower() == assocId.lower()) && canManageRepertoire();
       }
 
+      // Documents et fiches Varal de l'association (Toadas, fiches pédagogiques, culture)
+      match /varal/{varalId} {
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() || 
+          getUserData().get('groupId', '').lower() == assocId.lower() ||
+          (assocId.lower() == 'samambaia' && getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1')
+        );
+        allow write: if (isSystemAdmin() || getUserData().get('groupId', '').lower() == assocId.lower()) && (canManageDocs() || canManageRepertoire() || isAdminOrMestre());
+      }
+
+      // Fiches culturelles et ateliers sous l'association
+      match /culture/{cultureId} {
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() || 
+          getUserData().get('groupId', '').lower() == assocId.lower() ||
+          (assocId.lower() == 'samambaia' && getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1')
+        );
+        allow write: if (isSystemAdmin() || getUserData().get('groupId', '').lower() == assocId.lower()) && (canManageDocs() || canManageRepertoire() || isAdminOrMestre());
+      }
+
       // Règles d'automatisation et de relances d'agenda de l'association
       match /automation_rules/{ruleId} {
         allow read: if isAuthenticated() && (getUserData().get('groupId', '').lower() == assocId.lower() || isAdminOrMestre());
@@ -501,6 +526,24 @@ service cloud.firestore {
           resource.data.auteurId == request.auth.uid ||
           canManageEvents() ||
           isModerator()
+        );
+      }
+
+      // Sous-collection des commissions de travail (jalons, budgets, logistique événementielle)
+      match /commissions/{commissionId} {
+        // Lecture autorisée aux membres authentifiés appartenant au même groupe associatif
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() ||
+          getUserData().get('groupId', '').lower() == get(/databases/$(database)/documents/events/$(event)).data.get('groupId', '').lower()
+        );
+
+        // Écriture (création, mise à jour, suppression) réservée aux Mestres / Admins / gestionnaires d'événements du groupe
+        allow write: if isAuthenticated() && (
+          isSystemAdmin() ||
+          (
+            getUserData().get('groupId', '').lower() == get(/databases/$(database)/documents/events/$(event)).data.get('groupId', '').lower() &&
+            (isAdminOrMestre() || canManageEvents())
+          )
         );
       }
     }
@@ -683,16 +726,24 @@ service cloud.firestore {
         isAdminOrMestre() ||
         isModerator() ||
         (
-          resource.data.authorId == request.auth.uid &&
+          (
+            (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
+            (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+          ) &&
           (hasChannelWriteAccess(resource.data.channelId) || !resource.data.keys().hasAny(['channelId'])) &&
           (!request.resource.data.keys().hasAny(['channelId']) || request.resource.data.channelId == resource.data.channelId)
         ) ||
         (
           hasChannelWriteAccess(resource.data.channelId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reponses', 'derniereModification', 'poll'])
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reponses', 'derniereModification', 'poll', 'reactions', 'nombreReponses'])
         )
       );
-      allow delete: if isAdminOrMestre() || isModerator() || (isAuthenticated() && resource.data.authorId == request.auth.uid);
+      allow delete: if isAdminOrMestre() || isModerator() || (
+        isAuthenticated() && (
+          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
+          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+        )
+      );
     }
 
     match /conversations/{conversationId} {
@@ -1048,6 +1099,31 @@ service cloud.firestore {
     match /premium_packs/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdminOrMestre();
+    }
+
+    // Varal racine (fiches pédagogiques et partitions de cordel)
+    match /varal/{varalId} {
+      allow read: if isAuthenticated() || true;
+      allow write: if isAdminOrMestre() || canManageDocs();
+    }
+
+    // Fiches culturelles racine
+    match /culture/{cultureId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdminOrMestre() || canManageDocs();
+    }
+
+    // =========================================================================
+    // 16. SALONS MULTIJOUEURS & DÉFIS (RODA QUIZ, CADAVRE EXQUIS)
+    // =========================================================================
+
+    match /game_rooms/{roomId} {
+      allow read, create: if request.auth != null;
+      allow update: if request.auth != null; // Pour rejoindre, répondre et arbitrer
+      allow delete: if request.auth != null && (
+        resource.data.get('hostUid', '') == request.auth.uid || 
+        isAdmin()
+      );
     }
   }
 }
