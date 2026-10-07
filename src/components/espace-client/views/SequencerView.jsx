@@ -1,179 +1,196 @@
 /**
- * Vue principale du Séquenceur Audio dans l'Espace Client.
- * Affiche le catalogue privé du groupe (et du Mestre) ainsi que le catalogue public,
- * avec possibilité d'ouvrir les morceaux dans l'application, de les réorganiser,
- * de les partager et de les supprimer.
+ * Vue Banque Rythmique unifiée du Séquenceur dans l'Espace Client (SequencerView.jsx).
+ * Centralise morceaux (presets), sections et motifs avec pré-écoute, filtres et suppression sécurisée.
  */
 
-import React, { useState } from 'react';
-import { db } from '../../../services/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { Plus, Music, Check } from 'lucide-react';
-import DeleteConfirmModal from '../modals/DeleteConfirmModal';
-import { deleteAudioResource } from '../../../services/audioDeletionService';
-import { launchCrossApp } from '../../../utils/crossAppAuth';
-import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
-import { useSequencerPresets } from './useSequencerPresets';
-import SequencerHeader from './SequencerHeader';
-import SequencerItemCard from './SequencerItemCard';
-import SequencerPublicCatalog from './SequencerPublicCatalog';
+import React, { useState, useMemo } from 'react';
+import { Check } from 'lucide-react';
+import { AudioPreviewProvider } from './AudioPreviewContext.jsx';
+import { useResourceCatalog } from './hooks/useResourceCatalog.js';
+import AudioResourceCard from './AudioResourceCard.jsx';
+import ResourceFiltersBar from './ResourceFiltersBar.jsx';
+import SequencerHeader from './SequencerHeader.jsx';
+import DeleteConfirmModal from '../modals/DeleteConfirmModal.jsx';
+import { deleteAudioResource } from '../../../services/audioDeletionService.js';
+import { launchCrossApp } from '../../../utils/crossAppAuth.js';
+import { getEcosystemUrl } from '../../../constants/ecosystemUrls.js';
 
-export default function SequencerView({ userData, associationData, onBack }) {
-  const { items, setItems, publicItems, loading } = useSequencerPresets(userData);
-  const [copiedId, setCopiedId] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
+const TABS = [
+  { id: 'presets', label: 'Morceaux', icon: '🎵' }, { id: 'sections', label: 'Sections', icon: '🧱' }, { id: 'patterns', label: 'Motifs', icon: '🪘' }
+];
+
+function SequencerViewContent({ userData, onBack }) {
+  const [activeTab, setActiveTab] = useState('presets');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState('all');
+  const [selectedInstrument, setSelectedInstrument] = useState('all');
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
 
-  // Affichage temporaire d'un toast informatif
-  const showToast = (message) => {
-    setToastMessage(message);
+  const {
+    resources,
+    isLoading,
+    renameResource,
+    updateVisibility,
+    removeResourceLocally,
+    refetch
+  } = useResourceCatalog(activeTab, userData);
+
+  const showToast = (msg) => {
+    setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  // Ouverture du Séquenciad'or avec transmission fluide de l'authentification
   const handleOpenSequencer = (path = '/app') => {
-    const url = getEcosystemUrl('sequenciador', path);
-    launchCrossApp(url, { appKey: 'sequenciador', appLabel: 'le Séquenceur' });
+    launchCrossApp(getEcosystemUrl('sequenciador', path), { appKey: 'sequenciador', appLabel: "le Séquenceur" });
   };
 
-  // Copie du lien direct de partage du rythme
-  const handleShare = (id) => {
-    const url = `${window.location.origin}/?import_id=${id}&type=rythme#espace-client`;
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(url).then(() => {
-        setCopiedId(id);
-        showToast('Lien de partage copié !');
-        setTimeout(() => setCopiedId(null), 2000);
-      });
-    } else {
-      prompt('Copiez ce lien de partage (Ctrl+C, Entrée) :', url);
-    }
-  };
+  // Détection des instruments uniques présents dans la collection courante
+  const availableInstruments = useMemo(() => {
+    const set = new Set();
+    resources.forEach((r) => {
+      const inst = r.instrument || r.pupitre || r.instrumentName;
+      if (inst) set.add(inst);
+    });
+    return Array.from(set).sort();
+  }, [resources]);
 
-  // Suppression d'un morceau avec confirmation
+  // Filtrage combiné en mémoire (recherche, visibilité, instrument)
+  const filteredResources = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const userUid = userData?.uid;
+    const userGroup = (userData?.groupId || '').toLowerCase();
+
+    return resources.filter((item) => {
+      if (query && !(item.name || item.title || '').toLowerCase().includes(query)) return false;
+      if (visibilityFilter === 'mine' && item.ownerId !== userUid) return false;
+      if (visibilityFilter === 'group' && (!item.groupId || item.groupId.toLowerCase() !== userGroup)) return false;
+      if (visibilityFilter === 'public' && item.visibility !== 'public' && !item.isPublic) return false;
+      if (selectedInstrument !== 'all') {
+        const inst = item.instrument || item.pupitre || item.instrumentName;
+        if (inst !== selectedInstrument) return false;
+      }
+      return true;
+    });
+  }, [resources, searchQuery, visibilityFilter, selectedInstrument, userData]);
+
+  // Suppression d'une ressource avec confirmation et mise à jour locale
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteAudioResource(itemToDelete, {
-        groupId: userData?.groupId,
-        collection: 'presets'
-      });
-      setItems((prev) => prev.filter((i) => i.id !== itemToDelete.id));
-      showToast('Le fichier audio a bien été retiré du catalogue.');
+      await deleteAudioResource(itemToDelete, { groupId: userData?.groupId, collection: activeTab });
+      removeResourceLocally(itemToDelete.id);
+      showToast('La ressource a bien été retirée du catalogue.');
       setItemToDelete(null);
-    } catch (error) {
-      console.error('Erreur suppression :', error);
+    } catch (err) {
+      console.error('Erreur suppression :', err);
       showToast('Une erreur est survenue lors de la suppression.');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Réorganisation par glissement haut/bas dans la liste locale et persistance Firestore
-  const moveItem = async (index, direction) => {
-    if ((direction === -1 && index === 0) || (direction === 1 && index === items.length - 1)) return;
-    const newItems = [...items];
-    const targetIndex = index + direction;
-    const temp = newItems[index];
-    newItems[index] = newItems[targetIndex];
-    newItems[targetIndex] = temp;
-    setItems(newItems);
-
-    try {
-      const updatePromises = [];
-      if (newItems[index].source === 'firestore') {
-        updatePromises.push(updateDoc(doc(db, 'presets', newItems[index].id), { orderIndex: index }));
-      }
-      if (newItems[targetIndex].source === 'firestore') {
-        updatePromises.push(updateDoc(doc(db, 'presets', newItems[targetIndex].id), { orderIndex: targetIndex }));
-      }
-      await Promise.all(updatePromises);
-    } catch (error) {
-      console.error('Erreur réorganisation :', error);
-      showToast("Erreur lors de l'enregistrement de l'ordre.");
-    }
-  };
-
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* En-tête et navigation */}
+    <div className="space-y-5 animate-in fade-in duration-300">
       <SequencerHeader onBack={onBack} onOpenSequencer={handleOpenSequencer} />
 
-      {/* Section 1 : Catalogue Privé de l'association */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <h3 className="font-bold text-gray-700 mb-6 flex items-center gap-2 uppercase tracking-wider text-sm">
-          <Music className="w-4 h-4 text-purple-600" />
-          Catalogue {associationData?.name || associationData?.nom || 'Local'} (Privé)
-        </h3>
-
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />
-            ))}
-          </div>
-        ) : items.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {items.map((item, index) => (
-              <SequencerItemCard
-                key={item.id}
-                item={item}
-                index={index}
-                totalItems={items.length}
-                copiedId={copiedId}
-                onOpenSequencer={handleOpenSequencer}
-                onMove={moveItem}
-                onShare={handleShare}
-                onDelete={setItemToDelete}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <Music className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium mb-4">Aucun rythme enregistré pour le moment dans votre groupe.</p>
-            <a
-              href={getEcosystemUrl('sequenciador', '/app')}
-              onClick={(e) => { e.preventDefault(); handleOpenSequencer('/app'); }}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 hover:bg-purple-200 font-bold text-sm rounded-lg transition-colors"
+      {/* Navigation linogravure Cordel par collection */}
+      <div className="flex items-center gap-2 border-b border-[#8b4513]/40 pb-1">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.id;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => { setActiveTab(tab.id); setSearchQuery(''); setSelectedInstrument('all'); }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-t-xl font-cordel font-bold text-sm transition-all border-t border-x ${
+                isActive
+                  ? 'bg-[#1c1613] text-amber-400 border-[#c05621] shadow-lg -mb-1.5 pb-2.5 border-b-0'
+                  : 'bg-stone-950/60 text-stone-400 border-transparent hover:text-stone-200'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              Composer mon premier rythme
-            </a>
-          </div>
-        )}
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
-      {/* Section 2 : Catalogue Public O Girador */}
-      <SequencerPublicCatalog
-        publicItems={publicItems}
-        loading={loading}
-        onOpenSequencer={handleOpenSequencer}
+      {/* Barre de recherche et de filtres */}
+      <ResourceFiltersBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        visibilityFilter={visibilityFilter}
+        onVisibilityFilterChange={setVisibilityFilter}
+        selectedInstrument={selectedInstrument}
+        onInstrumentChange={setSelectedInstrument}
+        availableInstruments={availableInstruments}
+        activeTab={activeTab}
+        onRefresh={() => refetch(true)}
+        isLoading={isLoading}
       />
+
+      {/* Grille des cartes ressources audio */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-32 bg-[#1c1613]/60 border border-[#8b4513]/20 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      ) : filteredResources.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredResources.map((item) => (
+            <AudioResourceCard
+              key={item.id}
+              item={item}
+              type={activeTab}
+              onRename={renameResource}
+              onVisibilityChange={updateVisibility}
+              onRequestDelete={(it) => setItemToDelete(it)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12 bg-[#1c1613]/50 rounded-2xl border border-dashed border-[#8b4513]/40 p-6">
+          <span className="text-3xl mb-2 block">🪵</span>
+          <h4 className="font-cordel text-base text-[#fdf6e7] font-bold mb-1">
+            Aucun élément trouvé dans les {activeTab}.
+          </h4>
+          <p className="text-xs text-stone-400">
+            Modifiez vos filtres ou créez de nouveaux rythmes depuis Séquenciad'Or.
+          </p>
+        </div>
+      )}
 
       {/* Modale de confirmation de suppression */}
       <DeleteConfirmModal
         isOpen={!!itemToDelete}
         onClose={() => { if (!isDeleting) setItemToDelete(null); }}
         onConfirm={confirmDelete}
-        itemName={itemToDelete?.title}
-        itemType="le rythme"
+        itemName={itemToDelete?.name || itemToDelete?.title}
+        itemType="la ressource"
         isDeleting={isDeleting}
       />
 
-      {/* Notification Toast */}
+      {/* Toast d'alerte */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          <div className="bg-gray-800 text-white px-4 py-3 rounded-xl shadow-xl flex items-center gap-3 border border-gray-700">
-            <Check className="w-5 h-5 text-green-400" />
-            <p className="font-bold text-sm">{toastMessage}</p>
+        <div className="fixed bottom-6 right-6 z-50">
+          <div className="bg-[#1c1613] text-[#fdf6e7] px-4 py-2.5 rounded-xl border border-amber-600/60 shadow-xl flex items-center gap-2 text-xs font-bold font-cordel">
+            <Check className="w-4 h-4 text-emerald-400" />
+            <span>{toastMessage}</span>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+export default function SequencerView(props) {
+  return (
+    <AudioPreviewProvider>
+      <SequencerViewContent {...props} />
+    </AudioPreviewProvider>
   );
 }
