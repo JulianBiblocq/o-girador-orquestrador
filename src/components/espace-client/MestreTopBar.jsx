@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { Lock, LayoutDashboard, Flame, Settings, Store, Sparkles, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, Flame, Settings, Store, Award } from 'lucide-react';
 import { getEcosystemUrl } from '../../constants/ecosystemUrls';
+import MestreUpsellModal from './MestreUpsellModal';
 
 export default function MestreTopBar({ associationData, activeTab, setActiveTab }) {
   const [lockedAppClicked, setLockedAppClicked] = useState(null);
+  const [logoError, setLogoError] = useState(false);
+
+  const logoUrl = associationData?.logoUrl || associationData?.branding?.logoUrl || null;
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [logoUrl]);
 
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
@@ -22,138 +30,74 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
     if (packId === 'manager' || packId === 'vitrine' || packId === 'gestion') requiredLevel = 3;
     if (packId === 'sequenceur' || packId === 'createur') requiredLevel = 2;
 
-    if (packs.some(p => p.includes(packId) || p.includes(`${packId}-solo`))) {
-      return true;
-    }
-
-    return userMaxLevel >= requiredLevel;
+    return packs.some(p => p.includes(packId) || p.includes(`${packId}-solo`)) || userMaxLevel >= requiredLevel;
   };
+
+  const effectiveLogoUrl = logoUrl && !logoError ? logoUrl : '/logo_rond.png';
+
+  const goldStyle = {
+    colorActive: 'bg-[#5c3a21] border-amber-500',
+    colorHover: 'hover:bg-[#4a2e1b] hover:border-amber-400',
+    textActive: 'text-amber-400',
+    textHover: 'group-hover:text-amber-400',
+    descTextActive: 'text-amber-200',
+    descTextHover: 'group-hover:text-amber-200'
+  };
+
   const apps = [
     {
-      id: 'dashboard',
-      label: 'Accueil',
-      desc: 'Vue d\'ensemble',
-      isIcon: false,
-      iconUrl: '/logos/dashboard.png',
-      isOwned: true,
-      url: '#',
-      colorActive: 'bg-[#8b4513] border-amber-500',
-      colorHover: 'hover:bg-[#6e370f] hover:border-amber-400',
-      textActive: 'text-amber-400',
-      textHover: 'group-hover:text-amber-400',
-      descTextActive: 'text-amber-200',
-      descTextHover: 'group-hover:text-amber-200'
+      id: 'dashboard', label: 'Accueil', desc: "Vue d'ensemble", iconUrl: '/logos/dashboard.png', isOwned: true,
+      colorActive: 'bg-[#8b4513] border-amber-500', colorHover: 'hover:bg-[#6e370f] hover:border-amber-400',
+      textActive: 'text-amber-400', textHover: 'group-hover:text-amber-400', descTextActive: 'text-amber-200', descTextHover: 'group-hover:text-amber-200'
     },
     {
-      id: 'manager',
-      label: 'Organizador',
-      desc: 'Gestion & Association',
-      iconUrl: '/logos/organizador.png',
-      isOwned: hasPack('manager'),
-      url: getEcosystemUrl('organizador'),
-      colorActive: 'bg-[#fdf6e7] border-[#d4b895]',
-      colorHover: 'hover:bg-[#fdf6e7] hover:border-[#d4b895]',
-      textActive: 'text-[#4a2e1b]',
-      textHover: 'group-hover:text-[#4a2e1b]',
-      descTextActive: 'text-[#8b4513]',
-      descTextHover: 'group-hover:text-[#8b4513]'
+      id: 'manager', label: 'Organizador', desc: 'Gestion & Association', iconUrl: effectiveLogoUrl, isOwned: hasPack('manager'), url: getEcosystemUrl('organizador'),
+      colorActive: 'bg-[#fdf6e7] border-[#d4b895]', colorHover: 'hover:bg-[#fdf6e7] hover:border-[#d4b895]',
+      textActive: 'text-[#4a2e1b]', textHover: 'group-hover:text-[#4a2e1b]', descTextActive: 'text-[#8b4513]', descTextHover: 'group-hover:text-[#8b4513]'
     },
     {
-      id: 'sequenceur',
-      label: 'Sequenciador',
-      desc: 'Création Audio',
-      iconUrl: '/logos/sequenciador.png',
-      isOwned: hasPack('sequenceur'),
-      url: getEcosystemUrl('sequenciador'),
-      colorActive: 'bg-[#1a1a1a] border-[#000000]',
-      colorHover: 'hover:bg-[#1a1a1a] hover:border-[#000000]',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-gray-300',
-      descTextHover: 'group-hover:text-gray-300'
+      id: 'sequenceur', label: 'Sequenciador', desc: 'Création Audio', iconUrl: '/logos/sequenciador.png', isOwned: hasPack('sequenceur'), url: getEcosystemUrl('sequenceur'),
+      colorActive: 'bg-[#1a1a1a] border-[#000000]', colorHover: 'hover:bg-[#1a1a1a] hover:border-[#000000]',
+      textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-gray-300', descTextHover: 'group-hover:text-gray-300'
     },
     {
-      id: 'dancador',
-      label: 'Dançador',
-      desc: 'Studio Chorégraphique',
-      iconUrl: '/logos/dancador.png',
-      isOwned: hasPack('dancador'),
-      url: getEcosystemUrl('dancador'),
-      colorActive: 'bg-[#b22222] border-[#8b0000]',
-      colorHover: 'hover:bg-[#b22222] hover:border-[#8b0000]',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-red-100',
-      descTextHover: 'group-hover:text-red-100'
+      id: 'dancador', label: 'Dançador', desc: 'Studio Chorégraphique', iconUrl: '/logos/dancador.png', isOwned: hasPack('dancador'), url: getEcosystemUrl('dancador'),
+      colorActive: 'bg-[#b22222] border-[#8b0000]', colorHover: 'hover:bg-[#b22222] hover:border-[#8b0000]',
+      textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-red-100', descTextHover: 'group-hover:text-red-100'
     },
     {
-      id: 'vitrine',
-      label: 'Mostrador',
-      desc: 'Site Public',
-      iconUrl: '/logos/mostrador.png',
-      isOwned: hasPack('vitrine'),
-      url: getEcosystemUrl('mostrador'),
-      colorActive: 'bg-[#d2691e] border-[#b05819]',
-      colorHover: 'hover:bg-[#d2691e] hover:border-[#b05819]',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-orange-100',
-      descTextHover: 'group-hover:text-orange-100'
+      id: 'vitrine', label: 'Mostrador', desc: 'Site Public', iconUrl: '/logos/mostrador.png', isOwned: hasPack('vitrine'), url: getEcosystemUrl('mostrador'),
+      colorActive: 'bg-[#d2691e] border-[#b05819]', colorHover: 'hover:bg-[#d2691e] hover:border-[#b05819]',
+      textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-orange-100', descTextHover: 'group-hover:text-orange-100'
     },
     {
-      id: 'terreiro',
-      label: 'Terreiro',
-      desc: 'Communauté',
-      isIcon: true,
+      id: 'terreiro', label: 'Terreiro', desc: 'Communauté', isIcon: true, isOwned: true,
       iconComponent: <Flame className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />,
-      isOwned: true,
-      url: '#',
-      colorActive: 'bg-[#b05819] border-amber-400',
-      colorHover: 'hover:bg-[#d2691e] hover:border-amber-300',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-amber-100',
-      descTextHover: 'group-hover:text-amber-100'
+      colorActive: 'bg-[#b05819] border-amber-400', colorHover: 'hover:bg-[#d2691e] hover:border-amber-300',
+      textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-amber-100', descTextHover: 'group-hover:text-amber-100'
     },
     {
-      id: 'boutique',
-      label: 'Boutique',
-      desc: 'Add-ons & Forfaits',
-      isIcon: true,
-      iconComponent: <Store className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />,
-      isOwned: true,
-      url: '#',
-      colorActive: 'bg-[#b05819] border-[#d2691e]',
-      colorHover: 'hover:bg-[#d2691e] hover:border-amber-500',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-orange-200',
-      descTextHover: 'group-hover:text-orange-200'
+      id: 'boutique', label: 'Boutique', desc: 'Packs & Modules', isIcon: true, isOwned: true,
+      iconComponent: <Store className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
+      ...goldStyle
     },
     {
-      id: 'profile',
-      label: 'Réglages',
-      desc: 'Profil & Identité',
-      isIcon: true,
-      iconComponent: <Settings className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />,
-      isOwned: true,
-      url: '#',
-      colorActive: 'bg-gray-800 border-gray-600',
-      colorHover: 'hover:bg-gray-700 hover:border-gray-500',
-      textActive: 'text-white',
-      textHover: 'group-hover:text-white',
-      descTextActive: 'text-gray-300',
-      descTextHover: 'group-hover:text-gray-300'
+      id: 'profile', label: 'Mon Espace', desc: 'Identité & Quotas', isIcon: true, isOwned: true,
+      iconComponent: <Settings className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
+      ...goldStyle
+    },
+    {
+      id: 'evaluation', label: 'Auto-Évaluation', desc: 'Diagnostic & Quiz', isIcon: true, isOwned: true,
+      iconComponent: <Award className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
+      ...goldStyle
     }
   ];
 
   return (
     <div className="bg-[#4a2e1b] rounded-xl shadow-lg p-4 mb-6 relative overflow-hidden">
-      {/* Texture de fond */}
       <div className="absolute inset-0 opacity-10 bg-[url('/assets/texture.png')] mix-blend-overlay pointer-events-none"></div>
       
       <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-2">
-        
         <div className="text-white flex-shrink-0 hidden xl:flex flex-col items-center justify-center mr-2 bg-amber-500/10 px-2 py-2.5 rounded-lg border border-amber-500/20 gap-2">
           <span className="text-xs font-black uppercase font-cordel text-amber-500 leading-none">H</span>
           <span className="text-xs font-black uppercase font-cordel text-amber-500 leading-none">U</span>
@@ -166,11 +110,8 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
               key={app.id}
               type="button"
               onClick={() => {
-                if (app.isOwned && setActiveTab) {
-                  setActiveTab(app.id);
-                } else if (!app.isOwned) {
-                  setLockedAppClicked(app);
-                }
+                if (app.isOwned && setActiveTab) setActiveTab(app.id);
+                else if (!app.isOwned) setLockedAppClicked(app);
               }}
               className={`relative flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all group outline-none ${
                 app.isOwned 
@@ -181,7 +122,16 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
               } flex-1 min-w-[75px] md:max-w-none`}
             >
               <div className="relative mb-2 flex items-center justify-center h-10 w-10 shrink-0">
-                {app.isIcon ? app.iconComponent : (
+                {app.id === 'manager' ? (
+                  <img 
+                    src={effectiveLogoUrl} 
+                    alt={app.label} 
+                    className={`w-10 h-10 rounded-full object-cover border border-amber-900/40 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''}`} 
+                    onError={() => setLogoError(true)}
+                  />
+                ) : app.isIcon ? (
+                  app.iconComponent
+                ) : (
                   <img 
                     src={app.iconUrl} 
                     alt={app.label} 
@@ -209,59 +159,14 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
         </div>
       </div>
 
-      {/* Upsell Modal (Frustration Positive) */}
-      {lockedAppClicked && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-            
-            <div className="bg-[#4a2e1b] relative p-6 text-center">
-              <div className="absolute inset-0 opacity-10 bg-[url('/assets/texture.png')] mix-blend-overlay pointer-events-none"></div>
-              <button 
-                onClick={() => setLockedAppClicked(null)}
-                className="absolute top-4 right-4 p-1 text-white/70 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-colors z-10"
-              >
-                <X className="w-5 h-5" />
-              </button>
-              
-              <div className="relative z-10 mb-4 inline-flex items-center justify-center p-3 bg-amber-500/20 rounded-2xl border border-amber-500/30">
-                <img src={lockedAppClicked.iconUrl} alt={lockedAppClicked.label} className="w-12 h-12 object-contain drop-shadow-md grayscale opacity-80" />
-                <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-1.5 rounded-full shadow-lg border-2 border-[#4a2e1b]">
-                  <Lock className="w-4 h-4" />
-                </div>
-              </div>
-              
-              <h3 className="text-2xl font-black text-[#fdf6e7] font-cordel relative z-10">
-                L'outil {lockedAppClicked.label} est verrouillé
-              </h3>
-            </div>
-
-            <div className="p-6 text-center">
-              <p className="text-gray-600 mb-6 leading-relaxed">
-                Débloquez <strong>{lockedAppClicked.label}</strong> ({lockedAppClicked.desc}) et propulsez votre association dans une nouvelle dimension. Gérez, créez et partagez comme jamais auparavant.
-              </p>
-              
-              <button 
-                onClick={() => {
-                  setLockedAppClicked(null);
-                  if (setActiveTab) setActiveTab('boutique');
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-[#d2691e] hover:bg-[#b05819] text-white px-6 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
-              >
-                <Sparkles className="w-5 h-5" />
-                Découvrir les forfaits
-              </button>
-              
-              <button 
-                onClick={() => setLockedAppClicked(null)}
-                className="mt-4 text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Non merci, je reste sur la carte gratuite
-              </button>
-            </div>
-            
-          </div>
-        </div>
-      )}
+      <MestreUpsellModal 
+        lockedApp={lockedAppClicked} 
+        onClose={() => setLockedAppClicked(null)}
+        onDiscoverPacks={() => {
+          setLockedAppClicked(null);
+          if (setActiveTab) setActiveTab('boutique');
+        }}
+      />
     </div>
   );
 }
