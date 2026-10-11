@@ -1,18 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Lock, Flame, Settings, Store, Award } from 'lucide-react';
 import { getEcosystemUrl } from '../../constants/ecosystemUrls';
 import MestreUpsellModal from './MestreUpsellModal';
 
+// Macaron neutre O Girador (repli par défaut en l'absence de logo d'association ou lien brisé)
+const NEUTRAL_BADGE = '/assets/badge-girador-neutre.png';
+
+/**
+ * Barre de navigation supérieure du Hub (App Switcher)
+ * Permet de basculer entre les applications de l'écosystème O Girador.
+ */
 export default function MestreTopBar({ associationData, activeTab, setActiveTab }) {
   const [lockedAppClicked, setLockedAppClicked] = useState(null);
-  const [logoError, setLogoError] = useState(false);
 
-  const logoUrl = associationData?.logoUrl || associationData?.branding?.logoUrl || null;
+  // 1. Détection de la source de données et extraction du logo de la structure active
+  const assocLogo = associationData?.logoUrl || associationData?.branding?.logoUrl || null;
 
-  useEffect(() => {
-    setLogoError(false);
-  }, [logoUrl]);
-
+  // Vérification des droits d'accès aux packs
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
     if (associationData?.appAccess?.[packId] === true) return true;
@@ -33,8 +37,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
     return packs.some(p => p.includes(packId) || p.includes(`${packId}-solo`)) || userMaxLevel >= requiredLevel;
   };
 
-  const effectiveLogoUrl = logoUrl && !logoError ? logoUrl : '/logo_rond.png';
-
+  // Styles communs pour les onglets dorés du Hub
   const goldStyle = {
     colorActive: 'bg-[#5c3a21] border-amber-500',
     colorHover: 'hover:bg-[#4a2e1b] hover:border-amber-400',
@@ -44,6 +47,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
     descTextHover: 'group-hover:text-amber-200'
   };
 
+  // Liste des applications et outils du Hub
   const apps = [
     {
       id: 'dashboard', label: 'Accueil', desc: "Vue d'ensemble", iconUrl: '/logos/dashboard.png', isOwned: true,
@@ -51,7 +55,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       textActive: 'text-amber-400', textHover: 'group-hover:text-amber-400', descTextActive: 'text-amber-200', descTextHover: 'group-hover:text-amber-200'
     },
     {
-      id: 'manager', label: 'Organizador', desc: 'Gestion & Association', iconUrl: effectiveLogoUrl, isOwned: hasPack('manager'), url: getEcosystemUrl('organizador'),
+      id: 'manager', label: 'Organizador', desc: 'Gestion & Association', iconUrl: assocLogo || NEUTRAL_BADGE, isOwned: hasPack('manager'), url: getEcosystemUrl('organizador'),
       colorActive: 'bg-[#fdf6e7] border-[#d4b895]', colorHover: 'hover:bg-[#fdf6e7] hover:border-[#d4b895]',
       textActive: 'text-[#4a2e1b]', textHover: 'group-hover:text-[#4a2e1b]', descTextActive: 'text-[#8b4513]', descTextHover: 'group-hover:text-[#8b4513]'
     },
@@ -105,57 +109,62 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
         </div>
 
         <div className="flex flex-wrap md:flex-nowrap justify-center md:justify-end gap-1 sm:gap-2 w-full">
-          {apps.map(app => (
-            <button
-              key={app.id}
-              type="button"
-              onClick={() => {
-                if (app.isOwned && setActiveTab) setActiveTab(app.id);
-                else if (!app.isOwned) setLockedAppClicked(app);
-              }}
-              className={`relative flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all group outline-none ${
-                app.isOwned 
-                  ? activeTab === app.id
-                    ? `${app.colorActive} shadow-md transform scale-[1.02]`
-                    : `bg-[#5c3a21] border-[#8b4513]/50 cursor-pointer shadow-sm ${app.colorHover}` 
-                  : 'bg-[#3d2516] border-[#4a2e1b] opacity-60 grayscale cursor-not-allowed'
-              } flex-1 min-w-[75px] md:max-w-none`}
-            >
-              <div className="relative mb-2 flex items-center justify-center h-10 w-10 shrink-0">
-                {app.id === 'manager' ? (
-                  <img 
-                    src={effectiveLogoUrl} 
-                    alt={app.label} 
-                    className={`w-10 h-10 rounded-full object-cover border border-amber-900/40 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''}`} 
-                    onError={() => setLogoError(true)}
-                  />
-                ) : app.isIcon ? (
-                  app.iconComponent
-                ) : (
-                  <img 
-                    src={app.iconUrl} 
-                    alt={app.label} 
-                    className={`w-10 h-10 object-contain drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''} ${['vitrine', 'dashboard', 'terreiro'].includes(app.id) ? 'rounded-full' : ''}`} 
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                )}
-                {!app.isOwned && (
-                  <div className="absolute -top-1 -right-1 bg-gray-800 text-gray-300 p-1 rounded-full shadow-lg">
-                    <Lock className="w-3 h-3" />
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex flex-col items-center justify-start w-full">
-                <span className={`h-8 flex items-center justify-center text-[11px] font-bold uppercase tracking-wider mb-0.5 text-center leading-tight line-clamp-2 ${activeTab === app.id ? app.textActive : `text-gray-300 ${app.textHover}`}`}>
-                  {app.label}
-                </span>
-                <span className={`h-6 flex items-start justify-center text-[9px] text-center leading-tight line-clamp-2 ${activeTab === app.id ? app.descTextActive : `text-gray-400 ${app.descTextHover}`}`}>
-                  {app.desc}
-                </span>
-              </div>
-            </button>
-          ))}
+          {apps.map(app => {
+            const isOrganizador = app.id === 'manager' || app.id === 'organizador';
+
+            return (
+              <button
+                key={app.id}
+                type="button"
+                onClick={() => {
+                  if (app.isOwned && setActiveTab) setActiveTab(app.id);
+                  else if (!app.isOwned) setLockedAppClicked(app);
+                }}
+                className={`relative flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg border-2 transition-all group outline-none ${
+                  app.isOwned 
+                    ? activeTab === app.id
+                      ? `${app.colorActive} shadow-md transform scale-[1.02]`
+                      : `bg-[#5c3a21] border-[#8b4513]/50 cursor-pointer shadow-sm ${app.colorHover}` 
+                    : 'bg-[#3d2516] border-[#4a2e1b] opacity-60 grayscale cursor-not-allowed'
+                } flex-1 min-w-[75px] md:max-w-none`}
+              >
+                <div className="relative mb-2 flex items-center justify-center h-10 w-10 shrink-0">
+                  {isOrganizador ? (
+                    /* Rendu dynamique du logo de la structure active avec médaillon circulaire et repli neutre */
+                    <img 
+                      src={assocLogo || NEUTRAL_BADGE} 
+                      alt={app.label} 
+                      className={`w-10 h-10 rounded-full object-cover border border-amber-900/40 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''}`} 
+                      onError={(e) => { e.currentTarget.src = NEUTRAL_BADGE; }}
+                    />
+                  ) : app.isIcon ? (
+                    app.iconComponent
+                  ) : (
+                    <img 
+                      src={app.iconUrl} 
+                      alt={app.label} 
+                      className={`w-10 h-10 object-contain drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''} ${['vitrine', 'dashboard', 'terreiro'].includes(app.id) ? 'rounded-full' : ''}`} 
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  )}
+                  {!app.isOwned && (
+                    <div className="absolute -top-1 -right-1 bg-gray-800 text-gray-300 p-1 rounded-full shadow-lg">
+                      <Lock className="w-3 h-3" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex flex-col items-center justify-start w-full">
+                  <span className={`h-8 flex items-center justify-center text-[11px] font-bold uppercase tracking-wider mb-0.5 text-center leading-tight line-clamp-2 ${activeTab === app.id ? app.textActive : `text-gray-300 ${app.textHover}`}`}>
+                    {app.label}
+                  </span>
+                  <span className={`h-6 flex items-start justify-center text-[9px] text-center leading-tight line-clamp-2 ${activeTab === app.id ? app.descTextActive : `text-gray-400 ${app.descTextHover}`}`}>
+                    {app.desc}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
