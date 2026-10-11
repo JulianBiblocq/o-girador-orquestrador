@@ -88,35 +88,164 @@
       ]
     },
     {
-      "id": "samba",
-      "name": "Samba de Enredo & Batucada",
-      "subtitle": "Rythmes & Défilés du Brésil",
-      "tagline": "La puissance de la Batucada de Rio et Salvador réunie dans un studio virtuel.",
+      "id": "batucada",
+      "name": "Batucada",
+      "subtitle": "Percussions de Rue & Batterie Festive Associative",
+      "tagline": "L'énergie festive et le partage des rythmes de rue dans votre collectif.",
+      "description": "Percussions de rue, batterie festive associative",
+      "status": "active",
+      "badge": "Actif",
+      "theme": {
+        "name": "Batucada Festive",
+        "description": "Esthétique solaire, vive et festive des percussions de rue.",
+        "primaryColor": "#0891b2",
+        "secondaryColor": "#f59e0b",
+        "accentColor": "#06b6d4",
+        "backgroundColor": "#ecfeff",
+        "paperTexture": false
+      },
+      "instruments": [
+        "Surdo 1",
+        "Surdo 2",
+        "Surdo 3",
+        "Repique",
+        "Caixa",
+        "Timba",
+        "Chocalho",
+        "Tambourin",
+        "Agogô",
+        "Chant",
+        "Danse"
+      ],
+      "applications": [
+        {
+          "id": "sequenceur",
+          "name": "O Girador - Séquenceur",
+          "description": "Séquenceur web interactif pour composer et répéter vos rythmes de batucada.",
+          "badge": "Disponible",
+          "url": "https://sequenceur.ogirador.app"
+        },
+        {
+          "id": "manager",
+          "name": "O Girador - Manager & Vitrine",
+          "description": "Plateforme complète pour administrer votre groupe, planning de sorties et site vitrine public.",
+          "badge": "Disponible",
+          "url": "https://manager.ogirador.app"
+        },
+        {
+          "id": "dancador",
+          "name": "O Girador - Dançador",
+          "description": "Studio chorégraphique interactif pour les défilés et évolutions de rue.",
+          "badge": "Nouveau",
+          "url": "https://dancador.ogirador.app"
+        }
+      ]
+    },
+    {
+      "id": "sambareggae",
+      "name": "Samba-Reggae & Blocos Afro",
+      "subtitle": "Rythmes Bahianais, Salvador & Tambours Afro",
+      "tagline": "La puissance tellurique et militante des Blocos Afro de Salvador de Bahia.",
+      "description": "Rythmes bahianais, Salvador",
       "status": "coming_soon",
       "badge": "Bientôt",
       "teaser": {
         "title": "Bientôt dans l'Écosystème",
-        "description": "Entraînez et organisez votre Batucada : repiques, surdos (1a, 2a, 3a), tamborims, cuícas, et coordination des défilés et répétitions de section.",
-        "plannedRelease": "Q1 2027",
+        "description": "Entraînez et organisez votre Bloco Afro : surdos (Fundo, Dobra, Resposta), repiques à deux baguettes souples, timbais bahianais, et coordination des défilés afro.",
+        "plannedRelease": "Q4 2026",
         "features": [
-          "Séquenceur Multi-Tamborim & Breaks de Batucada",
-          "Gestionnaire de Pupitres & Repétitions par section",
-          "Partitions interactives et export PDF"
+          "Séquenceur Multi-Surdos & Breaks de Samba-Reggae",
+          "Gestion des pupitres et répétitions en extérieur",
+          "Conducteur de rue et déambulations"
         ]
       },
       "theme": {
-        "name": "Carnaval Tropical",
-        "primaryColor": "#15803d",
-        "secondaryColor": "#7e22ce",
+        "name": "Axé Panafricain",
+        "primaryColor": "#b45309",
+        "secondaryColor": "#dc2626",
         "accentColor": "#f59e0b",
-        "backgroundColor": "#f0fdf4",
+        "backgroundColor": "#fffbeb",
         "paperTexture": false
       },
+      "instruments": [
+        "Surdo Fundo",
+        "Surdo Dobra",
+        "Surdo Resposta",
+        "Repique de Bloco",
+        "Timbal",
+        "Caixa",
+        "Chant & Voix",
+        "Danse Afro"
+      ],
       "applications": [
+        {
+          "id": "manager",
+          "name": "O Girador - Manager & Vitrine",
+          "description": "Plateforme complète pour administrer votre bloco afro et site vitrine.",
+          "badge": "Disponible",
+          "url": "https://manager.ogirador.app"
+        },
         {
           "id": "dancador",
           "name": "O Girador - Dançador",
-          "description": "Studio chorégraphique interactif pour préparer les défilés et les chorégraphies des passistas.",
+          "description": "Studio chorégraphique interactif pour les chorégraphies et déambulations afro.",
+          "badge": "Nouveau",
+          "url": "https://dancador.ogirador.app"
+        }
+      ]
+    },
+    {
+      "id": "samba",
+      "name": "Bateria & Samba",
+      "subtitle": "Samba de Enredo & Écoles de Samba",
+      "tagline": "La rigueur, la cadence et la puissance des Baterias de Rio de Janeiro.",
+      "description": "Samba de Enredo, écoles de samba",
+      "status": "coming_soon",
+      "badge": "Bientôt",
+      "teaser": {
+        "title": "Bientôt dans l'Écosystème",
+        "description": "Entraînez et organisez votre Bateria d'école de samba : Surdos (1ª Marcação, 2ª Resposta, 3ª Terceira/Corte), Caixas de Guerra, Tarol, Repiniques, Tamborims virados, Cuícas, Agogôs, Chocalhos et Enredos officiels.",
+        "plannedRelease": "Q1 2027",
+        "features": [
+          "Séquenceur Multi-Tamborim (virado 3/1) & Breaks de Bateria",
+          "Gestionnaire de Naipes & Répétitions par section",
+          "Partitions interactives et export PDF de défilé"
+        ]
+      },
+      "theme": {
+        "name": "Sambódromo Carioca",
+        "primaryColor": "#15803d",
+        "secondaryColor": "#7e22ce",
+        "accentColor": "#10b981",
+        "backgroundColor": "#f0fdf4",
+        "paperTexture": false
+      },
+      "instruments": [
+        "Surdo 1 (Primeira)",
+        "Surdo 2 (Segunda)",
+        "Surdo 3 (Terceira)",
+        "Caixa de Guerra",
+        "Tarol",
+        "Repinique",
+        "Tamborim",
+        "Chocalho",
+        "Cuíca",
+        "Agogô",
+        "Chant (Puxador)",
+        "Passistas & Mestre-Sala"
+      ],
+      "applications": [
+        {
+          "id": "manager",
+          "name": "O Girador - Manager & Vitrine",
+          "description": "Plateforme complète pour votre école de samba, naipes et site vitrine.",
+          "badge": "Disponible",
+          "url": "https://manager.ogirador.app"
+        },
+        {
+          "id": "dancador",
+          "name": "O Girador - Dançador",
+          "description": "Studio chorégraphique interactif pour préparer les défilés et les évolutions de passistas.",
           "badge": "Nouveau",
           "url": "https://dancador.ogirador.app"
         }

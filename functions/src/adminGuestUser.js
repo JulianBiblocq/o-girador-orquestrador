@@ -45,6 +45,7 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
     email,
     displayName,
     groupId = 'guest-pro',
+    role = 'mestre',
     manualPassword,
     canWrite = true
   } = data || {};
@@ -53,9 +54,15 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
     throw new HttpsError('invalid-argument', "L'adresse email est obligatoire.");
   }
 
+  const requestedRole = (role || 'mestre').toLowerCase();
+  const isMestre = requestedRole === 'mestre';
+  const effectiveRole = isMestre ? 'mestre' : 'pro';
+
   const cleanEmail = email.trim().toLowerCase();
-  const cleanGroupId = (groupId && typeof groupId === 'string' ? groupId : 'guest-pro').trim().toLowerCase();
-  const cleanDisplayName = (displayName && typeof displayName === 'string' ? displayName.trim() : '') || 'Invité Pro';
+  const defaultGroupId = isMestre ? 'association' : 'guest-pro';
+  const cleanGroupId = (groupId && typeof groupId === 'string' ? groupId : defaultGroupId).trim().toLowerCase();
+  const defaultDisplayName = isMestre ? 'Mestre' : 'Invité Pro';
+  const cleanDisplayName = (displayName && typeof displayName === 'string' ? displayName.trim() : '') || defaultDisplayName;
 
   // 4. Génération d'un mot de passe sécurisé ou conservation de la saisie manuelle
   const cleanPassword = (manualPassword && typeof manualPassword === 'string' && manualPassword.trim().length >= 6)
@@ -72,43 +79,88 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
     });
     const newUid = userRecord.uid;
 
-    // 6. Écriture directe du profil dans Firestore users/{uid}
-    await db.collection('users').doc(newUid).set({
-      uid: newUid,
-      email: cleanEmail,
-      displayName: cleanDisplayName,
-      groupId: cleanGroupId,
-      role: 'pro',
-      canWriteSequenciador: Boolean(canWrite),
-      mestreId: null,
-      isHidden: true, // Masqué des annuaires et trombinoscopes publics
-      onboardingCompleted: true, // Accès direct au Séquenceur sans passer par l'onboarding
-      createdAt: FieldValue.serverTimestamp(),
-      createdVia: 'orquestrador_admin_guest_provisioning'
-    });
-
-    // 7. Provisioning automatique de l'espace dans associations/{groupId} si inexistant
+    // 6. Résolution du nom de l'association cible et vérification stricte des quotas
     const groupRef = db.collection('associations').doc(cleanGroupId);
     const groupDoc = await groupRef.get();
-    if (!groupDoc.exists) {
-      await groupRef.set({
+    let assocName = cleanGroupId;
+    let assocData = null;
+
+    if (groupDoc.exists) {
+      assocData = groupDoc.data() || {};
+      assocName = assocData.name || assocData.nom || cleanGroupId;
+    } else {
+      assocName = isMestre
+        ? (cleanDisplayName && cleanDisplayName !== 'Mestre' ? `Bloco ${cleanDisplayName}` : cleanGroupId)
+        : (cleanGroupId === 'pif' ? 'Laboratoire Pif' : 'Espace Invités & Professionnels');
+      assocData = {
         groupId: cleanGroupId,
-        name: cleanGroupId === 'pif' ? 'Laboratoire Pif' : 'Espace Invités & Professionnels',
-        quotas: { sequenciador: 20, dansador: 0, orchestrador: 0 },
+        name: assocName,
+        quotas: { sequenciador: 20, dansador: isMestre ? 10 : 0, orchestrador: isMestre ? 10 : 0 },
         unlockedPacks: [],
-        isGuestSpace: true,
+        isGuestSpace: !isMestre,
         createdAt: FieldValue.serverTimestamp()
-      });
+      };
+      await groupRef.set(assocData);
     }
 
-    // 8. Retour des identifiants générés au client
+    // Vérification des quotas applicatifs Séquenceur
+    const hasSequencer = isMestre
+      ? (assocData?.appAccess?.sequenciador === true && (assocData?.mestreSequenciadorQuota > 0 || assocData?.mestreSequenciadorQuota === undefined))
+      : Boolean(canWrite);
+
+    // 7. Écriture directe du profil dans Firestore users/{uid}
+    const userProfile = isMestre
+      ? {
+          uid: newUid,
+          email: cleanEmail,
+          displayName: cleanDisplayName,
+          groupId: cleanGroupId,
+          role: 'mestre',
+          canWriteSequenciador: Boolean(hasSequencer),
+          mestreId: newUid,
+          isHidden: false,
+          onboardingCompleted: true,
+          tags: ['Mestre', 'Direction', 'Bureau', 'Vitrine', 'Logistique', 'Trésorerie'],
+          createdAt: FieldValue.serverTimestamp(),
+          createdVia: 'orquestrador_admin_mestre_provisioning'
+        }
+      : {
+          uid: newUid,
+          email: cleanEmail,
+          displayName: cleanDisplayName,
+          groupId: cleanGroupId,
+          role: 'pro',
+          canWriteSequenciador: Boolean(hasSequencer),
+          mestreId: null,
+          isHidden: true,
+          onboardingCompleted: true,
+          createdAt: FieldValue.serverTimestamp(),
+          createdVia: 'orquestrador_admin_guest_provisioning'
+        };
+
+    await db.collection('users').doc(newUid).set(userProfile);
+
+    // 8. Génération du message d'invitation personnalisé
+    const loginUrl = isMestre
+      ? 'https://organizador.o-girador.com'
+      : 'https://sequenciador.o-girador.com';
+
+    const inviteMessage = isMestre
+      ? `Bonjour ${cleanDisplayName} ! Ton espace ${assocName} est prêt sur O Girador. Connecte-toi sur ${loginUrl} avec l'email ${cleanEmail} et le mot de passe ${cleanPassword}.`
+      : `Bonjour ${cleanDisplayName} ! Ton accès invité pro est activé sur O Girador. Connecte-toi sur ${loginUrl} avec l'email ${cleanEmail} et le mot de passe ${cleanPassword}.`;
+
+    // 9. Retour des identifiants et métadonnées au client
     return {
       success: true,
       uid: newUid,
       email: cleanEmail,
       password: cleanPassword,
       groupId: cleanGroupId,
-      displayName: cleanDisplayName
+      displayName: cleanDisplayName,
+      role: effectiveRole,
+      assocName: assocName,
+      inviteMessage: inviteMessage,
+      loginUrl: loginUrl
     };
   } catch (error) {
     console.error('[adminCreateGuestUser] Erreur lors du provisioning :', error);
@@ -118,7 +170,7 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
     if (error instanceof HttpsError) {
       throw error;
     }
-    throw new HttpsError('internal', error.message || 'Erreur lors de la création du compte invité.');
+    throw new HttpsError('internal', error.message || 'Erreur lors de la création du compte.');
   }
 });
 

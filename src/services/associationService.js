@@ -1,5 +1,6 @@
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { collection, getDocs, setDoc, deleteDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from './firebase';
+import { slugifyAssociationId } from '../utils/slugUtils';
 
 // Mock initial data for demonstration & offline fallback
 const INITIAL_DEMO_GROUPS = [
@@ -135,31 +136,32 @@ export function subscribeToAssociations(callback) {
 
 export async function saveAssociation(groupData) {
   let updatedGroup = { ...groupData };
+  const targetId = (
+    groupData.id || 
+    groupData.groupId || 
+    slugifyAssociationId(groupData.name || groupData.nom) || 
+    `asso-${Date.now()}`
+  ).trim().toLowerCase();
+
+  updatedGroup.id = targetId;
+  updatedGroup.groupId = targetId;
 
   try {
-    if (groupData.id && !groupData.id.startsWith('asso-')) {
-      const docRef = doc(db, 'associations', groupData.id);
-      await updateDoc(docRef, {
-        ...groupData,
-        updatedAt: serverTimestamp()
-      });
-    } else {
-      const docRef = await addDoc(collection(db, 'associations'), {
-        ...groupData,
-        createdAt: serverTimestamp()
-      });
-      updatedGroup.id = docRef.id;
-    }
+    const docRef = doc(db, 'associations', targetId);
+    await setDoc(docRef, {
+      ...updatedGroup,
+      id: targetId,
+      groupId: targetId,
+      updatedAt: serverTimestamp(),
+      ...(!groupData.createdAt && { createdAt: serverTimestamp() })
+    }, { merge: true });
   } catch (err) {
     console.warn("Firestore saveAssociation fallback:", err);
-    if (!updatedGroup.id) {
-      updatedGroup.id = `asso-${Date.now()}`;
-    }
   }
 
   // Sync to local storage
   const currentList = await fetchAssociations();
-  const existingIdx = currentList.findIndex(g => g.id === updatedGroup.id);
+  const existingIdx = currentList.findIndex(g => (g.id === updatedGroup.id || g.groupId === updatedGroup.groupId));
   let newList;
   if (existingIdx >= 0) {
     newList = [...currentList];
@@ -173,15 +175,13 @@ export async function saveAssociation(groupData) {
 
 export async function deleteAssociation(id) {
   try {
-    if (!id.startsWith('asso-')) {
-      await deleteDoc(doc(db, 'associations', id));
-    }
+    await deleteDoc(doc(db, 'associations', id));
   } catch (err) {
     console.warn("Firestore deleteAssociation fallback:", err);
   }
 
   const currentList = await fetchAssociations();
-  const newList = currentList.filter(g => g.id !== id);
+  const newList = currentList.filter(g => g.id !== id && g.groupId !== id);
   localStorage.setItem('ogirador_associations', JSON.stringify(newList));
   return newList;
 }

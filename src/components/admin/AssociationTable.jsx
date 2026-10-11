@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Edit3, Trash2, HardDrive } from 'lucide-react';
+import { Search, Edit3, Trash2, HardDrive, Crown } from 'lucide-react';
 import { calculateSubscriptionStatus, getAccessRights } from '../../utils/subscriptionRights';
 import { db } from '../../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -23,14 +23,9 @@ function ActiveMembersCount({ groupId, staticCount }) {
         const q = query(collection(db, 'users'), where('groupId', '==', groupId));
         const snap = await getDocs(q);
         if (isMounted) {
-          let count = 0;
-          snap.forEach(docSnap => {
-            const user = docSnap.data();
-            if (user && user.statutActuel !== 'archived') {
-              count++;
-            }
-          });
-          setCount(count);
+          let c = 0;
+          snap.forEach(d => { if (d.data()?.statutActuel !== 'archived') c++; });
+          setCount(c);
         }
       } catch (e) { }
     };
@@ -40,13 +35,13 @@ function ActiveMembersCount({ groupId, staticCount }) {
   return <>{count !== null ? count : (staticCount || 0)}</>;
 }
 
-
 export default function AssociationTable({ 
   associations, 
   searchTerm, 
   onSearchChange, 
   onEdit, 
-  onDelete 
+  onDelete,
+  onCreateMestre
 }) {
   return (
     <div className="bg-white/90 xilo-border rounded-xl p-6 space-y-6 shadow-xl">
@@ -85,16 +80,10 @@ export default function AssociationTable({
             {associations.map((assoc) => {
               const statusInfo = calculateSubscriptionStatus(assoc.endDate, assoc.planType);
               const rights = getAccessRights(assoc);
-              
               const unlockedIds = (assoc.unlockedPacks || []).map(id => id.replace('-monthly', '').replace('-annual', ''));
               const planOrder = ['decouverte', 'createur', 'gestion', 'integrale'];
               const activePlanId = [...planOrder].reverse().find(id => unlockedIds.includes(id)) || 'decouverte';
-              const planLabels = {
-                'decouverte': 'Découverte',
-                'createur': 'Créateur',
-                'gestion': 'Gestion',
-                'integrale': 'Intégrale'
-              };
+              const planLabels = { decouverte: 'Découverte', createur: 'Créateur', gestion: 'Gestion', integrale: 'Intégrale' };
               const planName = planLabels[activePlanId];
 
               return (
@@ -168,26 +157,28 @@ export default function AssociationTable({
                   </td>
 
                   <td className="p-3 text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.sequenceur ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                        SEQ {assoc.quotas?.sequenciador != null ? `(${assoc.quotas.sequenciador})` : ''}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.manager ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                        ORG {assoc.quotas?.orchestrador != null ? `(${assoc.quotas.orchestrador})` : ''}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.dancador ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                        DAN {assoc.quotas?.dansador != null ? `(${assoc.quotas.dansador})` : ''}
-                      </span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${assoc.appAccess?.vitrine ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>MOS</span>
+                    <div className="flex items-center justify-center gap-1 text-[10px] font-bold">
+                      <span className={`px-1.5 py-0.5 rounded ${assoc.appAccess?.sequenceur ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>SEQ {assoc.quotas?.sequenciador != null ? `(${assoc.quotas.sequenciador})` : ''}</span>
+                      <span className={`px-1.5 py-0.5 rounded ${assoc.appAccess?.manager ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>ORG {assoc.quotas?.orchestrador != null ? `(${assoc.quotas.orchestrador})` : ''}</span>
+                      <span className={`px-1.5 py-0.5 rounded ${assoc.appAccess?.dancador ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>DAN {assoc.quotas?.dansador != null ? `(${assoc.quotas.dansador})` : ''}</span>
+                      <span className={`px-1.5 py-0.5 rounded ${assoc.appAccess?.vitrine ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>MOS</span>
                     </div>
                   </td>
 
                   <td className="p-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => onEdit(assoc)} className="p-1.5 bg-[#f4e8cf] hover:bg-[#ebd8b3] text-[#4a2e1b] rounded border border-[#8b4513]/40 cursor-pointer">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        onClick={() => onCreateMestre?.(assoc)}
+                        title="👑 Créer accès Mestre officiel"
+                        className="p-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded border border-amber-400/60 cursor-pointer flex items-center gap-1 font-bold text-[10px] transition-colors"
+                      >
+                        <Crown className="w-3.5 h-3.5 text-amber-700" />
+                        <span className="hidden xl:inline">Mestre</span>
+                      </button>
+                      <button onClick={() => onEdit(assoc)} title="Éditer la structure" className="p-1.5 bg-[#f4e8cf] hover:bg-[#ebd8b3] text-[#4a2e1b] rounded border border-[#8b4513]/40 cursor-pointer">
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button onClick={() => onDelete(assoc.id)} className="p-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded border border-red-300 cursor-pointer">
+                      <button onClick={() => onDelete(assoc.id)} title="Supprimer la structure" className="p-1.5 bg-red-100 hover:bg-red-200 text-red-800 rounded border border-red-300 cursor-pointer">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>

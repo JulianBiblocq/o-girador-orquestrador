@@ -8,7 +8,11 @@ import { launchCrossApp } from '../utils/crossAppAuth';
 import { getEcosystemUrl } from '../constants/ecosystemUrls';
 import { fetchHeroMetrics } from '../services/cmsService';
 
-export default function HeroSection({ activeUniverse, onNavigate }) {
+export default function HeroSection({ 
+  activeUniverse, 
+  onNavigate, 
+  hubSettings = { showPricing: true, showTutorials: true } 
+}) {
   const { t } = useLanguage();
   const universeObj = universData.universes.find(u => u.id === activeUniverse) || universData.universes[0];
 
@@ -66,22 +70,26 @@ export default function HeroSection({ activeUniverse, onNavigate }) {
             <ArrowRight className="w-4 h-4" />
           </a>
 
-          <a
-            href="#tarifs"
-            className="px-6 py-3 bg-[#f4e8cf] text-[#4a2e1b] font-bold text-sm sm:text-base rounded-lg border-2 border-[#8b4513] hover:bg-[#ebd8b3] transition-all flex items-center gap-2 shadow-sm"
-          >
-            <span>{t('hero.discoverTarifs')}</span>
-            <ArrowRight className="w-4 h-4 opacity-70" />
-          </a>
+          {hubSettings?.showPricing && (
+            <a
+              href="#tarifs"
+              className="px-6 py-3 bg-[#f4e8cf] text-[#4a2e1b] font-bold text-sm sm:text-base rounded-lg border-2 border-[#8b4513] hover:bg-[#ebd8b3] transition-all flex items-center gap-2 shadow-sm"
+            >
+              <span>{t('hero.discoverTarifs')}</span>
+              <ArrowRight className="w-4 h-4 opacity-70" />
+            </a>
+          )}
 
-          <button
-            onClick={() => onNavigate('tutos')}
-            className="px-6 py-3 bg-white/60 text-[#8b4513] font-bold text-sm sm:text-base rounded-lg border-2 border-[#8b4513]/40 hover:bg-white hover:border-[#8b4513] transition-all flex items-center gap-2 shadow-sm cursor-pointer"
-          >
-            <PlayCircle className="w-5 h-5 text-[#e67e22]" />
-            <span>{t('hero.watchDemos')}</span>
-            <ArrowRight className="w-4 h-4 opacity-70" />
-          </button>
+          {hubSettings?.showTutorials && (
+            <button
+              onClick={() => onNavigate('tutos')}
+              className="px-6 py-3 bg-white/60 text-[#8b4513] font-bold text-sm sm:text-base rounded-lg border-2 border-[#8b4513]/40 hover:bg-white hover:border-[#8b4513] transition-all flex items-center gap-2 shadow-sm cursor-pointer"
+            >
+              <PlayCircle className="w-5 h-5 text-[#e67e22]" />
+              <span>{t('hero.watchDemos')}</span>
+              <ArrowRight className="w-4 h-4 opacity-70" />
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 max-w-5xl mx-auto">

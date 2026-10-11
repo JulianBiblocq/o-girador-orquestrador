@@ -127,6 +127,10 @@ export default function PublicCatalogue({ onNavigateHome }) {
         return 'from-amber-600 to-orange-900';
       case 'samba':
         return 'from-emerald-500 to-green-800';
+      case 'batucada':
+        return 'from-cyan-500 to-teal-800';
+      case 'sambareggae':
+        return 'from-amber-700 to-red-800';
       case 'capoeira':
         return 'from-red-500 to-orange-700';
       default:
@@ -138,6 +142,8 @@ export default function PublicCatalogue({ onNavigateHome }) {
     switch(universeId) {
       case 'maracatu': return { bg: 'bg-amber-100', text: 'text-amber-800' };
       case 'samba': return { bg: 'bg-green-100', text: 'text-green-800' };
+      case 'batucada': return { bg: 'bg-cyan-100', text: 'text-cyan-800' };
+      case 'sambareggae': return { bg: 'bg-amber-100', text: 'text-amber-800' };
       case 'capoeira': return { bg: 'bg-red-100', text: 'text-red-800' };
       default: return { bg: 'bg-gray-100', text: 'text-gray-800' };
     }

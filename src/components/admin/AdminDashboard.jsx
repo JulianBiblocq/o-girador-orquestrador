@@ -20,6 +20,7 @@ import AdminConcours from './AdminConcours';
 import AxeRulesTab from './AxeRulesTab';
 import AdminModerationTab from './AdminModerationTab';
 import NewsletterTab from './NewsletterTab';
+import HubDisplaySettingsTab from './HubDisplaySettingsTab';
 
 export default function AdminDashboard() {
   const { associations, reload, addOrUpdateAssociation, removeAssociation } = useSubscriptions();
@@ -29,6 +30,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('list'); // 'list' | 'matrix' | 'simulator'
   const [modalOpen, setModalOpen] = useState(false);
   const [guestModalOpen, setGuestModalOpen] = useState(false);
+  const [guestModalData, setGuestModalData] = useState(null);
   const [editingAssoc, setEditingAssoc] = useState(null);
 
   const handleOpenCreate = () => {
@@ -39,6 +41,22 @@ export default function AdminDashboard() {
   const handleOpenEdit = (assoc) => {
     setEditingAssoc(assoc);
     setModalOpen(true);
+  };
+
+  const handleOpenCreateMestre = (assoc) => {
+    setGuestModalData({
+      role: 'mestre',
+      groupId: assoc.groupId || assoc.id,
+      email: assoc.contactEmail || '',
+      displayName: assoc.contactName || '',
+      lockGroup: true
+    });
+    setGuestModalOpen(true);
+  };
+
+  const handleOpenGuestModalGeneric = () => {
+    setGuestModalData(null);
+    setGuestModalOpen(true);
   };
 
   const handleSaveAssoc = async (formData) => {
@@ -110,7 +128,7 @@ export default function AdminDashboard() {
           warningCount={warningCount}
           expiredCount={expiredCount}
           onOpenCreate={handleOpenCreate}
-          onOpenGuestModal={() => setGuestModalOpen(true)}
+          onOpenGuestModal={handleOpenGuestModalGeneric}
           onReload={reload}
         />
 
@@ -189,6 +207,14 @@ export default function AdminDashboard() {
             {t('admin.tabs.bugs') || '🚨 Crashs Auto'}
           </button>
           <button
+            onClick={() => setActiveTab('vitrine')}
+            className={`px-4 py-2 font-bold text-xs sm:text-sm rounded-lg transition-all cursor-pointer ${
+              activeTab === 'vitrine' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-md' : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-[#e8d5b5]'
+            }`}
+          >
+            🎛️ Paramètres Vitrine
+          </button>
+          <button
             onClick={() => setActiveTab('cms')}
             className={`px-4 py-2 font-bold text-xs sm:text-sm rounded-lg transition-all cursor-pointer ${
               activeTab === 'cms' ? 'bg-[#8b4513] text-[#fdf6e7] shadow-md' : 'bg-[#f4e8cf] text-[#4a2e1b] hover:bg-[#e8d5b5]'
@@ -246,6 +272,7 @@ export default function AdminDashboard() {
             onSearchChange={setSearchTerm}
             onEdit={handleOpenEdit}
             onDelete={handleDeleteAssoc}
+            onCreateMestre={handleOpenCreateMestre}
           />
         )}
 
@@ -308,6 +335,10 @@ export default function AdminDashboard() {
           <AxeRulesTab />
         )}
 
+        {activeTab === 'vitrine' && (
+          <HubDisplaySettingsTab />
+        )}
+
         {activeTab === 'newsletter' && (
           <NewsletterTab />
         )}
@@ -318,11 +349,17 @@ export default function AdminDashboard() {
           initialData={editingAssoc}
           onClose={() => setModalOpen(false)}
           onSave={handleSaveAssoc}
+          onCreateMestre={handleOpenCreateMestre}
         />
 
         <AdminGuestModal
           isOpen={guestModalOpen}
-          onClose={() => setGuestModalOpen(false)}
+          initialData={guestModalData}
+          associations={associations}
+          onClose={() => {
+            setGuestModalOpen(false);
+            setGuestModalData(null);
+          }}
         />
 
       </div>

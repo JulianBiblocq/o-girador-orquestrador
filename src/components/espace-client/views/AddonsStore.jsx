@@ -70,6 +70,8 @@ export default function AddonsStore({ associationData, onBack }) {
   const getUniverseBadgeStyle = (universeId) => {
     switch (universeId) {
       case 'maracatu': return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'batucada': return 'bg-cyan-100 text-cyan-800 border-cyan-200';
+      case 'sambareggae': return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'samba': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'capoeira': return 'bg-orange-100 text-orange-800 border-orange-200';
       case 'universal': return 'bg-purple-100 text-purple-800 border-purple-200';
@@ -80,6 +82,8 @@ export default function AddonsStore({ associationData, onBack }) {
   const getUniverseName = (universeId) => {
     switch (universeId) {
       case 'maracatu': return 'Maracatu';
+      case 'batucada': return 'Batucada';
+      case 'sambareggae': return 'Samba-Reggae';
       case 'samba': return 'Samba';
       case 'capoeira': return 'Capoeira';
       case 'universal': return 'Universel';

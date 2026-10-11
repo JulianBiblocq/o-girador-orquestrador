@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, UserPlus, AlertCircle } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { functions } from '../../services/firebase';
@@ -6,10 +6,16 @@ import AdminGuestForm from './AdminGuestForm';
 import AdminGuestSuccessView from './AdminGuestSuccessView';
 
 /**
- * Modale Super-Admin pour l'invitation et la création rapide d'accès Pros / Testeurs.
+ * Modale Super-Admin pour la création d'accès Mestre officiel ou Invité Pro.
  * Appelle la Cloud Function adminCreateGuestUser pour ne pas déconnecter le Super-Admin.
  */
-export default function AdminGuestModal({ isOpen, onClose }) {
+export default function AdminGuestModal({ 
+  isOpen, 
+  initialData = null, 
+  associations = [], 
+  onClose 
+}) {
+  const [role, setRole] = useState('mestre');
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [groupId, setGroupId] = useState('guest-pro');
@@ -17,22 +23,53 @@ export default function AdminGuestModal({ isOpen, onClose }) {
   const [isAutoPassword, setIsAutoPassword] = useState(true);
   const [manualPassword, setManualPassword] = useState('');
   const [canWrite, setCanWrite] = useState(true);
+  const [lockGroup, setLockGroup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
+  useEffect(() => {
+    if (initialData) {
+      setRole(initialData.role || 'mestre');
+      setEmail(initialData.email || '');
+      setDisplayName(initialData.displayName || '');
+      const defaultGid = initialData.groupId || (associations[0]?.groupId || associations[0]?.id || 'guest-pro');
+      setGroupId(defaultGid);
+      setCustomGroupId(initialData.groupId || '');
+      setLockGroup(Boolean(initialData.lockGroup));
+    } else {
+      setRole('mestre');
+      setEmail('');
+      setDisplayName('');
+      const firstAssocGid = associations[0]?.groupId || associations[0]?.id;
+      setGroupId(firstAssocGid || 'guest-pro');
+      setCustomGroupId('');
+      setLockGroup(false);
+    }
+    setError(null);
+    setResult(null);
+  }, [initialData, isOpen]);
+
   if (!isOpen) return null;
 
   const handleReset = () => {
-    setEmail('');
-    setDisplayName('');
-    setGroupId('guest-pro');
-    setCustomGroupId('');
-    setIsAutoPassword(true);
-    setManualPassword('');
-    setCanWrite(true);
-    setError(null);
-    setResult(null);
+    if (initialData?.lockGroup) {
+      setEmail('');
+      setDisplayName('');
+      setError(null);
+      setResult(null);
+    } else {
+      setEmail('');
+      setDisplayName('');
+      setRole('mestre');
+      setGroupId(associations[0]?.groupId || associations[0]?.id || 'guest-pro');
+      setCustomGroupId('');
+      setIsAutoPassword(true);
+      setManualPassword('');
+      setCanWrite(true);
+      setError(null);
+      setResult(null);
+    }
   };
 
   const handleClose = () => {
@@ -50,9 +87,10 @@ export default function AdminGuestModal({ isOpen, onClose }) {
     try {
       const createGuestFn = httpsCallable(functions, 'adminCreateGuestUser');
       const response = await createGuestFn({
+        role,
         email: email.trim().toLowerCase(),
-        displayName: displayName.trim() || 'Invité Pro',
-        groupId: effectiveGroupId || 'guest-pro',
+        displayName: displayName.trim() || (role === 'mestre' ? 'Mestre' : 'Invité Pro'),
+        groupId: effectiveGroupId || (role === 'mestre' ? 'association' : 'guest-pro'),
         manualPassword: isAutoPassword ? null : manualPassword.trim(),
         canWrite
       });
@@ -75,7 +113,9 @@ export default function AdminGuestModal({ isOpen, onClose }) {
           <div className="flex items-center gap-2">
             <UserPlus className="w-6 h-6 text-[#8b4513]" />
             <h2 className="text-xl font-extrabold text-[#4a2e1b] font-cordel">
-              {result ? 'Accès Invité Prêt !' : 'Inviter un Pro / Créer un Accès'}
+              {result 
+                ? (result.role === 'mestre' ? 'Accès Mestre Prêt !' : 'Accès Invité Prêt !') 
+                : (role === 'mestre' ? "Créer l'accès Mestre Officiel" : "Inviter un Pro / Testeur")}
             </h2>
           </div>
           <button
@@ -101,6 +141,8 @@ export default function AdminGuestModal({ isOpen, onClose }) {
           />
         ) : (
           <AdminGuestForm
+            role={role}
+            setRole={setRole}
             email={email}
             setEmail={setEmail}
             displayName={displayName}
@@ -109,6 +151,8 @@ export default function AdminGuestModal({ isOpen, onClose }) {
             setGroupId={setGroupId}
             customGroupId={customGroupId}
             setCustomGroupId={setCustomGroupId}
+            associations={associations}
+            lockGroup={lockGroup}
             isAutoPassword={isAutoPassword}
             setIsAutoPassword={setIsAutoPassword}
             manualPassword={manualPassword}

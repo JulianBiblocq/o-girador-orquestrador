@@ -7,6 +7,8 @@ const getMarkerIcon = (universeId) => {
   let color = '#4a2e1b'; 
   if (universeId === 'maracatu') color = '#d2691e';
   else if (universeId === 'samba') color = '#10b981';
+  else if (universeId === 'batucada') color = '#06b6d4';
+  else if (universeId === 'sambareggae') color = '#f59e0b';
   else if (universeId === 'capoeira') color = '#ef4444';
 
   const svgIcon = `

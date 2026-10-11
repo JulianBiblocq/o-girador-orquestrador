@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2, HardDrive } from 'lucide-react';
+import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2, HardDrive, Crown, KeyRound, Lock } from 'lucide-react';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../../services/firebase';
+import { slugifyAssociationId } from '../../utils/slugUtils';
 
 const formatBytes = (bytes) => {
   if (bytes == null) return '0 Go';
@@ -10,7 +13,9 @@ const formatBytes = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export default function AssociationModal({ isOpen, initialData, onClose, onSave }) {
+export default function AssociationModal({ isOpen, initialData, onClose, onSave, onCreateMestre }) {
+  const [technicalId, setTechnicalId] = useState('');
+  const [isIdManuallyEdited, setIsIdManuallyEdited] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     city: '',
@@ -46,8 +51,11 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
 
   useEffect(() => {
     if (initialData) {
+      const existingId = initialData.id || initialData.groupId || '';
+      setTechnicalId(existingId);
+      setIsIdManuallyEdited(true);
       setFormData({
-        id: initialData.id || '',
+        id: existingId,
         name: initialData.name || initialData.nom || '',
         city: initialData.city || '',
         contactName: initialData.contactName || '',
@@ -72,8 +80,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         },
         universeAccess: {
           maracatu: Boolean(initialData.universeAccess?.maracatu ?? true),
-          capoeira: Boolean(initialData.universeAccess?.capoeira ?? false),
-          samba: Boolean(initialData.universeAccess?.samba ?? false)
+          batucada: Boolean(initialData.universeAccess?.batucada ?? false),
+          sambareggae: Boolean(initialData.universeAccess?.sambareggae ?? false),
+          samba: Boolean(initialData.universeAccess?.samba ?? false),
+          capoeira: Boolean(initialData.universeAccess?.capoeira ?? false)
         },
         quotas: {
           sequenciador: initialData.quotas?.sequenciador ?? null,
@@ -86,7 +96,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         }
       });
     } else {
+      setTechnicalId('');
+      setIsIdManuallyEdited(false);
       setFormData({
+        id: '',
         name: '',
         city: '',
         contactName: '',
@@ -106,8 +119,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
         },
         universeAccess: {
           maracatu: true,
-          capoeira: false,
-          samba: false
+          batucada: false,
+          sambareggae: false,
+          samba: false,
+          capoeira: false
         },
         quotas: {
           sequenciador: null,
@@ -123,6 +138,18 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
   }, [initialData, isOpen]);
 
   if (!isOpen) return null;
+
+  const handleNameChange = (newName) => {
+    setFormData(prev => ({ ...prev, name: newName }));
+    if (!initialData && !isIdManuallyEdited) {
+      setTechnicalId(slugifyAssociationId(newName));
+    }
+  };
+
+  const handleTechnicalIdChange = (val) => {
+    setIsIdManuallyEdited(true);
+    setTechnicalId(slugifyAssociationId(val));
+  };
 
   const toggleApp = (appKey) => {
     setFormData(prev => ({
@@ -144,7 +171,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     // Nettoyer les anciennes formules principales
@@ -156,33 +183,86 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
       newPacks.push(formData.formule);
     }
     
-    const finalData = { ...formData, unlockedPacks: newPacks };
+    const finalSlugId = (
+      technicalId || 
+      formData.id || 
+      slugifyAssociationId(formData.name) || 
+      `asso-${Date.now()}`
+    ).trim().toLowerCase();
+
+    const finalData = { 
+      ...formData, 
+      id: finalSlugId,
+      groupId: finalSlugId,
+      unlockedPacks: newPacks 
+    };
     delete finalData.formule;
-    
-    onSave(finalData);
+
+    try {
+      const docRef = doc(db, 'associations', finalSlugId);
+      await setDoc(docRef, {
+        ...finalData,
+        id: finalSlugId,
+        groupId: finalSlugId,
+        updatedAt: serverTimestamp(),
+        ...(!initialData && { createdAt: serverTimestamp() })
+      }, { merge: true });
+    } catch (err) {
+      console.warn("Firestore setDoc fallback in AssociationModal:", err);
+    }
+
+    if (onSave) {
+      await onSave(finalData);
+    }
   };
 
+  const activeTechnicalId = technicalId || initialData?.groupId || initialData?.id || formData?.id || '';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-[#fdf6e7] xilo-border rounded-xl max-w-2xl w-full p-6 sm:p-8 relative shadow-2xl space-y-6 my-8">
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-start justify-center p-4 sm:py-8 bg-black/70 backdrop-blur-sm animate-fade-in">
+      <div className="bg-[#fdf6e7] xilo-border rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col p-6 sm:p-8 relative shadow-2xl">
         
         {/* Header */}
-        <div className="flex justify-between items-center border-b-2 border-[#4a2e1b]/20 pb-3">
+        <div className="flex justify-between items-center border-b-2 border-[#4a2e1b]/20 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <Building2 className="w-6 h-6 text-[#8b4513]" />
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#4a2e1b] font-cordel">
-              {initialData ? 'Éditer la Structure' : 'Créer un Nouveau Bloco / Association'}
-            </h2>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-[#4a2e1b] font-cordel">
+                {initialData ? 'Éditer la Structure' : 'Créer un Nouveau Bloco / Association'}
+              </h2>
+              {activeTechnicalId && (
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] uppercase font-bold text-gray-500">ID Technique :</span>
+                  <span className="text-xs font-mono font-bold text-[#8b4513] bg-[#f4e8cf] px-2 py-0.5 rounded border border-[#8b4513]/20">
+                    {activeTechnicalId}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-[#8b4513] hover:text-[#4a2e1b] p-1 bg-[#f4e8cf] rounded-full border border-[#8b4513]/30 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {initialData && (
+              <button
+                type="button"
+                onClick={() => onCreateMestre?.(initialData)}
+                title="Générer un compte Mestre officiel"
+                className="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-md border border-amber-400/60 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-700" />
+                <span className="hidden sm:inline">Créer accès Mestre</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-[#8b4513] hover:text-[#4a2e1b] p-1 bg-[#f4e8cf] rounded-full border border-[#8b4513]/30 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 pt-4">
+          <div className="flex-1 overflow-y-auto pr-2 space-y-6">
           
           {/* General info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -194,8 +274,8 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 type="text"
                 required
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
-                placeholder="ex: Maracatu Estrela de Ouro"
+                onChange={e => handleNameChange(e.target.value)}
+                placeholder="ex: Samb'à Bulles"
                 className="w-full px-3 py-2 bg-white text-[#2c1d11] text-xs rounded border border-[#4a2e1b]"
               />
             </div>
@@ -211,6 +291,62 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 placeholder="ex: Nantes / Recife"
                 className="w-full px-3 py-2 bg-white text-[#2c1d11] text-xs rounded border border-[#4a2e1b]"
               />
+            </div>
+
+            {/* Identifiant Technique Firestore (Slug normalisé avec vérification visuelle) */}
+            <div className="sm:col-span-2 bg-[#f4e8cf]/70 p-3 rounded-lg border-2 border-[#8b4513]/20">
+              <div className="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                <label className="text-xs font-bold text-[#8b4513] uppercase flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-[#8b4513]" />
+                  <span>Identifiant Technique Firestore (Slug) *</span>
+                </label>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-500 font-semibold">Chemin :</span>
+                  <span className="text-xs font-mono font-bold text-[#8b4513] bg-white px-2 py-0.5 rounded border border-[#8b4513]/30">
+                    associations/{activeTechnicalId || '...'}
+                  </span>
+                </div>
+              </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  disabled={Boolean(initialData)}
+                  value={activeTechnicalId}
+                  onChange={e => handleTechnicalIdChange(e.target.value)}
+                  placeholder="ex: sambabulles"
+                  className={`w-full px-3 py-2 font-mono text-xs rounded border outline-none transition-colors ${
+                    initialData
+                      ? 'bg-gray-100 text-gray-600 border-gray-300 cursor-not-allowed select-all'
+                      : 'bg-white text-[#4a2e1b] border-[#4a2e1b] focus:border-[#8b4513] focus:ring-1 focus:ring-[#8b4513]'
+                  }`}
+                />
+                {initialData && (
+                  <span className="absolute right-3 top-2.5 text-gray-400 flex items-center gap-1 text-[11px]">
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Fixe</span>
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-gray-600 mt-1.5 flex items-center justify-between">
+                <span>
+                  {initialData
+                    ? "Identifiant permanent scellé pour sécuriser les liaisons membres et profils."
+                    : "Minuscules sans accents ni espaces (ex: \"Samb'à Bulles\" ➔ \"sambabulles\"). Vérifiez-le avant création."}
+                </span>
+                {!initialData && isIdManuallyEdited && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsIdManuallyEdited(false);
+                      setTechnicalId(slugifyAssociationId(formData.name));
+                    }}
+                    className="text-[#8b4513] hover:underline font-semibold cursor-pointer ml-2 text-[10px]"
+                  >
+                    Réinitialiser depuis le nom
+                  </button>
+                )}
+              </p>
             </div>
 
             <div>
@@ -249,9 +385,11 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 onChange={e => setFormData({ ...formData, universeId: e.target.value })}
                 className="w-full px-3 py-2 bg-[#fdf6e7] text-xs font-bold text-[#4a2e1b] rounded border border-[#8b4513]"
               >
-                <option value="maracatu">Maracatu</option>
-                <option value="samba">Samba</option>
-                <option value="capoeira">Capoeira</option>
+                <option value="maracatu">Maracatu de Baque Virado</option>
+                <option value="batucada">Batucada</option>
+                <option value="sambareggae">Samba-Reggae & Blocos Afro</option>
+                <option value="samba">Bateria & Samba</option>
+                <option value="capoeira">Capoeira Regional & Angola</option>
               </select>
             </div>
           </div>
@@ -429,6 +567,51 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                 </div>
 
                 <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
+                  <span className="font-semibold text-gray-800">Batucada</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleUniverse('batucada')}
+                    className="cursor-pointer"
+                  >
+                    {formData.universeAccess.batucada ? (
+                      <ToggleRight className="w-7 h-7 text-emerald-700" />
+                    ) : (
+                      <ToggleLeft className="w-7 h-7 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
+                  <span className="font-semibold text-gray-800">Samba-Reggae & Blocos Afro</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleUniverse('sambareggae')}
+                    className="cursor-pointer"
+                  >
+                    {formData.universeAccess.sambareggae ? (
+                      <ToggleRight className="w-7 h-7 text-emerald-700" />
+                    ) : (
+                      <ToggleLeft className="w-7 h-7 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
+                  <span className="font-semibold text-gray-800">Bateria & Samba</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleUniverse('samba')}
+                    className="cursor-pointer"
+                  >
+                    {formData.universeAccess.samba ? (
+                      <ToggleRight className="w-7 h-7 text-emerald-700" />
+                    ) : (
+                      <ToggleLeft className="w-7 h-7 text-gray-400" />
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
                   <span className="font-semibold text-gray-800">Capoeira Regional & Angola</span>
                   <button
                     type="button"
@@ -442,83 +625,14 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
                     )}
                   </button>
                 </div>
-
-                <div className="flex items-center justify-between p-2 bg-[#fdf6e7] rounded border border-gray-200">
-                  <span className="font-semibold text-gray-800">Samba de Enredo & Batucada</span>
-                  <button
-                    type="button"
-                    onClick={() => toggleUniverse('samba')}
-                    className="cursor-pointer"
-                  >
-                    {formData.universeAccess.samba ? (
-                      <ToggleRight className="w-7 h-7 text-emerald-700" />
-                    ) : (
-                      <ToggleLeft className="w-7 h-7 text-gray-400" />
-                    )}
-                  </button>
-                </div>
               </div>
             </div>
-
-            {/* Quotas Matrix */}
-            <div className="bg-white/80 p-4 rounded-lg border-2 border-[#8b4513]/20 space-y-3 sm:col-span-2 mt-4">
-              <h3 className="text-xs font-bold text-[#4a2e1b] uppercase">
-                Quotas de Badges Administrateur
-              </h3>
-              <p className="text-[10px] text-gray-500 italic mb-2">Laissez vide pour un accès illimité. Mettez 0 pour bloquer complètement l'accès.</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div>
-                  <label className="block font-semibold text-gray-800 mb-1">Séquenciador</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Illimité"
-                    value={formData.quotas?.sequenciador ?? ''}
-                    onChange={e => setFormData({
-                      ...formData,
-                      quotas: { ...formData.quotas, sequenciador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
-                    })}
-                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-gray-800 mb-1">Dançador</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Illimité"
-                    value={formData.quotas?.dansador ?? ''}
-                    onChange={e => setFormData({
-                      ...formData,
-                      quotas: { ...formData.quotas, dansador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
-                    })}
-                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-gray-800 mb-1">Orchestrador</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="Illimité"
-                    value={formData.quotas?.orchestrador ?? ''}
-                    onChange={e => setFormData({
-                      ...formData,
-                      quotas: { ...formData.quotas, orchestrador: e.target.value === '' ? null : parseInt(e.target.value, 10) }
-                    })}
-                    className="w-full px-3 py-2 bg-[#fdf6e7] rounded border border-gray-300 focus:border-[#8b4513] outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
           </div>
 
           {/* Quotas Matrix */}
           <div className="bg-white/80 p-4 rounded-lg border-2 border-[#8b4513]/20 space-y-4">
             <h3 className="text-xs font-bold text-[#4a2e1b] uppercase flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-[#8b4513]"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <Shield className="w-4 h-4 text-[#8b4513]" />
               Quotas Badges Administrateur
             </h3>
             
@@ -617,9 +731,10 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave 
             </div>
             <p className="text-[10px] text-gray-500 italic">Laissez vide pour aucun quota (illimité ou géré ailleurs).</p>
           </div>
+          </div>
 
           {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-[#8b4513]/20">
+          <div className="flex justify-end gap-3 pt-3 border-t border-[#8b4513]/20 shrink-0 mt-2">
             <button
               type="button"
               onClick={onClose}

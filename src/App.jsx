@@ -22,12 +22,14 @@ import LegalView from './components/LegalView';
 import FreeSignupView from './components/FreeSignupView';
 import { Loader2 } from 'lucide-react';
 import { useAppUpdate } from './hooks/useAppUpdate';
+import { useHubDisplaySettings } from './hooks/useHubDisplaySettings';
 
 // Lazy loading pour le panneau d'administration lourd (/admin)
 const AdminDashboard = lazy(() => import('./components/admin/AdminDashboard'));
 
 function AppContent() {
   useAppUpdate();
+  const { settings: hubSettings } = useHubDisplaySettings();
   const [activeUniverse, setActiveUniverse] = useState('maracatu');
   const [activeView, setActiveView] = useState('home'); // 'home' | 'a-propos' | 'tutos' | 'admin' | 'checkout'
   const [activePlan, setActivePlan] = useState(null);
@@ -35,17 +37,25 @@ function AppContent() {
   const [adminModalOpen, setAdminModalOpen] = useState(false);
 
   useEffect(() => {
-    if (window.location.pathname === '/admin' || window.location.hash.startsWith('#admin')) {
-      setActiveView('admin');
-    } else if (window.location.hash.startsWith('#espace-client')) {
-      setActiveView('espace-client');
-    } else if (window.location.hash.startsWith('#catalogue-public')) {
-      setActiveView('catalogue-public');
-    } else if (window.location.hash.startsWith('#legal')) {
-      setActiveView('legal');
-    } else if (window.location.hash.startsWith('#inscription-gratuite')) {
-      setActiveView('free-signup');
-    }
+    const handleRoute = () => {
+      if (window.location.pathname === '/admin' || window.location.hash.startsWith('#admin')) {
+        setActiveView('admin');
+      } else if (window.location.hash.startsWith('#espace-client')) {
+        setActiveView('espace-client');
+      } else if (window.location.hash.startsWith('#catalogue-public')) {
+        setActiveView('catalogue-public');
+      } else if (window.location.hash.startsWith('#legal')) {
+        setActiveView('legal');
+      } else if (window.location.hash.startsWith('#inscription-gratuite')) {
+        setActiveView('free-signup');
+      } else if (!window.location.hash) {
+        setActiveView('home');
+      }
+    };
+
+    handleRoute();
+    window.addEventListener('hashchange', handleRoute);
+    return () => window.removeEventListener('hashchange', handleRoute);
   }, []);
 
   const handleSelectUniverse = (universeId) => {
@@ -84,25 +94,53 @@ function AppContent() {
         activeView={activeView}
         onNavigate={handleNavigate}
         onOpenTeaser={handleOpenTeaser}
+        hubSettings={hubSettings}
       />
 
       {/* Main Views */}
       {activeView === 'home' && (
         <main>
-          <HeroSection activeUniverse={activeUniverse} onNavigate={handleNavigate} />
+          <HeroSection 
+            activeUniverse={activeUniverse} 
+            onNavigate={handleNavigate} 
+            hubSettings={hubSettings} 
+          />
           <TriptychSection />
-          <PricingSynergySection onSelectPlan={(plan) => { setActivePlan(plan); handleNavigate('checkout'); }} />
-          <AddonsStore onNavigate={handleNavigate} />
+          {hubSettings.showPricing && (
+            <PricingSynergySection onSelectPlan={(plan) => { setActivePlan(plan); handleNavigate('checkout'); }} />
+          )}
+          {hubSettings.showAddons && (
+            <AddonsStore onNavigate={handleNavigate} />
+          )}
           <PublicNetworkSection onNavigate={handleNavigate} />
           <PublicReviewsSection onNavigate={handleNavigate} />
-          <TutorialsSection />
+          {hubSettings.showTutorials && (
+            <TutorialsSection />
+          )}
           <NewsletterSection activeUniverse={activeUniverse} />
         </main>
       )}
 
       {activeView === 'tutos' && (
         <main className="py-6">
-          <TutorialsSection />
+          {hubSettings.showTutorials ? (
+            <TutorialsSection />
+          ) : (
+            <div className="max-w-2xl mx-auto px-4 py-16 text-center space-y-4">
+              <h2 className="text-2xl font-black font-cordel text-[#4a2e1b]">
+                Section Démonstrations & Tutoriels
+              </h2>
+              <p className="text-sm text-[#8b4513] max-w-lg mx-auto">
+                Cette section est en cours d'ajustement pour le déploiement inaugural avec nos associations partenaires.
+              </p>
+              <button
+                onClick={() => handleNavigate('home')}
+                className="mt-4 px-6 py-2.5 bg-[#8b4513] text-[#fdf6e7] font-bold text-xs rounded-xl shadow-md hover:bg-[#6e370f] transition-all cursor-pointer"
+              >
+                Retourner à l'accueil
+              </button>
+            </div>
+          )}
           <NewsletterSection activeUniverse={activeUniverse} />
         </main>
       )}
