@@ -172,4 +172,152 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
     await assertFails(pendingRef.get());
     await assertFails(pendingRef.delete());
   });
+
+  describe('Porte-Voix (Forum & Canaux) — Déblocage adhérents standards', () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        // Membre sans badge ni tags (auteur du sujet)
+        await db.doc('users/user_standard').set({
+          groupId: 'samambaia',
+          role: 'membre'
+        });
+        // Autre membre du même groupe (non-auteur)
+        await db.doc('users/user_colleague').set({
+          groupId: 'samambaia',
+          role: 'membre'
+        });
+        // Membre d'une autre asso
+        await db.doc('users/user_other_asso').set({
+          groupId: 'autre_asso',
+          role: 'membre'
+        });
+        // Canaux
+        await db.doc('forum_channels/chan_public').set({
+          groupId: 'samambaia',
+          title: 'Général',
+          readRoles: ['all']
+        });
+        await db.doc('forum_channels/chan_no_roles').set({
+          groupId: 'samambaia',
+          title: 'Discussion libre'
+        });
+        await db.doc('forum_channels/chan_restricted').set({
+          groupId: 'samambaia',
+          title: 'Bureau',
+          readRoles: ['Bureau', 'Admin']
+        });
+        // Sujet existant
+        await db.doc('forum/thread_1').set({
+          groupId: 'samambaia',
+          channelId: 'chan_public',
+          authorId: 'user_standard',
+          titre: 'Premier sujet',
+          reponses: []
+        });
+      });
+    });
+
+    it('Autorise un adhérent sans tag à lire un canal avec readRoles [all]', async () => {
+      const db = testEnv.authenticatedContext('user_standard').firestore();
+      await assertSucceeds(db.doc('forum_channels/chan_public').get());
+    });
+
+    it('Autorise un adhérent sans tag à lire un canal sans propriété readRoles', async () => {
+      const db = testEnv.authenticatedContext('user_standard').firestore();
+      await assertSucceeds(db.doc('forum_channels/chan_no_roles').get());
+    });
+
+    it('Interdit la lecture d un canal restreint à un adhérent sans tag', async () => {
+      const db = testEnv.authenticatedContext('user_standard').firestore();
+      await assertFails(db.doc('forum_channels/chan_restricted').get());
+    });
+
+    it('Interdit la lecture d un canal à un utilisateur d un autre groupe', async () => {
+      const db = testEnv.authenticatedContext('user_other_asso').firestore();
+      await assertFails(db.doc('forum_channels/chan_public').get());
+    });
+
+    it('Autorise un membre à poster une réponse et mettre à jour les métadonnées de discussion', async () => {
+      const db = testEnv.authenticatedContext('user_standard').firestore();
+      await assertSucceeds(db.doc('forum/thread_1').update({
+        reponses: [{ message: 'Super!', authorId: 'user_standard' }],
+        derniereModification: '2026-10-03T10:00:00Z',
+        dernierMessage: 'Super!',
+        dernierAuteur: 'Standard User',
+        dernierAuteurId: 'user_standard',
+        nombreReponses: 1,
+        reactions: { '👍': ['user_standard'] }
+      }));
+    });
+
+    it('Interdit la mise à jour de champs administratifs non autorisés par un membre', async () => {
+      const db = testEnv.authenticatedContext('user_colleague').firestore();
+      await assertFails(db.doc('forum/thread_1').update({
+        isPinned: true
+      }));
+    });
+
+    it('Autorise la création de sujet par l auteur dans son groupe', async () => {
+      const db = testEnv.authenticatedContext('user_standard').firestore();
+      await assertSucceeds(db.doc('forum/thread_new').set({
+        authorId: 'user_standard',
+        groupId: 'samambaia',
+        channelId: 'chan_public',
+        titre: 'Nouveau sujet'
+      }));
+    });
+  });
+
+  describe('Paramètres Vitrine & Globaux (settings/{settingId})', () => {
+    it('Autorise la lecture publique du document settings/hub_display pour les visiteurs', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('settings/hub_display').set({
+          showPricing: false,
+          showAddons: false,
+          showTutorials: false
+        });
+      });
+
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      await assertSucceeds(unauthDb.doc('settings/hub_display').get());
+    });
+
+    it('Interdit l\'écriture sur settings/hub_display à un utilisateur non authentifié', async () => {
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      await assertFails(unauthDb.doc('settings/hub_display').set({ showPricing: true }));
+    });
+
+    it('Interdit l\'écriture sur settings/hub_display à un membre standard sans rôle admin', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/simple_user').set({
+          role: 'membre',
+          groupId: 'samambaia'
+        });
+      });
+
+      const userDb = testEnv.authenticatedContext('simple_user').firestore();
+      await assertFails(userDb.doc('settings/hub_display').set({ showPricing: true }));
+    });
+
+    it('Autorise l\'administrateur système à écrire sur settings/hub_display', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/sys_admin').set({
+          role: 'super-admin',
+          isSystemAdmin: true,
+          groupId: 'samambaia'
+        });
+      });
+
+      const adminDb = testEnv.authenticatedContext('sys_admin', { isSystemAdmin: true }).firestore();
+      await assertSucceeds(adminDb.doc('settings/hub_display').set({
+        showPricing: true,
+        showAddons: true,
+        showTutorials: false
+      }));
+    });
+  });
 });

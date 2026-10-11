@@ -190,56 +190,35 @@ service cloud.firestore {
         );
     }
 
-    function getChannelData(channelId) {
-      return get(/databases/$(database)/documents/forum_channels/$(channelId)).data;
-    }
-
-    function hasChannelReadAccess(channelId) {
+    function hasChannelReadAccess(channelData) {
       return isAuthenticated() && (
+        isSystemAdmin() ||
         isAdminOrMestre() ||
-        isModerator() ||
-        channelId == null ||
-        channelId in ['general', 'general-annonces'] ||
-        channelId.matches('.*(_general|_general-annonces)$') ||
         (
-          channelId != null &&
-          exists(/databases/$(database)/documents/forum_channels/$(channelId)) &&
-          getUserData().get('groupId', '').lower() == getChannelData(channelId).get('groupId', '').lower() &&
-          (
-            getChannelData(channelId).isTransparent == true ||
-            getChannelData(channelId).readRoles == null ||
-            getChannelData(channelId).readRoles.size() == 0 ||
-            getChannelData(channelId).readRoles.hasAny(['all']) ||
-            (getChannelData(channelId).keys().hasAny(['allowedRoles']) && getChannelData(channelId).allowedRoles.hasAny(['all'])) ||
-            getChannelData(channelId).readRoles.hasAny([getUserData().role]) ||
-            (getUserData().keys().hasAny(['tags']) && getUserData().tags.hasAny(getChannelData(channelId).readRoles))
+          isDocSameGroup() && (
+            !channelData.keys().hasAny(['readRoles']) ||
+            channelData.readRoles == null ||
+            channelData.readRoles.size() == 0 ||
+            'all' in channelData.readRoles ||
+            channelData.readRoles.hasAny(['all', getUserData().get('role', 'membre')]) ||
+            (getUserData().keys().hasAny(['tags']) && channelData.readRoles.hasAny(getUserData().tags))
           )
         )
       );
     }
 
-    function hasChannelWriteAccess(channelId) {
+    function hasChannelWriteAccess(channelData) {
       return isAuthenticated() && (
+        isSystemAdmin() ||
         isAdminOrMestre() ||
-        isModerator() ||
         (
-          (
-            (channelId in ['general', 'general-annonces'] || channelId.matches('.*(_general|_general-annonces)$')) &&
-            !exists(/databases/$(database)/documents/forum_channels/$(channelId))
-          ) ||
-          (
-            channelId != null &&
-            exists(/databases/$(database)/documents/forum_channels/$(channelId)) &&
-            getUserData().get('groupId', '').lower() == getChannelData(channelId).get('groupId', '').lower() &&
-            (!getChannelData(channelId).keys().hasAny(['readOnlyForMembers']) || getChannelData(channelId).readOnlyForMembers != true) &&
-            (
-              getChannelData(channelId).writeRoles == null ||
-              getChannelData(channelId).writeRoles.size() == 0 ||
-              getChannelData(channelId).writeRoles.hasAny(['all']) ||
-              (getChannelData(channelId).keys().hasAny(['allowedRoles']) && getChannelData(channelId).allowedRoles.hasAny(['all'])) ||
-              getChannelData(channelId).writeRoles.hasAny([getUserData().role]) ||
-              (getUserData().keys().hasAny(['tags']) && getUserData().tags.hasAny(getChannelData(channelId).writeRoles))
-            )
+          isDocSameGroup() && (
+            !channelData.keys().hasAny(['writeRoles']) ||
+            channelData.writeRoles == null ||
+            channelData.writeRoles.size() == 0 ||
+            'all' in channelData.writeRoles ||
+            channelData.writeRoles.hasAny(['all', getUserData().get('role', 'membre')]) ||
+            (getUserData().keys().hasAny(['tags']) && channelData.writeRoles.hasAny(getUserData().tags))
           )
         )
       );
@@ -693,57 +672,126 @@ service cloud.firestore {
     }
 
     match /forum_channels/{channelId} {
+      // Lecture : autorisée si hasChannelReadAccess(resource.data)
+      allow read: if hasChannelReadAccess(resource.data);
+      // Écriture : réservée aux administrateurs / Mestres
+      allow write: if isAdminOrMestre() || isSystemAdmin();
+    }
+
+    match /forum/{threadId} {
+      // Lecture autorisée aux membres du même groupe ayant accès au salon
       allow read: if isAuthenticated() && (
+        isSystemAdmin() ||
         isAdminOrMestre() ||
+        isModerator() ||
         (
-          getUserData().get('groupId', '').lower() == resource.data.get('groupId', '').lower() &&
+          isDocSameGroup() &&
           (
-            resource.data.isTransparent == true ||
+            !resource.data.keys().hasAny(['readRoles']) ||
             resource.data.readRoles == null ||
             resource.data.readRoles.size() == 0 ||
-            resource.data.readRoles.hasAny(['all']) ||
-            (resource.data.keys().hasAny(['allowedRoles']) && resource.data.allowedRoles.hasAny(['all'])) ||
-            (resource.data.keys().hasAny(['allowedRoles']) && resource.data.allowedRoles.hasAny([getUserData().role])) ||
-            resource.data.readRoles.hasAny([getUserData().role]) ||
-            (getUserData().keys().hasAny(['tags']) && getUserData().tags.hasAny(resource.data.readRoles))
+            'all' in resource.data.readRoles ||
+            hasChannelReadAccess(resource.data)
           )
         )
       );
-      allow create: if isAuthenticated() && request.resource.data.get('groupId', '').lower() == getUserData().get('groupId', '').lower();
-      allow update, delete: if isAdminOrMestre();
-    }
 
-    match /forum/{thread} {
-      allow read: if isAuthenticated() && (
-        isAdminOrMestre() ||
-        isModerator() ||
-        hasChannelReadAccess(resource.data.channelId)
-      );
+      // Création de sujet
       allow create: if isAuthenticated() && (
-        hasChannelWriteAccess(request.resource.data.channelId)
-      );
-      allow update: if isAuthenticated() && (
-        isAdminOrMestre() ||
-        isModerator() ||
+        isSystemAdmin() ||
         (
           (
-            (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
-            (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+            (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
+            (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
           ) &&
-          (hasChannelWriteAccess(resource.data.channelId) || !resource.data.keys().hasAny(['channelId'])) &&
-          (!request.resource.data.keys().hasAny(['channelId']) || request.resource.data.channelId == resource.data.channelId)
-        ) ||
-        (
-          hasChannelWriteAccess(resource.data.channelId) &&
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reponses', 'derniereModification', 'poll', 'reactions', 'nombreReponses'])
+          isDocSameGroup()
         )
       );
-      allow delete: if isAdminOrMestre() || isModerator() || (
-        isAuthenticated() && (
+
+      // Mise à jour (Réponse, validation, vote sondage)
+      allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        isModerator() ||
+        // L'auteur peut modifier son propre sujet
+        (
           (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
           (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+        ) ||
+        // N'importe quel membre autorisé peut répondre ou participer au fil
+        (
+          isDocSameGroup() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'reponses', 
+            'derniereModification', 
+            'dernierMessage', 
+            'dernierAuteur', 
+            'dernierAuteurId', 
+            'nombreReponses', 
+            'participants', 
+            'derniersParticipants', 
+            'poll', 
+            'validationData', 
+            'unreadBy',
+            'reactions'
+          ])
         )
       );
+
+      // Suppression réservée à l'auteur ou aux admins
+      allow delete: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
+        (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+      );
+
+      // Sous-collections éventuelles pour les messages / réponses
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() ||
+          get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
+        );
+        allow create: if isAuthenticated() && (
+          isSystemAdmin() ||
+          (
+            (
+              (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
+              (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
+            ) &&
+            get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
+          )
+        );
+        allow update, delete: if isAuthenticated() && (
+          isSystemAdmin() ||
+          isAdminOrMestre() ||
+          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
+          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+        );
+      }
+
+      match /reponses/{reponseId} {
+        allow read: if isAuthenticated() && (
+          isSystemAdmin() ||
+          get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
+        );
+        allow create: if isAuthenticated() && (
+          isSystemAdmin() ||
+          (
+            (
+              (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
+              (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
+            ) &&
+            get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
+          )
+        );
+        allow update, delete: if isAuthenticated() && (
+          isSystemAdmin() ||
+          isAdminOrMestre() ||
+          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
+          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+        );
+      }
     }
 
     match /conversations/{conversationId} {
@@ -1124,6 +1172,17 @@ service cloud.firestore {
         resource.data.get('hostUid', '') == request.auth.uid || 
         isAdmin()
       );
+    }
+
+    // =========================================================================
+    // 17. PARAMÈTRES GLOBAUX & VITRINE (HUB DISPLAY, AXÉ RULES)
+    // =========================================================================
+
+    match /settings/{settingId} {
+      // Lecture publique autorisée (ex: settings/hub_display pour les visiteurs du Hub)
+      allow read: if true;
+      // Écriture réservée aux administrateurs
+      allow write: if isAuthenticated() && (isSystemAdmin() || isAdminOrMestre());
     }
   }
 }

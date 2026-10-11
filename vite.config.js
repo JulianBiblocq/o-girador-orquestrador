@@ -16,7 +16,9 @@ export default defineConfig({
     })
   ],
   server: {
-    port: 3000,
+    port: 5170,
+    strictPort: true, // Interdit à Vite de basculer silencieusement sur un autre port
+    host: '0.0.0.0',  // Permet l'accès réseau local (tablette / mobile)
     open: true
   },
   build: {

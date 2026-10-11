@@ -12,7 +12,8 @@ if (fs.existsSync(jdkPath)) {
 }
 
 const npxCmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
-const fullCommand = `${npxCmd} firebase emulators:exec --only firestore,storage "npx vitest run __tests__/security-rules.test.js"`;
+const fbCmd = process.platform === 'win32' ? 'firebase.cmd' : 'firebase';
+const fullCommand = `${fbCmd} emulators:exec --project o-girador-7828c --only firestore,storage "${npxCmd} vitest run __tests__/security-rules.test.js"`;
 
 console.log('🚀 Lancement des tests de sécurité avec émulateurs Firebase...');
 const child = spawn(fullCommand, {
