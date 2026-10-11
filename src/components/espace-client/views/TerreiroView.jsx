@@ -29,8 +29,8 @@ export default function TerreiroView({ associationData, userData, onBack }) {
         let docs = [];
         snap.forEach(doc => {
           const data = doc.data();
-          // Garder soi-même sur la carte, vérifier juste le paramètre de confidentialité
-          if (data.isPublicInTerreiro !== false) {
+          // N'inclure que les associations valides (avec un nom) et publiques dans le Terreiro
+          if ((data.name || data.nom) && data.isPublicInTerreiro !== false) {
             docs.push({ id: doc.id, ...data });
           }
         });
@@ -190,7 +190,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
             {baterias.map(bateria => (
               <div key={bateria.id} className="bg-[#fdf6e7] border border-[#d4b895] rounded-xl p-5 flex flex-col justify-between hover:shadow-md transition-all group">
                 <div>
-                  <h4 className="font-bold text-[#4a2e1b] text-lg leading-tight mb-1">{bateria.name || 'Association sans nom'}</h4>
+                  <h4 className="font-bold text-[#4a2e1b] text-lg leading-tight mb-1">{bateria.name || bateria.nom || 'Association'}</h4>
                   {bateria.city && (
                     <p className="text-sm text-[#8b4513] flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
                     (bateria.customDomains && bateria.customDomains.length > 0) ? (bateria.customDomains[0].startsWith('http') ? bateria.customDomains[0] : `https://${bateria.customDomains[0]}`) :
                     bateria.customDomain ? (bateria.customDomain.startsWith('http') ? bateria.customDomain : `https://${bateria.customDomain}`) :
                     bateria.website ? (bateria.website.startsWith('http') ? bateria.website : `https://${bateria.website}`) :
-                    `https://mostrador.o-girador.com/${bateria.id}`
+                    `https://mostrador.o-girador.com/?tenant=${encodeURIComponent(bateria.id)}`
                   }
                   target="_blank"
                   rel="noreferrer"
