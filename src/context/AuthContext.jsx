@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
   signInWithPopup, 
   signOut,
   signInWithCustomToken 
@@ -124,6 +125,10 @@ export function AuthProvider({ children }) {
     return signInWithEmailAndPassword(auth, email, password);
   };
 
+  const signupWithEmail = (email, password) => {
+    return createUserWithEmailAndPassword(auth, email, password);
+  };
+
   const loginWithGoogle = () => {
     return signInWithPopup(auth, googleProvider);
   };
@@ -139,6 +144,7 @@ export function AuthProvider({ children }) {
     loading,
     isProvisioning,
     login,
+    signupWithEmail,
     loginWithGoogle,
     logout
   };
