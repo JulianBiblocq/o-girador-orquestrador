@@ -130,13 +130,22 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
               >
                 <div className="relative mb-2 flex items-center justify-center h-10 w-10 shrink-0">
                   {isOrganizador ? (
-                    /* Rendu dynamique du logo de la structure active avec médaillon circulaire et repli neutre */
-                    <img 
-                      src={assocLogo || NEUTRAL_BADGE} 
-                      alt={app.label} 
-                      className={`w-10 h-10 rounded-full object-cover border border-amber-900/40 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''}`} 
-                      onError={(e) => { e.currentTarget.src = NEUTRAL_BADGE; }}
-                    />
+                    /* Mélange dynamique : Cadre macaron O-Girador + Logo association incrusté */
+                    <div className={`relative w-10 h-10 rounded-full overflow-hidden flex items-center justify-center border border-amber-900/40 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''}`}>
+                      <img 
+                        src={NEUTRAL_BADGE} 
+                        alt="O Girador" 
+                        className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none" 
+                      />
+                      {assocLogo && (
+                        <img 
+                          src={assocLogo} 
+                          alt={app.label} 
+                          className="relative z-10 w-[26px] h-[22px] object-contain -mt-1 drop-shadow-xs" 
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      )}
+                    </div>
                   ) : app.isIcon ? (
                     app.iconComponent
                   ) : (
