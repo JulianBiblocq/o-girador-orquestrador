@@ -272,8 +272,8 @@ service cloud.firestore {
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
             (!request.resource.data.keys().hasAny(['paymentStatus']) || request.resource.data.paymentStatus in ['unpaid', 'paid']) &&
-            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'membre' || request.resource.data.role == 'visiteur' || request.resource.data.role == 'eleve' || (request.resource.data.role == 'mestre' && request.auth.token.email.matches(".*@ogirador\\.com"))) &&
-            (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel == 'active') &&
+            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role in ['membre', 'visiteur', 'eleve'] || (request.resource.data.role == 'mestre' && request.auth.token.email.matches(".*@ogirador\\.com"))) &&
+            (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel in ['active', 'pending']) &&
             (!request.resource.data.keys().hasAny(['adhesionBase']) || request.resource.data.adhesionBase == true) &&
             (!request.resource.data.keys().hasAny(['canWriteSequenciador']) || request.resource.data.canWriteSequenciador == false) &&
             (!request.resource.data.keys().hasAny(['canWriteDansador']) || request.resource.data.canWriteDansador == false) &&
@@ -286,8 +286,8 @@ service cloud.firestore {
           request.resource.data.managedBy == request.auth.uid && (
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
-            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role == 'membre' || request.resource.data.role == 'visiteur' || request.resource.data.role == 'eleve') &&
-            (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel == 'active') &&
+            (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role in ['membre', 'visiteur', 'eleve']) &&
+            (!request.resource.data.keys().hasAny(['statutActuel']) || request.resource.data.statutActuel in ['active', 'pending']) &&
             (!request.resource.data.keys().hasAny(['tags']) || request.resource.data.tags.size() == 0)
           )
         )
@@ -301,6 +301,20 @@ service cloud.firestore {
         (request.auth.uid == userId && (
           resource.data.get('role', '').lower() in ['mestre', 'admin', 'super-admin', 'superadmin'] ||
           isAdminOrMestre()
+        )) ||
+        // Finalisation d'onboarding par le membre (sur document partiel préexistant ou première inscription)
+        (request.auth.uid == userId && resource.data.get('onboardingCompleted', false) == false && (
+          (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
+          (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
+          (!request.resource.data.keys().hasAny(['canWriteSequenciador']) || request.resource.data.canWriteSequenciador == false) &&
+          (!request.resource.data.keys().hasAny(['canWriteDansador']) || request.resource.data.canWriteDansador == false) &&
+          (!request.resource.data.keys().hasAny(['canWriteOrchestrador']) || request.resource.data.canWriteOrchestrador == false) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['paymentStatus']) || 
+           !resource.data.keys().hasAny(['paymentStatus']) || 
+           request.resource.data.paymentStatus == resource.data.paymentStatus) &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
+           request.resource.data.role in ['membre', 'visiteur', 'eleve'] ||
+           (resource.data.keys().hasAny(['role']) && request.resource.data.role == resource.data.role))
         )) ||
         // Mise à jour standard par le membre (profil personnel hors privilèges)
         (request.auth.uid == userId && (
