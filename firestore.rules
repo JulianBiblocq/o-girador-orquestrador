@@ -91,6 +91,16 @@ service cloud.firestore {
         getUserData().tags.hasAny(tagList);
     }
 
+    // Vérifie si un Mestre à l'essai est encore dans sa période d'évaluation active
+    function isTrialActive() {
+      return !exists(/databases/$(database)/documents/users/$(request.auth.uid)) ||
+        !getUserData().keys().hasAny(['trialEndDateMs']) ||
+        getUserData().trialEndDateMs == null ||
+        request.time.toMillis() < getUserData().trialEndDateMs ||
+        getUserData().get('paymentStatus', '') == 'paid' ||
+        isSystemAdmin();
+    }
+
     // Utilisé par le Séquenceur pour autoriser les élèves d'un même mestre
     function isSameGroup(docMestreId) {
       return isAuthenticated() &&
@@ -310,7 +320,7 @@ service cloud.firestore {
           (!request.resource.data.keys().hasAny(['canWriteDansador']) || request.resource.data.canWriteDansador == false) &&
           (!request.resource.data.keys().hasAny(['canWriteOrchestrador']) || request.resource.data.canWriteOrchestrador == false) &&
           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['paymentStatus']) || 
-           !resource.data.keys().hasAny(['paymentStatus']) || 
+           (!resource.data.keys().hasAny(['paymentStatus']) && request.resource.data.paymentStatus in ['unpaid']) || 
            request.resource.data.paymentStatus == resource.data.paymentStatus) &&
           (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) ||
            request.resource.data.role in ['membre', 'visiteur', 'eleve'] ||
@@ -1014,18 +1024,21 @@ service cloud.firestore {
     match /patterns/{patternId} {
       allow read: if true;
       allow create: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
                         || isSameGroup(request.resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
                         || isSameGroup(resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
       allow delete: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
@@ -1036,18 +1049,21 @@ service cloud.firestore {
     match /sections/{sectionId} {
       allow read: if true;
       allow create: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
                         || isSameGroup(request.resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
                         || isSameGroup(resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
       allow delete: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
@@ -1058,18 +1074,21 @@ service cloud.firestore {
     match /presets/{presetId} {
       allow read: if true;
       allow create: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
                         || isSameGroup(request.resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
                         || isSameGroup(resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
       allow delete: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
@@ -1080,18 +1099,21 @@ service cloud.firestore {
     match /exercises/{exerciseId} {
       allow read: if true;
       allow create: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == request.resource.data.ownerId 
                         || request.auth.uid == request.resource.data.get('mestreId', '')
                         || isSameGroup(request.resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
       allow update: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
                         || isSameGroup(resource.data.get('mestreId', ''))
                         || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
       allow delete: if request.auth != null 
+                    && isTrialActive()
                     && (isAdminOrMestre()
                         || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
@@ -1161,6 +1183,12 @@ service cloud.firestore {
     match /premium_packs/{docId} {
       allow read: if request.auth != null;
       allow write: if isAdminOrMestre();
+    }
+
+    // Packs de Toadas & Chants (Cantador & Atelier Vocal)
+    match /toada_packs/{packId} {
+      allow read: if true;
+      allow write: if isAdminOrMestre() || isSystemAdmin();
     }
 
     // Varal racine (fiches pédagogiques et partitions de cordel)

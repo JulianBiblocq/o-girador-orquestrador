@@ -23,6 +23,9 @@ export default function AdminGuestModal({
   const [isAutoPassword, setIsAutoPassword] = useState(true);
   const [manualPassword, setManualPassword] = useState('');
   const [canWrite, setCanWrite] = useState(true);
+  const [isTrial, setIsTrial] = useState(false);
+  const [trialStartDate, setTrialStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [trialEndDate, setTrialEndDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
   const [lockGroup, setLockGroup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,6 +40,9 @@ export default function AdminGuestModal({
       setGroupId(defaultGid);
       setCustomGroupId(initialData.groupId || '');
       setLockGroup(Boolean(initialData.lockGroup));
+      setIsTrial(Boolean(initialData.isTrial));
+      if (initialData.trialStartDate) setTrialStartDate(initialData.trialStartDate);
+      if (initialData.trialEndDate) setTrialEndDate(initialData.trialEndDate);
     } else {
       setRole('mestre');
       setEmail('');
@@ -45,6 +51,9 @@ export default function AdminGuestModal({
       setGroupId(firstAssocGid || 'guest-pro');
       setCustomGroupId('');
       setLockGroup(false);
+      setIsTrial(false);
+      setTrialStartDate(new Date().toISOString().split('T')[0]);
+      setTrialEndDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
     }
     setError(null);
     setResult(null);
@@ -92,7 +101,10 @@ export default function AdminGuestModal({
         displayName: displayName.trim() || (role === 'mestre' ? 'Mestre' : 'Invité Pro'),
         groupId: effectiveGroupId || (role === 'mestre' ? 'association' : 'guest-pro'),
         manualPassword: isAutoPassword ? null : manualPassword.trim(),
-        canWrite
+        canWrite,
+        isTrial,
+        trialStartDate: isTrial ? trialStartDate : null,
+        trialEndDate: isTrial ? trialEndDate : null
       });
 
       setResult(response.data);
@@ -159,6 +171,12 @@ export default function AdminGuestModal({
             setManualPassword={setManualPassword}
             canWrite={canWrite}
             setCanWrite={setCanWrite}
+            isTrial={isTrial}
+            setIsTrial={setIsTrial}
+            trialStartDate={trialStartDate}
+            setTrialStartDate={setTrialStartDate}
+            trialEndDate={trialEndDate}
+            setTrialEndDate={setTrialEndDate}
             loading={loading}
             onSubmit={handleSubmit}
           />

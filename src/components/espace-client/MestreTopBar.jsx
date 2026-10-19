@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Flame, Settings, Store, Award } from 'lucide-react';
+import { Lock, Flame, Settings, Store, Award, Mic } from 'lucide-react';
 import { getEcosystemUrl } from '../../constants/ecosystemUrls';
 import MestreUpsellModal from './MestreUpsellModal';
 
@@ -68,6 +68,12 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       id: 'dancador', label: 'Dançador', desc: 'Studio Chorégraphique', iconUrl: '/logos/dancador.png', isOwned: hasPack('dancador'), url: getEcosystemUrl('dancador'),
       colorActive: 'bg-[#b22222] border-[#8b0000]', colorHover: 'hover:bg-[#b22222] hover:border-[#8b0000]',
       textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-red-100', descTextHover: 'group-hover:text-red-100'
+    },
+    {
+      id: 'cantador', label: 'Cantador', desc: 'Atelier Vocal', isIcon: true, isOwned: true, url: getEcosystemUrl('cantador'),
+      iconComponent: <Mic className="w-8 h-8 text-purple-300 group-hover:scale-110 transition-transform" />,
+      colorActive: 'bg-[#581c87] border-purple-500', colorHover: 'hover:bg-[#4c1d95] hover:border-purple-400',
+      textActive: 'text-purple-300', textHover: 'group-hover:text-purple-300', descTextActive: 'text-purple-200', descTextHover: 'group-hover:text-purple-200'
     },
     {
       id: 'vitrine', label: 'Mostrador', desc: 'Site Public', iconUrl: '/logos/mostrador.png', isOwned: hasPack('vitrine'), url: getEcosystemUrl('mostrador'),

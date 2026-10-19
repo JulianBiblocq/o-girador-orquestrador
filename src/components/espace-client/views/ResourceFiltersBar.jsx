@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Search, RefreshCw, Filter } from 'lucide-react';
+import { Search, RefreshCw, Filter, Folder } from 'lucide-react';
 
 const VISIBILITY_OPTIONS = [
   { id: 'all', label: 'Tous' },
@@ -21,11 +21,15 @@ export default function ResourceFiltersBar({
   selectedInstrument,
   onInstrumentChange,
   availableInstruments = [],
+  selectedFolder = 'all',
+  onFolderFilterChange,
+  availableFolders = [],
   activeTab,
   onRefresh,
   isLoading
 }) {
   const showInstrumentFilter = activeTab === 'patterns' || availableInstruments.length > 0;
+  const showFolderFilter = availableFolders.length > 0;
 
   return (
     <div className="bg-[#1c1613] border border-[#8b4513]/40 rounded-xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md">
@@ -74,6 +78,24 @@ export default function ResourceFiltersBar({
               ))}
             </select>
             <Filter className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" />
+          </div>
+        )}
+
+        {/* Filtre dossier */}
+        {showFolderFilter && (
+          <div className="relative">
+            <select
+              value={selectedFolder}
+              onChange={(e) => onFolderFilterChange && onFolderFilterChange(e.target.value)}
+              className="text-xs font-bold bg-stone-950 border border-stone-800 text-stone-300 rounded-lg px-2.5 py-1.5 cursor-pointer outline-none focus:border-amber-600 appearance-none pr-6"
+            >
+              <option value="all">Tous dossiers</option>
+              <option value="none">Sans dossier</option>
+              {availableFolders.map((folder) => (
+                <option key={folder} value={folder}>📁 {folder}</option>
+              ))}
+            </select>
+            <Folder className="w-3 h-3 absolute right-2 top-1/2 -translate-y-1/2 text-amber-500 pointer-events-none" />
           </div>
         )}
 

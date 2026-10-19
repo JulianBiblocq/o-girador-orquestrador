@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Pencil, Trash2 } from 'lucide-react';
+import { Play, Pause, Pencil, Trash2, Folder, Check } from 'lucide-react';
 import { useAudioPreview } from './AudioPreviewContext.jsx';
 import { launchCrossApp } from '../../../utils/crossAppAuth';
 import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
@@ -21,6 +21,7 @@ export default function AudioResourceCard({
   type = 'presets',
   onRename,
   onVisibilityChange,
+  onFolderChange,
   onRequestDelete
 }) {
   const { currentId, isPlaying, audioProgress, togglePlay } = useAudioPreview();
@@ -32,9 +33,17 @@ export default function AudioResourceCard({
   const [titleInput, setTitleInput] = useState(currentTitle);
   const inputRef = useRef(null);
 
+  const [isEditingFolder, setIsEditingFolder] = useState(false);
+  const currentFolder = item.folder || '';
+  const [folderInput, setFolderInput] = useState(currentFolder);
+
   useEffect(() => {
     setTitleInput(item.name || item.title || 'Sans titre');
   }, [item.name, item.title]);
+
+  useEffect(() => {
+    setFolderInput(item.folder || '');
+  }, [item.folder]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -57,6 +66,18 @@ export default function AudioResourceCard({
     }
   };
 
+  const handleSaveFolder = async () => {
+    setIsEditingFolder(false);
+    const trimmed = folderInput.trim();
+    if (trimmed !== currentFolder && onFolderChange) {
+      try {
+        await onFolderChange(item.id, trimmed);
+      } catch (_) {
+        setFolderInput(currentFolder);
+      }
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') handleSaveRename();
     if (e.key === 'Escape') {
@@ -65,12 +86,20 @@ export default function AudioResourceCard({
     }
   };
 
+  const handleFolderKeyDown = (e) => {
+    if (e.key === 'Enter') handleSaveFolder();
+    if (e.key === 'Escape') {
+      setIsEditingFolder(false);
+      setFolderInput(currentFolder);
+    }
+  };
+
   const handleOpenInSequencer = () => {
     let queryParam = `?loadPreset=${item.id}`;
     if (type === 'sections') queryParam = `?loadSection=${item.id}`;
     if (type === 'patterns') queryParam = `?editPatternId=${item.id}`;
 
-    const targetUrl = getEcosystemUrl('sequenciador', `/${queryParam}`);
+    const targetUrl = getEcosystemUrl('sequenciador', queryParam);
     launchCrossApp(targetUrl, { appLabel: "Séquenciad'Or", appKey: 'sequenciador' });
   };
 
@@ -128,8 +157,39 @@ export default function AudioResourceCard({
             </div>
           )}
 
-          {/* Badges métadonnées : Tempo & Pupitre */}
+          {/* Badges métadonnées : Dossier, Tempo & Pupitre */}
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            {isEditingFolder ? (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={folderInput}
+                  onChange={(e) => setFolderInput(e.target.value)}
+                  onBlur={handleSaveFolder}
+                  onKeyDown={handleFolderKeyDown}
+                  placeholder="Dossier..."
+                  className="bg-stone-950 border border-amber-600 text-[#fdf6e7] text-[10px] px-1.5 py-0.5 rounded outline-none w-24"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveFolder}
+                  className="text-amber-400 hover:text-amber-300 p-0.5"
+                >
+                  <Check className="w-3 h-3" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditingFolder(true)}
+                className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-stone-900/80 hover:bg-stone-800 text-stone-300 border border-stone-700/60 transition-colors cursor-pointer"
+                title="Modifier le dossier"
+              >
+                <Folder className="w-2.5 h-2.5 text-amber-500" />
+                <span>{currentFolder || 'Sans dossier'}</span>
+              </button>
+            )}
             {instrument && (
               <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-stone-800/80 text-stone-300 border border-stone-700/60">
                 {instrument}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, User, Lock, Sparkles, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Mail, User, Lock, Sparkles, ToggleLeft, ToggleRight, Clock, Calendar } from 'lucide-react';
 
 /**
  * Formulaire de saisie pour la création d'un compte Mestre officiel ou Invité Pro.
@@ -23,11 +23,25 @@ export default function AdminGuestForm({
   setManualPassword,
   canWrite,
   setCanWrite,
+  isTrial = false,
+  setIsTrial,
+  trialStartDate,
+  setTrialStartDate,
+  trialEndDate,
+  setTrialEndDate,
   loading,
   onSubmit
 }) {
   const lockedAssoc = associations.find(a => (a.groupId || a.id) === groupId);
   const lockedAssocName = lockedAssoc ? (lockedAssoc.name || lockedAssoc.nom) : groupId;
+
+  const selectableAssociations = associations.filter(a => {
+    const gid = (a.groupId || a.id || '').toLowerCase();
+    if (isTrial || role === 'pro') {
+      return gid !== 'samambaia' && gid !== 'samambaia-maracatu';
+    }
+    return true;
+  });
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
@@ -110,20 +124,18 @@ export default function AdminGuestForm({
               onChange={(e) => setGroupId(e.target.value)}
               className="w-full px-3 py-2 bg-[#fdf6e7] text-xs font-bold text-[#4a2e1b] rounded border border-[#8b4513]"
             >
-              {associations.length > 0 && (
-                <optgroup label="Associations existantes">
-                  {associations.map(a => (
+              {selectableAssociations.length > 0 && (
+                <optgroup label="Associations disponibles">
+                  {selectableAssociations.map(a => (
                     <option key={a.id} value={a.groupId || a.id}>{a.name || a.nom} ({a.groupId || a.id})</option>
                   ))}
                 </optgroup>
               )}
-              {role === 'pro' && (
-                <optgroup label="Espaces test">
-                  <option value="guest-pro">Espace Invités & Pros (guest-pro)</option>
-                  <option value="pif">Laboratoire Pif (pif)</option>
-                </optgroup>
-              )}
-              <option value="custom">Saisir un autre identifiant...</option>
+              <optgroup label="Espaces bac à sable">
+                <option value="guest-pro">Espace Invités & Pros (guest-pro)</option>
+                <option value="pif">Laboratoire Pif (pif)</option>
+              </optgroup>
+              <option value="custom">Saisir un identifiant bac à sable personnalisé...</option>
             </select>
             {groupId === 'custom' && (
               <input
@@ -131,11 +143,52 @@ export default function AdminGuestForm({
                 required
                 value={customGroupId}
                 onChange={(e) => setCustomGroupId(e.target.value)}
-                placeholder="identifiant-groupe-exclusif"
+                placeholder="ex: trial-bloco-rio"
                 className="mt-2 w-full px-3 py-2 bg-white text-[#2c1d11] text-xs rounded border border-[#4a2e1b]"
               />
             )}
           </>
+        )}
+      </div>
+
+      {/* Période d'essai Mestre (Trial) */}
+      <div className="p-3 bg-white/70 rounded-lg border border-[#8b4513]/20 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-4 h-4 text-amber-600" />
+            <span className="text-xs font-bold text-gray-700">Compte à l'essai (Période d'évaluation)</span>
+          </div>
+          <button type="button" onClick={() => setIsTrial && setIsTrial(!isTrial)} className="cursor-pointer text-[#8b4513]">
+            {isTrial ? <ToggleRight className="w-6 h-6 text-emerald-600" /> : <ToggleLeft className="w-6 h-6 text-gray-400" />}
+          </button>
+        </div>
+
+        {isTrial && (
+          <div className="pt-2 border-t border-gray-200/80 space-y-2 animate-in fade-in duration-200">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-0.5">Début d'essai</label>
+                <input
+                  type="date"
+                  value={trialStartDate}
+                  onChange={(e) => setTrialStartDate && setTrialStartDate(e.target.value)}
+                  className="w-full px-2 py-1 bg-white text-[#2c1d11] text-xs rounded border border-[#8b4513]/40"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-0.5">Fin d'essai</label>
+                <input
+                  type="date"
+                  value={trialEndDate}
+                  onChange={(e) => setTrialEndDate && setTrialEndDate(e.target.value)}
+                  className="w-full px-2 py-1 bg-white text-[#2c1d11] text-xs rounded border border-[#8b4513]/40"
+                />
+              </div>
+            </div>
+            <p className="text-[10px] text-amber-800 leading-tight">
+              ⏳ Droits complets Cloud jusqu'à échéance. Après l'échéance : période de grâce (gel/lecture seule 60j).
+            </p>
+          </div>
         )}
       </div>
 

@@ -24,6 +24,7 @@ function SequencerViewContent({ userData, onBack }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibilityFilter, setVisibilityFilter] = useState('all');
   const [selectedInstrument, setSelectedInstrument] = useState('all');
+  const [selectedFolder, setSelectedFolder] = useState('all');
   const [itemToDelete, setItemToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -33,6 +34,7 @@ function SequencerViewContent({ userData, onBack }) {
     isLoading,
     renameResource,
     updateVisibility,
+    updateFolder,
     removeResourceLocally,
     refetch
   } = useResourceCatalog(activeTab, userData);
@@ -56,7 +58,18 @@ function SequencerViewContent({ userData, onBack }) {
     return Array.from(set).sort();
   }, [resources]);
 
-  // Filtrage combiné en mémoire (recherche, visibilité, instrument)
+  // Détection des dossiers uniques présents dans la collection courante
+  const availableFolders = useMemo(() => {
+    const set = new Set();
+    resources.forEach((r) => {
+      if (r.folder && typeof r.folder === 'string' && r.folder.trim()) {
+        set.add(r.folder.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [resources]);
+
+  // Filtrage combiné en mémoire (recherche, visibilité, instrument, dossier)
   const filteredResources = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const userUid = userData?.uid;
@@ -71,9 +84,11 @@ function SequencerViewContent({ userData, onBack }) {
         const inst = item.instrument || item.pupitre || item.instrumentName;
         if (inst !== selectedInstrument) return false;
       }
+      if (selectedFolder === 'none' && item.folder) return false;
+      if (selectedFolder !== 'all' && selectedFolder !== 'none' && item.folder !== selectedFolder) return false;
       return true;
     });
-  }, [resources, searchQuery, visibilityFilter, selectedInstrument, userData]);
+  }, [resources, searchQuery, visibilityFilter, selectedInstrument, selectedFolder, userData]);
 
   // Suppression d'une ressource avec confirmation et mise à jour locale
   const confirmDelete = async () => {
@@ -127,6 +142,9 @@ function SequencerViewContent({ userData, onBack }) {
         selectedInstrument={selectedInstrument}
         onInstrumentChange={setSelectedInstrument}
         availableInstruments={availableInstruments}
+        selectedFolder={selectedFolder}
+        onFolderFilterChange={setSelectedFolder}
+        availableFolders={availableFolders}
         activeTab={activeTab}
         onRefresh={() => refetch(true)}
         isLoading={isLoading}
@@ -148,6 +166,7 @@ function SequencerViewContent({ userData, onBack }) {
               type={activeTab}
               onRename={renameResource}
               onVisibilityChange={updateVisibility}
+              onFolderChange={updateFolder}
               onRequestDelete={(it) => setItemToDelete(it)}
             />
           ))}

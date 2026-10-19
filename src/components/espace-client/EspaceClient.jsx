@@ -11,6 +11,7 @@ import MestreTopBar from './MestreTopBar';
 import MestreDashboard from './MestreDashboard';
 import SequencerView from './views/SequencerView';
 import DancadorView from './views/DancadorView';
+import CantadorView from './views/CantadorView';
 import OrganizadorView from './views/OrganizadorView';
 import VitrineView from './views/VitrineView';
 import AddonsStore from './views/AddonsStore';
@@ -209,6 +210,9 @@ export default function EspaceClient({ onNavigateHome }) {
         )}
         {activeTab === 'dancador' && (
           <DancadorView userData={userData} associationData={associationData} onBack={() => setActiveTab('dashboard')} />
+        )}
+        {activeTab === 'cantador' && (
+          <CantadorView onBack={() => setActiveTab('dashboard')} />
         )}
         {activeTab === 'manager' && (
           <OrganizadorView userData={userData} onBack={() => setActiveTab('dashboard')} />

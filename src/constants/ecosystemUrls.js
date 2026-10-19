@@ -10,6 +10,8 @@ export const ECOSYSTEM_DOMAINS = Object.freeze({
   organizador: 'https://organizador.o-girador.com',
   dancador: 'https://dancador.o-girador.com',
   mostrador: 'https://mostrador.o-girador.com',
+  cantador: 'https://cantador.o-girador.com',
+  vocalLab: 'https://cantador.o-girador.com',
 });
 
 export const LOCAL_DEV_PORTS = Object.freeze({
@@ -19,6 +21,8 @@ export const LOCAL_DEV_PORTS = Object.freeze({
   organizador: 5175,
   dancador: 5176,
   mostrador: 5170,
+  cantador: 5177,
+  vocalLab: 5177,
 });
 
 export const ECOSYSTEM_LOCAL_URLS = Object.freeze({
@@ -26,6 +30,8 @@ export const ECOSYSTEM_LOCAL_URLS = Object.freeze({
   SEQUENCIADOR: 'http://localhost:5174',
   ORGANIZADOR: 'http://localhost:5175',
   DANCADOR: 'http://localhost:5176',
+  CANTADOR: 'http://localhost:5177',
+  VOCAL_LAB: 'http://localhost:5177',
 });
 
 /**
@@ -39,12 +45,15 @@ export function isLocalEnvironment() {
 
 /**
  * Retourne l'URL complète d'une application de l'écosystème selon le contexte (local vs prod OVH).
- * @param {'hub'|'orquestrador'|'sequenciador'|'organizador'|'dancador'|'mostrador'|'sequenceur'} appKey 
+ * @param {'hub'|'orquestrador'|'sequenciador'|'organizador'|'dancador'|'mostrador'|'sequenceur'|'cantador'|'vocalLab'} appKey 
  * @param {string} [path=''] - Chemin ou query string (ex: '/app' ou '?loadPreset=123')
  * @returns {string}
  */
 export function getEcosystemUrl(appKey, path = '') {
-  const normalizedKey = appKey === 'sequenceur' ? 'sequenciador' : appKey;
+  let normalizedKey = appKey === 'sequenceur' ? 'sequenciador' : appKey;
+  if (normalizedKey === 'vocal' || normalizedKey === 'vocal-lab' || normalizedKey === 'vocallab') {
+    normalizedKey = 'vocalLab';
+  }
   const isLocal = isLocalEnvironment();
 
   let baseUrl = ECOSYSTEM_DOMAINS[normalizedKey] || ECOSYSTEM_DOMAINS.hub;

@@ -47,7 +47,10 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
     groupId = 'guest-pro',
     role = 'mestre',
     manualPassword,
-    canWrite = true
+    canWrite = true,
+    isTrial = false,
+    trialStartDate = null,
+    trialEndDate = null
   } = data || {};
 
   if (!email || typeof email !== 'string' || !email.trim()) {
@@ -63,6 +66,17 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
   const cleanGroupId = (groupId && typeof groupId === 'string' ? groupId : defaultGroupId).trim().toLowerCase();
   const defaultDisplayName = isMestre ? 'Mestre' : 'Invité Pro';
   const cleanDisplayName = (displayName && typeof displayName === 'string' ? displayName.trim() : '') || defaultDisplayName;
+
+  // 🛡️ Garde-fou d'isolation absolue : Interdire d'assigner samambaia aux comptes d'essai ou invités
+  if ((isTrial || !isMestre) && (cleanGroupId === 'samambaia' || cleanGroupId === 'samambaia-maracatu')) {
+    throw new HttpsError('permission-denied', "Un compte invité ou à l'essai ne peut pas être assigné au groupe privé Samambaia.");
+  }
+
+  let trialEndDateMs = null;
+  if (trialEndDate) {
+    const parsed = new Date(trialEndDate).getTime();
+    if (!isNaN(parsed)) trialEndDateMs = parsed;
+  }
 
   // 4. Génération d'un mot de passe sécurisé ou conservation de la saisie manuelle
   const cleanPassword = (manualPassword && typeof manualPassword === 'string' && manualPassword.trim().length >= 6)
@@ -137,6 +151,14 @@ const adminCreateGuestUser = onCall({ cors: true }, async (request) => {
           createdAt: FieldValue.serverTimestamp(),
           createdVia: 'orquestrador_admin_guest_provisioning'
         };
+
+    if (isTrial || trialEndDate) {
+      userProfile.isTrial = true;
+      userProfile.trialStartDate = trialStartDate || new Date().toISOString();
+      userProfile.trialEndDate = trialEndDate;
+      userProfile.trialEndDateMs = trialEndDateMs;
+      userProfile.trialGracePeriodDays = 60;
+    }
 
     await db.collection('users').doc(newUid).set(userProfile);
 

@@ -320,4 +320,93 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
       }));
     });
   });
+
+  describe('Cantador & Vocal Lab (toada_packs/{packId})', () => {
+    it('Autorise la lecture publique des packs de toadas', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('toada_packs/pack_boi_bumba').set({
+          title: 'Toadas Traditionnelles Boi Bumbá',
+          visibility: 'public'
+        });
+      });
+
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      await assertSucceeds(unauthDb.doc('toada_packs/pack_boi_bumba').get());
+    });
+
+    it('Interdit la création de pack à un membre standard', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/standard_singer').set({
+          role: 'membre',
+          groupId: 'samambaia'
+        });
+      });
+
+      const memberDb = testEnv.authenticatedContext('standard_singer').firestore();
+      await assertFails(memberDb.doc('toada_packs/pack_new').set({
+        title: 'Chant illégal'
+      }));
+    });
+
+    it('Autorise la création et mise à jour de pack par un Mestre ou Admin', async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/mestre_singer').set({
+          role: 'mestre',
+          groupId: 'samambaia'
+        });
+      });
+
+      const mestreDb = testEnv.authenticatedContext('mestre_singer').firestore();
+      await assertSucceeds(mestreDb.doc('toada_packs/pack_cordel').set({
+        title: 'Packs Cantoria Cordel',
+        groupId: 'samambaia'
+      }));
+    });
+  });
+
+  describe('Mestres à l\'essai & Période de grâce (Chantier 2)', () => {
+    it('Autorise un mestre à l\'essai actif à créer un preset', async () => {
+      const futureMs = Date.now() + 1000 * 60 * 60 * 24 * 14; // +14 jours
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/trial_active_mestre').set({
+          role: 'mestre',
+          groupId: 'demo_group',
+          isTrial: true,
+          trialEndDateMs: futureMs
+        });
+      });
+
+      const mestreDb = testEnv.authenticatedContext('trial_active_mestre').firestore();
+      await assertSucceeds(mestreDb.doc('presets/trial_preset_1').set({
+        name: 'Baianá Démo',
+        ownerId: 'trial_active_mestre',
+        groupId: 'demo_group'
+      }));
+    });
+
+    it('Interdit la création d\'un preset quand la période d\'essai est expirée', async () => {
+      const pastMs = Date.now() - 1000 * 60 * 60 * 24; // -1 jour
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/trial_expired_mestre').set({
+          role: 'mestre',
+          groupId: 'demo_group',
+          isTrial: true,
+          trialEndDateMs: pastMs
+        });
+      });
+
+      const mestreDb = testEnv.authenticatedContext('trial_expired_mestre').firestore();
+      await assertFails(mestreDb.doc('presets/trial_preset_expired').set({
+        name: 'Preset Bloqué',
+        ownerId: 'trial_expired_mestre',
+        groupId: 'demo_group'
+      }));
+    });
+  });
 });
+

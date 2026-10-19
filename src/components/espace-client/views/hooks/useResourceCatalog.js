@@ -153,6 +153,25 @@ export function useResourceCatalog(collectionName = 'presets', userProfile = nul
     }
   }, [items, cacheKey, collectionName]);
 
+  // Mise à jour optimiste du dossier (folder)
+  const updateFolder = useCallback(async (resourceId, newFolder) => {
+    const previous = items;
+    const cleanFolder = (newFolder || '').trim();
+    const updated = previous.map((it) => (it.id === resourceId ? { ...it, folder: cleanFolder } : it));
+    setItems(updated);
+    catalogCache.set(cacheKey, updated);
+
+    try {
+      const docRef = doc(db, collectionName, resourceId);
+      await updateDoc(docRef, { folder: cleanFolder, updatedAt: serverTimestamp() });
+    } catch (err) {
+      console.warn(`[useResourceCatalog] Échec mise à jour dossier (${resourceId}) :`, err);
+      setItems(previous);
+      catalogCache.set(cacheKey, previous);
+      throw err;
+    }
+  }, [items, cacheKey, collectionName]);
+
   // Suppression locale immédiate (déléguée au service pour le distant)
   const removeResourceLocally = useCallback((resourceId) => {
     setItems((prev) => {
@@ -171,6 +190,7 @@ export function useResourceCatalog(collectionName = 'presets', userProfile = nul
     refetch,
     renameResource,
     updateVisibility,
+    updateFolder,
     removeResourceLocally
   };
 }
