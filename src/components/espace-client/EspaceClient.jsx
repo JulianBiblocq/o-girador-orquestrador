@@ -212,7 +212,7 @@ export default function EspaceClient({ onNavigateHome }) {
           <DancadorView userData={userData} associationData={associationData} onBack={() => setActiveTab('dashboard')} />
         )}
         {activeTab === 'cantador' && (
-          <CantadorView onBack={() => setActiveTab('dashboard')} />
+          <CantadorView groupId={userData?.groupId || associationData?.groupId} onBack={() => setActiveTab('dashboard')} />
         )}
         {activeTab === 'manager' && (
           <OrganizadorView userData={userData} onBack={() => setActiveTab('dashboard')} />

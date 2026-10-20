@@ -25,6 +25,7 @@ export default function TriptychSection() {
           <TriptychCard type="manager" />
           <TriptychCard type="vitrine" />
           <TriptychCard type="sequenceur" />
+          <TriptychCard type="cantador" />
           <TriptychCard type="dancador" />
           <TriptychCard type="terreiro" />
         </div>

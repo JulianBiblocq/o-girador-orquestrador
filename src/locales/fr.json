@@ -40,7 +40,17 @@
   "triptyque": {
     "badge": "Fiches Détaillées",
     "title": "Les Applications de l'Écosystème",
-    "subtitle": "Cinq piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
+    "subtitle": "Six piliers complémentaires conçus sur mesure pour les besoins de la percussion et des associations brésiliennes.",
+    "cantador": {
+      "badge": "Atelier Vocal",
+      "title": "O Girador Cantador",
+      "description": "L'espace studio dédié aux chants traditionnels, à la diction bilingue et aux guides vocaux Puxador/Coro.",
+      "feat1": "Studio Multi-Pistes Puxador / Coro : guides audio isolés, anacrouses dynamiques et boucles de répétition.",
+      "feat2": "Karaoké & Paroles Universelles : synchronisation visuelle et défilement au tempo 1 paragraphe = 1 mesure.",
+      "feat3": "Grille Harmonique Automatique : détection d'accords et accompagnement d'instruments harmoniques (cavaquinho, guitare).",
+      "feat4": "Dictionnaire Pédagogique & QCM : détection de termes culturels brésiliens et génération automatique de quiz bilingues.",
+      "feat5": "Diagnostic de Tessiture & Ambitus : analyse de la voix de chaque chanteur et transposition adaptée au registre."
+    },
     "sequenceur": {
       "badge": "Studio de création",
       "title": "O Girador Séquenciador",

@@ -38,7 +38,17 @@
   "triptyque": {
     "badge": "O Coração do Ecossistema",
     "title": "A Suíte O Girador",
-    "subtitle": "Quatro pilares complementares desenvolvidos sob medida para as necessidades da percussão e das associações culturais brasileiras.",
+    "subtitle": "Seis pilares complementares desenvolvidos sob medida para as necessidades da percussão e das associações culturais brasileiras.",
+    "cantador": {
+      "badge": "Oficina Vocal",
+      "title": "O Girador Cantador",
+      "description": "O estúdio dedicado às toadas tradicionais, dicção bilíngue e guias vocais Puxador/Coro.",
+      "feat1": "Estúdio Multifaixas Puxador / Coro: guias de áudio isolados, anacruses dinâmicas e loops de ensaio.",
+      "feat2": "Karaokê & Letras Universais: sincronização visual e rolagem no andamento 1 parágrafo = 1 compasso.",
+      "feat3": "Grade Harmônica Automática: detecção de acordes e acompanhamento harmônico (cavaquinho, violão).",
+      "feat4": "Dicionário Pedagógico & Quiz: detecção de termos culturais brasileiros e geração automática de testes bilíngues.",
+      "feat5": "Diagnóstico de Tessitura & Âmbito: análise da voz de cada cantor e transposição adaptada ao registro vocal."
+    },
     "sequenceur": {
       "badge": "Estúdio & Ritmos",
       "title": "O Girador-Sequenciador",

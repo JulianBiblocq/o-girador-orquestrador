@@ -2,9 +2,14 @@ import React from 'react';
 import { Disc3, Calendar, Globe, Footprints, LayoutDashboard } from 'lucide-react';
 import { Github } from './SocialIcons';
 import { useLanguage } from '../../hooks/useLanguage';
+import TriptychCardCantador from './TriptychCardCantador';
 
 export default function TriptychCard({ type }) {
   const { t } = useLanguage();
+
+  if (type === 'cantador') {
+    return <TriptychCardCantador />;
+  }
 
   const renderFeatures = (typeKey, styleClass) => {
     return (

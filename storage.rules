@@ -61,7 +61,7 @@ service firebase.storage {
 
     // Enregistrements vocaux / Toadas
     match /vocalRecordings/{allPaths=**} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create, update: if isAuthenticated() 
         && isAudio()
         && request.resource.size < 20 * 1024 * 1024;

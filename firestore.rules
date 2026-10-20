@@ -691,7 +691,7 @@ service cloud.firestore {
     }
 
     match /documents/{document} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() || (resource != null && resource.data.get('isPublic', false) == true);
       allow write: if canManageDocs();
     }
 
