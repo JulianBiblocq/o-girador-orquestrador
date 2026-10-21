@@ -5,7 +5,7 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { launchCrossApp } from '../utils/crossAppAuth';
-import { getEcosystemUrl } from '../constants/ecosystemUrls';
+import { getEcosystemUrl, SAMAMBAIA_VITRINE_URL } from '../constants/ecosystemUrls';
 import { fetchHeroMetrics } from '../services/cmsService';
 
 export default function HeroSection({ 
@@ -102,10 +102,22 @@ export default function HeroSection({
             <div className="text-xl font-black text-[#4a2e1b] font-cordel leading-tight">{getMetric('manager', 'hero.metrics.manager')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('managerSub', 'hero.metrics.managerSub')}</div>
           </a>
-          <a href={getEcosystemUrl('mostrador')} target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
-            <img src="/logos/mostrador.png" alt="Mostrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full" />
-            <div className="text-xl font-black text-[#d2691e] font-cordel leading-tight">{getMetric('vitrine', 'hero.metrics.vitrine')}</div>
-            <div className="text-xs text-gray-700 mt-2">{getMetric('vitrineSub', 'hero.metrics.vitrineSub')}</div>
+          <a 
+            href={SAMAMBAIA_VITRINE_URL} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            title={t('hero.metrics.vitrineLiveBadge') || 'Exemple live : Samambaia ↗'}
+            className="group relative p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-between hover:bg-white transition-all hover:scale-105 cursor-pointer hover:shadow-md"
+          >
+            <div className="flex flex-col items-center">
+              <img src="/logos/mostrador.png" alt="Mostrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full group-hover:scale-105 transition-transform" />
+              <div className="text-xl font-black text-[#d2691e] font-cordel leading-tight">{getMetric('vitrine', 'hero.metrics.vitrine')}</div>
+              <div className="text-xs text-gray-700 mt-2">{getMetric('vitrineSub', 'hero.metrics.vitrineSub')}</div>
+            </div>
+            <div className="mt-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#d2691e]/10 text-[#a04e14] border border-[#d2691e]/30 group-hover:bg-[#d2691e] group-hover:text-white transition-all shadow-xs">
+              <span>{t('hero.metrics.vitrineLiveBadge') || 'Exemple live : Samambaia'}</span>
+              <span className="text-[11px] font-mono leading-none">↗</span>
+            </div>
           </a>
           <a 
             href={getEcosystemUrl('sequenciador')} 

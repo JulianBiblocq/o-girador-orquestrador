@@ -292,8 +292,8 @@ service cloud.firestore {
             (!request.resource.data.keys().hasAny(['tags']) || request.resource.data.tags.size() == 0)
           )
         ) || (
-          request.resource.data.isDependent == true &&
-          request.resource.data.managedBy == request.auth.uid && (
+          request.resource.data.get('isDependent', false) == true &&
+          request.resource.data.get('managedBy', '') == request.auth.uid && (
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
             (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role in ['membre', 'visiteur', 'eleve']) &&
@@ -326,7 +326,7 @@ service cloud.firestore {
            request.resource.data.role in ['membre', 'visiteur', 'eleve'] ||
            (resource.data.keys().hasAny(['role']) && request.resource.data.role == resource.data.role))
         )) ||
-        // Mise à jour standard par le membre (profil personnel hors privilèges)
+        // Mise à jour standard par le membre (profil personnel hors privilèges : nom, muteGroups, lateralite, etc.)
         (request.auth.uid == userId && (
           !request.resource.data.diff(resource.data).affectedKeys().hasAny([
             'paymentStatus', 'role', 'isSystemAdmin', 'hasAccessLogistique', 'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
@@ -336,8 +336,8 @@ service cloud.firestore {
           )
         )) || (
           // Membres dépendants
-          resource.data.managedBy == request.auth.uid &&
-          resource.data.isDependent == true && (
+          resource.data.get('managedBy', '') == request.auth.uid &&
+          resource.data.get('isDependent', false) == true && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny([
               'paymentStatus', 'role', 'isSystemAdmin', 'hasAccessLogistique', 'groupId', 'adhesionBase', 'selectedOptions', 'tags', 'statutActuel', 'managedBy', 'isDependent', 'isNew',
               'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
@@ -347,8 +347,8 @@ service cloud.firestore {
       );
       allow delete: if isAdminOrMestre() || (
         isAuthenticated() &&
-        resource.data.managedBy == request.auth.uid &&
-        resource.data.isDependent == true
+        resource.data.get('managedBy', '') == request.auth.uid &&
+        resource.data.get('isDependent', false) == true
       );
 
       // Sous-collection parcours (auto-évaluations et progression de l'élève)

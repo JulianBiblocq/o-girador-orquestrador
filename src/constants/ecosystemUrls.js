@@ -35,6 +35,15 @@ export const ECOSYSTEM_LOCAL_URLS = Object.freeze({
 });
 
 /**
+ * URL publique officielle de la vitrine live de démonstration (Groupe Samambaia).
+ * Utilisée comme vitrine de référence dans l'écosystème O Girador.
+ */
+export const SAMAMBAIA_VITRINE_URL = 
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SAMAMBAIA_VITRINE_URL) ||
+  'https://www.samambaia-maracatu.fr';
+
+
+/**
  * Détermine si le contexte d'exécution est un environnement local.
  */
 export function isLocalEnvironment() {

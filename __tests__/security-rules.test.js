@@ -140,6 +140,27 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
     await assertFails(selfDoc.update({ paymentStatus: 'paid' }));
   });
 
+  it("Autorise un membre à sauvegarder muteGroups, lateralite et preferences sur son profil (/users/{userId})", async () => {
+    const userBetaDb = testEnv.authenticatedContext('user_beta').firestore();
+    const selfDoc = userBetaDb.doc('users/user_beta');
+
+    // 1. Sauvegarde via update()
+    await assertSucceeds(selfDoc.update({
+      muteGroups: {
+        'maracatu-preset-1': ['alfaia_grava', 'agogo']
+      },
+      lateralite: 'gauche'
+    }));
+
+    // 2. Sauvegarde via setDoc(..., { merge: true })
+    await assertSucceeds(selfDoc.set({
+      muteGroups: {
+        'maracatu-preset-1': ['alfaia_grava', 'agogo'],
+        'samba-reggae': ['surdo_1']
+      }
+    }, { merge: true }));
+  });
+
   it("Sas pending_payments : autorise le membre propriétaire de l'email à lire et purger son entrée", async () => {
     await testEnv.withSecurityRulesDisabled(async (context) => {
       const db = context.firestore();

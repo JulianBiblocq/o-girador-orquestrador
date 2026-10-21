@@ -31,6 +31,7 @@
       "managerSub": "Agenda, Tesouraria & Varal",
       "vitrine": "🌟 Mostrador",
       "vitrineSub": "Identidade Cordel & Recrutamento",
+      "vitrineLiveBadge": "Exemplo ao vivo: Samambaia ↗",
       "cantador": "🎤 Cantador",
       "cantadorSub": "Toadas, Cantos & Karaokê",
       "dancador": "👣 Dançador",
@@ -81,6 +82,7 @@
       "feat2": "Calendário de Apresentações: Datas de shows abertas ao público.",
       "feat3": "Formulário de Contato & Inscrição: Cadastro direto de novos batuqueiros.",
       "feat4": "Galeria de Mídia & Toadas: Audição de faixas e vídeos de apresentações.",
+      "demoButton": "Ver exemplo ao vivo (Samambaia) ↗",
       "note": "Integração direta com o Manager"
     },
     "dancador": {

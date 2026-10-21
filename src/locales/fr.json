@@ -31,6 +31,7 @@
       "managerSub": "Agenda, Trésorerie & Varal",
       "vitrine": "🌟 Mostrador",
       "vitrineSub": "Identité Cordel & Recrutement",
+      "vitrineLiveBadge": "Exemple live : Samambaia ↗",
       "cantador": "🎤 Cantador",
       "cantadorSub": "Toadas, Chants & Karaoké",
       "dancador": "👣 Dançador",
@@ -96,6 +97,7 @@
       "feat2": "Espace Pro : Mise à disposition instantanée des fiches techniques, plans de scène et riders pour les programmateurs.",
       "feat3": "Recrutement : Formulaire de contact intégré pour les nouveaux membres et module d'inscription à la newsletter.",
       "feat4": "Visibilité Accrue : Un site moderne qui valorise l'image de l'association.",
+      "demoButton": "Découvrir un exemple live (Samambaia) ↗",
       "note": "Intégration directe Manager"
     },
     "terreiro": {

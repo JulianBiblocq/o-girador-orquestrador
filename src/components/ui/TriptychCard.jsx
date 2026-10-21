@@ -3,12 +3,17 @@ import { Disc3, Calendar, Globe, Footprints, LayoutDashboard } from 'lucide-reac
 import { Github } from './SocialIcons';
 import { useLanguage } from '../../hooks/useLanguage';
 import TriptychCardCantador from './TriptychCardCantador';
+import TriptychCardVitrine from './TriptychCardVitrine';
 
 export default function TriptychCard({ type }) {
   const { t } = useLanguage();
 
   if (type === 'cantador') {
     return <TriptychCardCantador />;
+  }
+
+  if (type === 'vitrine') {
+    return <TriptychCardVitrine />;
   }
 
   const renderFeatures = (typeKey, styleClass) => {
@@ -175,34 +180,5 @@ export default function TriptychCard({ type }) {
     );
   }
 
-  return (
-    <div className="bg-gradient-to-br from-[#d2691e] to-[#a04e14] text-white rounded-xl p-6 sm:p-8 flex flex-col justify-between shadow-2xl relative overflow-hidden group border-4 border-[#d2691e] hover:border-amber-300 transition-all">
-      <div>
-        <div className="flex justify-between items-start mb-4">
-          <div className="w-12 h-12 rounded-lg bg-white text-[#d2691e] flex items-center justify-center font-bold shadow">
-            <Globe className="w-6 h-6" />
-          </div>
-          <span className="text-[10px] uppercase font-bold px-2.5 py-1 rounded bg-white text-[#d2691e]">
-            {t('triptyque.vitrine.badge')}
-          </span>
-        </div>
-
-        <h3 className="text-2xl font-black font-cordel text-white mb-2 group-hover:text-amber-200 transition-colors">
-          {t('triptyque.vitrine.title')}
-        </h3>
-        <p className="text-xs text-white/90 mb-6 leading-relaxed">
-          {t('triptyque.vitrine.description')}
-        </p>
-
-        {renderFeatures('vitrine', 'bg-white/20 text-white')}
-      </div>
-
-      <div className="border-t border-white/20 pt-4 flex items-center justify-between">
-        <span className="text-xs text-white/90 font-semibold flex items-center gap-1">
-          {t('triptyque.vitrine.note') || 'Intégration directe Manager'}
-        </span>
-        <span className="text-[10px] font-mono text-white/80">Responsive & SEO</span>
-      </div>
-    </div>
-  );
+  return <TriptychCardVitrine />;
 }
