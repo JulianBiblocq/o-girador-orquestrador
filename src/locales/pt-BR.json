@@ -20,19 +20,23 @@
     "badge": "Universo",
     "title": "O Ecossistema Digital da",
     "titleHighlight": "Percussão Brasileira",
-    "subtitle": "Um conjunto de aplicações interconectadas para compor no Sequenciador, coreografar com o Dançador, administrar seu Bloco com o Organizador e brilhar com o Mostrador.",
+    "subtitle": "Um conjunto de aplicações interconectadas para compor no Sequenciador, cantar com o Cantador, coreografar com o Dançador, administrar seu Bloco com o Organizador e brilhar com o Mostrador.",
     "exploreTriptyque": "Explorar a Suíte",
     "discoverTarifs": "Ver Planos e Preços",
     "watchDemos": "Assistir Vídeos Demonstrativos",
     "metrics": {
       "sequenceur": "🥁 Sequenciador",
-      "sequenceurSub": "Micro-timing, Tone.js & Toadas",
+      "sequenceurSub": "Micro-timing, Tone.js & Balanço",
       "manager": "📋 Organizador",
       "managerSub": "Agenda, Tesouraria & Varal",
       "vitrine": "🌟 Mostrador",
       "vitrineSub": "Identidade Cordel & Recrutamento",
+      "cantador": "🎤 Cantador",
+      "cantadorSub": "Toadas, Cantos & Karaokê",
       "dancador": "👣 Dançador",
-      "dancadorSub": "Coreografias & Formações"
+      "dancadorSub": "Coreografias & Formações",
+      "terreiro": "🎛️ Orquestrador",
+      "terreiroSub": "Hub Global & Administração"
     }
   },
   "triptyque": {

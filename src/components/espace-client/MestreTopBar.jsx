@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Flame, Settings, Store, Award, Mic } from 'lucide-react';
+import { Lock, Flame, Settings, Store } from 'lucide-react';
 import { getEcosystemUrl } from '../../constants/ecosystemUrls';
 import MestreUpsellModal from './MestreUpsellModal';
 
@@ -70,10 +70,9 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-red-100', descTextHover: 'group-hover:text-red-100'
     },
     {
-      id: 'cantador', label: 'Cantador', desc: 'Atelier Vocal', isIcon: true, isOwned: true, url: getEcosystemUrl('cantador'),
-      iconComponent: <Mic className="w-8 h-8 text-purple-300 group-hover:scale-110 transition-transform" />,
-      colorActive: 'bg-[#581c87] border-purple-500', colorHover: 'hover:bg-[#4c1d95] hover:border-purple-400',
-      textActive: 'text-purple-300', textHover: 'group-hover:text-purple-300', descTextActive: 'text-purple-200', descTextHover: 'group-hover:text-purple-200'
+      id: 'cantador', label: 'Cantador', desc: 'Atelier Vocal', iconUrl: '/logo-cantador.jpg', isOwned: true, url: getEcosystemUrl('cantador'),
+      colorActive: 'bg-[#3730a3] border-indigo-400', colorHover: 'hover:bg-[#312e81] hover:border-indigo-300',
+      textActive: 'text-indigo-200', textHover: 'group-hover:text-indigo-200', descTextActive: 'text-indigo-100', descTextHover: 'group-hover:text-indigo-100'
     },
     {
       id: 'vitrine', label: 'Mostrador', desc: 'Site Public', iconUrl: '/logos/mostrador.png', isOwned: hasPack('vitrine'), url: getEcosystemUrl('mostrador'),
@@ -94,11 +93,6 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
     {
       id: 'profile', label: 'Mon Espace', desc: 'Identité & Quotas', isIcon: true, isOwned: true,
       iconComponent: <Settings className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
-      ...goldStyle
-    },
-    {
-      id: 'evaluation', label: 'Auto-Évaluation', desc: 'Diagnostic & Quiz', isIcon: true, isOwned: true,
-      iconComponent: <Award className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
       ...goldStyle
     }
   ];
@@ -158,7 +152,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
                     <img 
                       src={app.iconUrl} 
                       alt={app.label} 
-                      className={`w-10 h-10 object-contain drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''} ${['vitrine', 'dashboard', 'terreiro'].includes(app.id) ? 'rounded-full' : ''}`} 
+                      className={`w-10 h-10 drop-shadow-md transition-transform ${app.isOwned ? 'group-hover:scale-110' : ''} ${['vitrine', 'dashboard', 'terreiro', 'cantador'].includes(app.id) ? 'rounded-full object-cover' : 'object-contain'}`} 
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   )}

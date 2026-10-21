@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export const CURRENT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+export const CURRENT_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.1';
 
 /**
  * Hook de détection de version et purge de cache PWA pour Orquestrad'Or.

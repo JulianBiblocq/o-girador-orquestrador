@@ -41,7 +41,7 @@ export default function HeroSection({
 
   const getMetric = (key, fallbackKey) => {
     if (cmsMetrics && cmsMetrics[key]) return cmsMetrics[key];
-    return t(fallbackKey).replace(/🥁|📋|🌟|👣|🎛️/g, '').trim();
+    return t(fallbackKey).replace(/🥁|📋|🌟|👣|🎛️|🎤/g, '').trim();
   };
 
   return (
@@ -92,7 +92,7 @@ export default function HeroSection({
           )}
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 pt-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pt-6 max-w-6xl mx-auto">
           <a 
             href={getEcosystemUrl('organizador')} 
             onClick={(e) => handleAppLaunch(e, getEcosystemUrl('organizador'), "organizador")}
@@ -115,6 +115,15 @@ export default function HeroSection({
             <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-14 h-14 mb-3 object-contain drop-shadow-md" />
             <div className="text-xl font-black text-[#18181b] font-cordel leading-tight">{getMetric('sequenceur', 'hero.metrics.sequenceur')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('sequenceurSub', 'hero.metrics.sequenceurSub')}</div>
+          </a>
+          <a 
+            href={getEcosystemUrl('cantador')} 
+            onClick={(e) => handleAppLaunch(e, getEcosystemUrl('cantador'), "cantador")}
+            className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'cantador' ? 'opacity-50 animate-pulse' : ''}`}
+          >
+            <img src="/logo-cantador.jpg" alt="Cantador" className="w-14 h-14 mb-3 rounded-full object-cover drop-shadow-md border border-[#9a3412]/20" />
+            <div className="text-xl font-black text-[#9a3412] font-cordel leading-tight">{getMetric('cantador', 'hero.metrics.cantador')}</div>
+            <div className="text-xs text-gray-700 mt-2">{getMetric('cantadorSub', 'hero.metrics.cantadorSub')}</div>
           </a>
           <a 
             href={getEcosystemUrl('dancador')} 
