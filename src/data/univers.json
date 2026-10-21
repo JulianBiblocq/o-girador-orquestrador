@@ -53,46 +53,11 @@
       ]
     },
     {
-      "id": "capoeira",
-      "name": "Capoeira Regional & Angola",
-      "subtitle": "Art Martial, Musique & Roda",
-      "tagline": "L'art de la ginga, les toques de Berimbau et la poésie de la Roda à portée de main.",
-      "status": "coming_soon",
-      "badge": "Bientôt",
-      "teaser": {
-        "title": "Bientôt dans l'Écosystème",
-        "description": "Un univers dédié à la Roda de Capoeira : apprentissage des toques de Berimbau (Gunga, Médio, Viola), Pandeiro, Atabaque, et gestion du carnet de chants et de batizados.",
-        "plannedRelease": "Q4 2026",
-        "features": [
-          "Studio interactif Toques de Berimbau",
-          "Carnet de Chants, Ladainhas & Chulas",
-          "Gestion des diplômes, cordes & événements de Batizado"
-        ]
-      },
-      "theme": {
-        "name": "Malandragem & Bahia Gold",
-        "primaryColor": "#1a4314",
-        "secondaryColor": "#eab308",
-        "accentColor": "#ca8a04",
-        "backgroundColor": "#fefce8",
-        "paperTexture": false
-      },
-      "applications": [
-        {
-          "id": "dancador",
-          "name": "O Girador - Dançador",
-          "description": "Studio chorégraphique interactif pour la roda et la maculelê.",
-          "badge": "Nouveau",
-          "url": "https://dancador.ogirador.app"
-        }
-      ]
-    },
-    {
       "id": "batucada",
-      "name": "Batucada",
-      "subtitle": "Percussions de Rue & Batterie Festive Associative",
-      "tagline": "L'énergie festive et le partage des rythmes de rue dans votre collectif.",
-      "description": "Percussions de rue, batterie festive associative",
+      "name": "Bateria & Batucada",
+      "subtitle": "Percussions de Rue & Bateria Festive Associative",
+      "tagline": "L'énergie festive et le partage des rythmes de rue et de bateria dans votre collectif.",
+      "description": "Percussions de rue, bateria festive associative",
       "status": "active",
       "badge": "Actif",
       "theme": {
@@ -105,17 +70,8 @@
         "paperTexture": false
       },
       "instruments": [
-        "Surdo 1",
-        "Surdo 2",
-        "Surdo 3",
-        "Repique",
-        "Caixa",
-        "Timba",
-        "Chocalho",
-        "Tambourin",
-        "Agogô",
-        "Chant",
-        "Danse"
+        "Surdo 1", "Surdo 2", "Surdo 3", "Repique", "Caixa",
+        "Timba", "Chocalho", "Tambourin", "Agogô", "Chant", "Danse"
       ],
       "applications": [
         {
@@ -168,14 +124,8 @@
         "paperTexture": false
       },
       "instruments": [
-        "Surdo Fundo",
-        "Surdo Dobra",
-        "Surdo Resposta",
-        "Repique de Bloco",
-        "Timbal",
-        "Caixa",
-        "Chant & Voix",
-        "Danse Afro"
+        "Surdo Fundo", "Surdo Dobra", "Surdo Resposta", "Repique de Bloco",
+        "Timbal", "Caixa", "Chant & Voix", "Danse Afro"
       ],
       "applications": [
         {
@@ -195,57 +145,35 @@
       ]
     },
     {
-      "id": "samba",
-      "name": "Bateria & Samba",
-      "subtitle": "Samba de Enredo & Écoles de Samba",
-      "tagline": "La rigueur, la cadence et la puissance des Baterias de Rio de Janeiro.",
-      "description": "Samba de Enredo, écoles de samba",
+      "id": "capoeira",
+      "name": "Capoeira Regional & Angola",
+      "subtitle": "Art Martial, Musique & Roda",
+      "tagline": "L'art de la ginga, les toques de Berimbau et la poésie de la Roda à portée de main.",
       "status": "coming_soon",
       "badge": "Bientôt",
       "teaser": {
         "title": "Bientôt dans l'Écosystème",
-        "description": "Entraînez et organisez votre Bateria d'école de samba : Surdos (1ª Marcação, 2ª Resposta, 3ª Terceira/Corte), Caixas de Guerra, Tarol, Repiniques, Tamborims virados, Cuícas, Agogôs, Chocalhos et Enredos officiels.",
-        "plannedRelease": "Q1 2027",
+        "description": "Un univers dédié à la Roda de Capoeira : apprentissage des toques de Berimbau (Gunga, Médio, Viola), Pandeiro, Atabaque, et gestion du carnet de chants et de batizados.",
+        "plannedRelease": "Q4 2026",
         "features": [
-          "Séquenceur Multi-Tamborim (virado 3/1) & Breaks de Bateria",
-          "Gestionnaire de Naipes & Répétitions par section",
-          "Partitions interactives et export PDF de défilé"
+          "Studio interactif Toques de Berimbau",
+          "Carnet de Chants, Ladainhas & Chulas",
+          "Gestion des diplômes, cordes & événements de Batizado"
         ]
       },
       "theme": {
-        "name": "Sambódromo Carioca",
-        "primaryColor": "#15803d",
-        "secondaryColor": "#7e22ce",
-        "accentColor": "#10b981",
-        "backgroundColor": "#f0fdf4",
+        "name": "Malandragem & Bahia Gold",
+        "primaryColor": "#1a4314",
+        "secondaryColor": "#eab308",
+        "accentColor": "#ca8a04",
+        "backgroundColor": "#fefce8",
         "paperTexture": false
       },
-      "instruments": [
-        "Surdo 1 (Primeira)",
-        "Surdo 2 (Segunda)",
-        "Surdo 3 (Terceira)",
-        "Caixa de Guerra",
-        "Tarol",
-        "Repinique",
-        "Tamborim",
-        "Chocalho",
-        "Cuíca",
-        "Agogô",
-        "Chant (Puxador)",
-        "Passistas & Mestre-Sala"
-      ],
       "applications": [
-        {
-          "id": "manager",
-          "name": "O Girador - Manager & Vitrine",
-          "description": "Plateforme complète pour votre école de samba, naipes et site vitrine.",
-          "badge": "Disponible",
-          "url": "https://manager.ogirador.app"
-        },
         {
           "id": "dancador",
           "name": "O Girador - Dançador",
-          "description": "Studio chorégraphique interactif pour préparer les défilés et les évolutions de passistas.",
+          "description": "Studio chorégraphique interactif pour la roda et la maculelê.",
           "badge": "Nouveau",
           "url": "https://dancador.ogirador.app"
         }

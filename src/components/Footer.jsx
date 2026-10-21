@@ -26,7 +26,7 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
               </span>
             </div>
             <p className="text-xs text-amber-200/70 leading-relaxed">
-              Le hub central de convergence entre Sequenciador, Organizador, Mostrador, Dançador et la culture populaire brésilienne.
+              La boîte à outils pensée pour gérer, créer, apprendre et faire rayonner les groupes de culture populaire brésilienne.
             </p>
           </div>
 
@@ -54,6 +54,11 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
               <li>
                 <a href="#triptyque" className="hover:text-white transition-colors">
                   O Girador Dançador
+                </a>
+              </li>
+              <li>
+                <a href="#triptyque" className="hover:text-white transition-colors">
+                  O Girador Cantador
                 </a>
               </li>
             </ul>

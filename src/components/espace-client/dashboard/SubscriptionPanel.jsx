@@ -27,15 +27,15 @@ export default function SubscriptionPanel({ associationData, setActiveTab, onNav
         setActivePlanIndex(actualIndex);
         setCurrentSlideIndex(actualIndex);
 
-        // Determine active universe (simplified: assume the first one they have access to)
+        // Détermination de l'univers actif
         let currentUni = 'maracatu';
-        if (associationData.universeAccess?.samba && !associationData.universeAccess?.maracatu) {
-          currentUni = 'samba';
+        if ((associationData.universeAccess?.batucada || associationData.universeAccess?.samba) && !associationData.universeAccess?.maracatu) {
+          currentUni = 'batucada';
         } else if (associationData.universeAccess?.capoeira && !associationData.universeAccess?.maracatu) {
           currentUni = 'capoeira';
         }
         
-        const uni = universData.universes.find(u => u.id === currentUni);
+        const uni = universData.universes.find(u => u.id === currentUni) || universData.universes[0];
         if (uni) setUniverseInfo(uni);
       }
       setLoading(false);

@@ -54,7 +54,7 @@ export default function PublicNetworkSection({ onNavigate }) {
             La communauté O Girador dans le monde
           </h2>
           <p className="text-amber-200 text-lg max-w-2xl mx-auto leading-relaxed">
-            Découvrez les dizaines de groupes de Maracatu, Samba et Capoeira qui utilisent déjà notre écosystème pour organiser, créer et partager leur culture.
+            Découvrez les groupes de Maracatu, Batucada et Capoeira qui utilisent notre écosystème pour organiser, créer et partager leur culture.
           </p>
         </div>
 
