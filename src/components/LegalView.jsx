@@ -29,7 +29,7 @@ export default function LegalView({ onNavigateHome }) {
           </button>
           
           <h1 className="text-4xl md:text-5xl font-black font-cordel text-[#4a2e1b]">Cadre Légal & RGPD</h1>
-          <p className="text-lg text-[#8b4513] mt-2">Dernière mise à jour : [Date du jour]</p>
+          <p className="text-lg text-[#8b4513] mt-2">Dernière mise à jour : 23 octobre 2026</p>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start">
@@ -66,28 +66,17 @@ export default function LegalView({ onNavigateHome }) {
                   
                   <h3 className="text-xl font-bold text-gray-900 mb-3">1. Éditeur du site</h3>
                   <p>
-                    Le site <strong>O Girador</strong> est édité par <strong>[Nom de l'association/entreprise]</strong>, 
-                    [Statut juridique] au capital de [Montant] €, immatriculée au Registre du Commerce et des Sociétés sous le numéro [Numéro SIRET/RCS].
+                    La plateforme <strong>O Girador</strong> (Hub Orquestrad'Or, Séquenciad'Or, Organizad'Or, Dançad'Or) est conçue, développée et éditée par <strong>Julian Biblocq</strong>.
                   </p>
                   <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li><strong>Siège social :</strong> [Adresse complète]</li>
-                    <li><strong>Directeur de la publication :</strong> [Nom du responsable]</li>
-                    <li><strong>Email de contact :</strong> <a href="mailto:[Email de contact]" className="text-[#8b4513] hover:underline">[Email de contact]</a></li>
-                    <li><strong>Numéro de téléphone :</strong> [Numéro de téléphone]</li>
+                    <li><strong>Responsable de publication :</strong> Julian Biblocq</li>
+                    <li><strong>Email de contact :</strong> <a href="mailto:contact@o-girador.com" className="text-[#8b4513] hover:underline">contact@o-girador.com</a></li>
+                    <li><strong>Site officiel :</strong> <a href="https://www.o-girador.com" className="text-[#8b4513] hover:underline">https://www.o-girador.com</a></li>
                   </ul>
 
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Hébergement</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Hébergement & Infrastructure</h3>
                   <p>
-                    L'hébergement du site est assuré par <strong>[Nom de l'hébergeur, ex: Vercel / GitHub Pages]</strong>.
-                  </p>
-                  <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li><strong>Adresse de l'hébergeur :</strong> [Adresse postale de l'hébergeur]</li>
-                    <li><strong>Contact de l'hébergeur :</strong> [Site web ou email de l'hébergeur]</li>
-                  </ul>
-                  
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">3. Base de données et Serveur Backend</h3>
-                  <p>
-                    L'infrastructure backend (authentification, base de données Firestore, Cloud Functions) est opérée par <strong>Google Firebase</strong> (Google Ireland Limited).
+                    L'hébergement statique, l'authentification et l'infrastructure de base de données temps réel sont assurés par <strong>Google Firebase / Google Cloud</strong> (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irlande).
                   </p>
                 </div>
               )}
@@ -96,76 +85,57 @@ export default function LegalView({ onNavigateHome }) {
                 <div className="animate-in fade-in duration-300">
                   <h2 className="text-3xl font-black text-[#4a2e1b] mb-8 font-cordel">Conditions Générales d'Utilisation</h2>
                   
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">1. Objet du Service</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">1. Objet du Service & Licence du Logiciel</h3>
                   <p>
-                    La plateforme O Girador fournit un ensemble d'outils numériques (Hub, Séquenceur, Dançador, Organizador) 
-                    dédiés à la gestion et la pratique musicale pour les groupes et associations (notamment de Maracatu). 
-                    L'utilisation de ces services implique l'acceptation sans réserve des présentes conditions.
+                    La plateforme O Girador fournit un ensemble d'outils numériques dédiés à la transmission, l'apprentissage et la pratique du Maracatu de Baque Virado. Le code source (licence UNLICENSED - Tous droits réservés), l'architecture de la Roda circulaire 360°, les algorithmes de micro-timing (Balanço), l'identité graphique Cordel et les 143 échantillons acoustiques enregistrés (/Mixdown/) sont la propriété intellectuelle exclusive de l'éditeur. Le web scraping, la redistribution des banques sonores et l'entraînement de modèles d'IA sans accord écrit sont formellement interdits.
                   </p>
 
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Accès et Compte Utilisateur</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Propriété des Œuvres, Toadas & Statut d'Hébergeur</h3>
                   <p>
-                    L'accès à l'Espace Mestre nécessite la création d'un compte gratuit via authentification Google. 
-                    L'utilisateur s'engage à fournir des informations exactes concernant son identité ou celle de son association. 
-                    Le compte est strictement personnel à l'association désignée.
+                    Les Mestres, compositeurs, batuqueiros et nations de Maracatu conservent <strong>100 % de leurs droits d'auteur</strong> sur leurs rythmes, paroles de toadas et voix enregistrées. O Girador intervient exclusivement en qualité d'hébergeur technique et de carnet de notes musical pour faciliter l'étude et la mémoire collective au sein des groupes autorisés.
                   </p>
 
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">3. Modération et Contenu Public</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">3. Procédure Amiable de Paternité & Retrait (« Notice & Take Action »)</h3>
                   <p>
-                    En publiant des rythmes ou chorégraphies dans le <strong>Catalogue Public</strong> ou des messages sur le <strong>Terreiro</strong>, 
-                    l'utilisateur s'engage à ne pas diffuser de contenus illicites, haineux, ou contraires aux bonnes mœurs. 
-                    L'éditeur se réserve le droit exclusif de modérer, masquer ou supprimer tout contenu jugé inapproprié 
-                    sans préavis (retrait du domaine public, déduction de points de karma).
+                    Tout auteur ou Mestre reconnaissant une toada dans le catalogue peut à tout moment demander l'attribution de son nom ou le retrait immédiat du contenu via le bouton dédié (« C'est votre texte ? ») ou par email à <a href="mailto:contact@o-girador.com" className="text-[#8b4513] hover:underline">contact@o-girador.com</a>. Le traitement est effectué sous 48 heures ouvrées sur simple justification.
                   </p>
-                  
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">4. Propriété Intellectuelle des Créations</h3>
+
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">4. Comptes, Formules & Rétention des Données (Usage Équitable)</h3>
                   <p>
-                    L'utilisateur garantit détenir les droits ou autorisations nécessaires pour partager des séquences 
-                    musicales ou chorégraphiques sur la plateforme. Les créations importées depuis le catalogue vers un 
-                    espace personnel sont automatiquement créditées de leur auteur original, dont la mention ne doit pas être altérée de mauvaise foi.
+                    L'accès gratuit permet l'écoute et l'entraînement. Les formules payantes et la licence pérenne sont soumises à un usage équitable (Fair Use) du stockage cloud. En cas de fin d'abonnement, les créations et presets personnels restent préservés en mode consultation pendant au moins 12 mois.
                   </p>
                 </div>
               )}
 
               {activeTab === 'privacy' && (
                 <div className="animate-in fade-in duration-300">
-                  <h2 className="text-3xl font-black text-[#4a2e1b] mb-8 font-cordel">Politique de Confidentialité (RGPD)</h2>
+                  <h2 className="text-3xl font-black text-[#4a2e1b] mb-8 font-cordel">Politique de Confidentialité (RGPD & LGPD)</h2>
                   
                   <h3 className="text-xl font-bold text-gray-900 mb-3">1. Données collectées</h3>
                   <p>
-                    Dans le cadre de l'utilisation de la plateforme, nous sommes amenés à collecter les données suivantes :
+                    Dans le cadre de l'utilisation de la plateforme, nous collectons exclusivement les données strictement nécessaires au service :
                   </p>
                   <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>Adresse email (via Google Auth)</li>
+                    <li>Adresse email et nom (via Google Authentication)</li>
                     <li>Identifiant unique Google (UID)</li>
-                    <li>Nom, prénom, ou nom de l'association</li>
-                    <li>Localisation (si renseignée sur la carte du Terreiro)</li>
-                    <li>Données d'utilisation (rythmes créés, chorégraphies, historique d'importation)</li>
+                    <li>Localisation géographique facultative pour la cartographie mondiale des groupes</li>
+                    <li>Presets, arrangements et données musicales créés par l'utilisateur</li>
                   </ul>
 
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Finalité du traitement</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">2. Finalité du traitement & Zéro Revente</h3>
                   <p>
-                    Ces données sont strictement nécessaires pour :
+                    Ces données servent uniquement à assurer la synchronisation cloud de vos projets et la gestion de votre espace client. Nous ne vendons ni ne cédons aucune donnée personnelle à des tiers.
                   </p>
-                  <ul className="list-disc pl-5 mt-2 space-y-1">
-                    <li>Assurer le fonctionnement des outils (sauvegarde Cloud des créations).</li>
-                    <li>Sécuriser l'accès à votre espace (Hub).</li>
-                    <li>Permettre les interactions communautaires (Catalogue public, Forum, Partage privé).</li>
-                  </ul>
-                  <p className="mt-2 text-sm italic text-gray-500">Nous ne revendons aucune de vos données personnelles à des tiers.</p>
 
-                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">3. Utilisation des Cookies</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">3. Cookies techniques</h3>
                   <p>
-                    La plateforme utilise principalement des cookies techniques dits "strictement nécessaires" pour 
-                    maintenir la session utilisateur ouverte (Firebase Auth). Aucun cookie de ciblage publicitaire intrusif n'est utilisé.
+                    La plateforme utilise exclusivement des cookies techniques nécessaires à l'authentification et au maintien de session (Firebase Auth). Aucun traceur publicitaire n'est exploité.
                   </p>
                   
                   <h3 className="text-xl font-bold text-gray-900 mt-8 mb-3">4. Vos droits (Accès, Rectification, Suppression)</h3>
                   <p>
-                    Conformément au Règlement Général sur la Protection des Données (RGPD), vous disposez d'un droit 
-                    d'accès, de rectification, de portabilité et d'effacement de vos données. Pour exercer ce droit, 
-                    vous pouvez nous contacter à l'adresse suivante : 
-                    <a href="mailto:[Email de contact]" className="text-[#8b4513] hover:underline ml-1">[Email de contact]</a>.
+                    Conformément au RGPD européen et à la LGPD brésilienne, vous disposez d'un droit d'accès, d'exportation, de rectification et d'effacement complet de vos données sur simple demande par email à : 
+                    <a href="mailto:contact@o-girador.com" className="text-[#8b4513] hover:underline ml-1">contact@o-girador.com</a>.
                   </p>
                 </div>
               )}
