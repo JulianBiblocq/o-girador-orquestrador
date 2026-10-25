@@ -20,10 +20,21 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
   const hasPack = (packId) => {
     if (associationData?.isAdmin || associationData?.role === 'admin') return true;
     if (associationData?.appAccess?.[packId] === true) return true;
-    const packs = associationData?.unlockedPacks || [];
     
+    // Grandfathering & Mode Trial : Accès complet pour démo et préservation des accès existants
+    const isTrial = associationData?.subscription?.plan === 'trial' || 
+                    associationData?.subscriptionStatus === 'trial' ||
+                    associationData?.planType === 'trial';
+    if (isTrial) return true;
+
+    // Si le groupe existe dans Firestore sans configuration de packs explicite,
+    // maintenir l'accès ouvert aux applications principales (Organizador, Sequenciador, Vitrine)
+    const packs = associationData?.unlockedPacks;
+    if (!packs && (packId === 'manager' || packId === 'sequenceur' || packId === 'vitrine')) return true;
+
+    const safePacks = packs || [];
     let userMaxLevel = 1;
-    for (const p of packs) {
+    for (const p of safePacks) {
       if (p.includes('integrale')) userMaxLevel = Math.max(userMaxLevel, 4);
       else if (p.includes('gestion')) userMaxLevel = Math.max(userMaxLevel, 3);
       else if (p.includes('createur')) userMaxLevel = Math.max(userMaxLevel, 2);
@@ -34,7 +45,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
     if (packId === 'manager' || packId === 'vitrine' || packId === 'gestion') requiredLevel = 3;
     if (packId === 'sequenceur' || packId === 'createur') requiredLevel = 2;
 
-    return packs.some(p => p.includes(packId) || p.includes(`${packId}-solo`)) || userMaxLevel >= requiredLevel;
+    return safePacks.some(p => p.includes(packId) || p.includes(`${packId}-solo`)) || userMaxLevel >= requiredLevel;
   };
 
   // Styles communs pour les onglets dorés du Hub

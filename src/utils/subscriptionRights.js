@@ -3,7 +3,7 @@
  */
 
 export function calculateSubscriptionStatus(endDateStr, planType) {
-  if (planType === 'permanent' || planType === 'mestre') {
+  if (planType === 'permanent' || planType === 'mestre' || planType === 'exempt') {
     return {
       status: 'active',
       label: 'Permanent / Illimité',
@@ -14,14 +14,17 @@ export function calculateSubscriptionStatus(endDateStr, planType) {
     };
   }
 
+  // Clause de sauvegarde / Grandfathering :
+  // Si aucune date de fin n'est renseignée (groupes historiques ou sans forfait explicite),
+  // considérer le statut comme actif pour garantir zéro régression et zéro interruption de service.
   if (!endDateStr) {
     return {
-      status: 'expired',
-      label: 'Inconnu / Expiré',
-      badgeClass: 'bg-red-800 text-red-100',
-      daysRemaining: 0,
-      isWarning: true,
-      isExpired: true
+      status: 'active',
+      label: 'Actif (Inclus)',
+      badgeClass: 'bg-emerald-700 text-white font-bold',
+      daysRemaining: Infinity,
+      isWarning: false,
+      isExpired: false
     };
   }
 
@@ -113,10 +116,10 @@ export function getAccessRights(group, userData = null) {
   const statusInfo = calculateSubscriptionStatus(group?.endDate, group?.planType);
   let isExpired = statusInfo.isExpired;
 
-  // Accès aux applications (Toggles administratifs)
-  const hasSequenceurAccess = Boolean(group?.appAccess?.sequenceur) || Boolean(trialInfo?.canWrite);
-  const hasManagerAccess = Boolean(group?.appAccess?.manager) || Boolean(trialInfo?.canWrite);
-  const hasVitrineAccess = Boolean(group?.appAccess?.vitrine);
+  // Accès aux applications (Toggles administratifs) - Valeur par défaut active si non restreint explicitement
+  const hasSequenceurAccess = group?.appAccess?.sequenceur !== false || Boolean(trialInfo?.canWrite);
+  const hasManagerAccess = group?.appAccess?.manager !== false || Boolean(trialInfo?.canWrite);
+  const hasVitrineAccess = group?.appAccess?.vitrine !== false;
   const hasDancadorAccess = Boolean(group?.appAccess?.dancador) || Boolean(trialInfo?.canWrite);
 
   // Soft Lock : Si l'abonnement est expiré, le Manager passe en lecture seule et les créations sont bloquées

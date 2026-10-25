@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2, HardDrive, Crown, KeyRound, Lock } from 'lucide-react';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2, HardDrive, Crown, KeyRound, Lock, CheckCircle2, ExternalLink } from 'lucide-react';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { slugifyAssociationId } from '../../utils/slugUtils';
 
@@ -16,6 +16,8 @@ const formatBytes = (bytes) => {
 export default function AssociationModal({ isOpen, initialData, onClose, onSave, onCreateMestre }) {
   const [technicalId, setTechnicalId] = useState('');
   const [isIdManuallyEdited, setIsIdManuallyEdited] = useState(false);
+  const [prefillStarterKit, setPrefillStarterKit] = useState(true);
+  const [createdGroupSummary, setCreatedGroupSummary] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     city: '',
@@ -103,19 +105,18 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
         name: '',
         city: '',
         contactName: '',
-        contactEmail: '',
-        planType: 'annual',
-        formule: 'decouverte',
-        unlockedPacks: [],
+        planType: 'trial',
+        formule: 'integrale',
+        unlockedPacks: ['integrale', 'pack-tresorerie', 'pack-boutique', 'pack-dancador'],
         startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: 20,
         universeId: 'maracatu',
         appAccess: {
           sequenceur: true,
           manager: true,
           vitrine: true,
-          dancador: false
+          dancador: true
         },
         universeAccess: {
           maracatu: true,
@@ -190,6 +191,19 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
       `asso-${Date.now()}`
     ).trim().toLowerCase();
 
+    // SÉCURITÉ STRICTE : Vérifier si le groupe existe déjà avant d'injecter le seed
+    let isBrandNewGroup = !initialData;
+    if (isBrandNewGroup) {
+      try {
+        const existingSnap = await getDoc(doc(db, 'associations', finalSlugId));
+        if (existingSnap.exists()) {
+          isBrandNewGroup = false; // Le groupe existe déjà, ne JAMAIS injecter le seed par dessus !
+        }
+      } catch (err) {
+        console.warn("Vérification existence groupe :", err);
+      }
+    }
+
     const finalData = { 
       ...formData, 
       id: finalSlugId,
@@ -197,6 +211,39 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
       unlockedPacks: newPacks 
     };
     delete finalData.formule;
+
+    if (isBrandNewGroup && prefillStarterKit) {
+      finalData.instrumentsDisponibles = [
+        'Alfaia Marcante',
+        'Alfaia Meião',
+        'Alfaia Repique',
+        'Caixa',
+        'Tarol',
+        'Gonguê',
+        'Agbê',
+        'Mineiro',
+        'Chant',
+        'Danse'
+      ];
+      finalData.linkedInstruments = [
+        { name: 'Alfaias', instruments: ['Alfaia Marcante', 'Alfaia Meião', 'Alfaia Repique'] },
+        { name: 'Sementes', instruments: ['Agbê', 'Mineiro'] },
+        { name: 'Caixas', instruments: ['Caixa', 'Tarol'] }
+      ];
+      finalData.tagsDisponibles = [
+        'batuqueiro', 'danseur', 'referent', 'bureau', 'lutherie', 'costumerie', 'tresorier', 'mestre'
+      ];
+      finalData.categoriesTransactions = [
+        'Prestations', 'Adhésions', 'Subventions', 'Matériel', 'Lutherie', 'Assurance', 'Local', 'Autre'
+      ];
+      finalData.subscription = {
+        plan: 'trial',
+        status: 'active',
+        trialEndsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
+      finalData.subscriptionStatus = 'trial';
+    }
 
     try {
       const docRef = doc(db, 'associations', finalSlugId);
@@ -207,12 +254,88 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
         updatedAt: serverTimestamp(),
         ...(!initialData && { createdAt: serverTimestamp() })
       }, { merge: true });
+
+      // Si nouveau groupe et starter kit demandé, injecter le répertoire et l'inventaire
+      if (isBrandNewGroup && prefillStarterKit) {
+        const pieces = [
+          {
+            id: 'baque-de-luanda',
+            titre: 'Baque de Luanda',
+            statutSaison: 'saison',
+            bpm: 112,
+            audioUrl: 'https://firebasestorage.googleapis.com/v0/b/ogirador-audio/o/demo%2Fluanda.mp3',
+            tracks: [
+              { name: 'Alfaia Marcante', steps: ['X', '-', '-', '-', 'X', '-', '-', '-', 'X', '-', '-', '-', 'X', '-', '-', '-'] },
+              { name: 'Caixa', steps: ['X', 'X', '-', 'X', 'X', '-', 'X', 'X', '-', 'X', 'X', '-', 'X', 'X', '-', 'X'] },
+              { name: 'Gonguê', steps: ['X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-'] },
+              { name: 'Agbê', steps: ['-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X'] }
+            ],
+            histoire: 'Toada traditionnelle de salutation du cortège royal.',
+            createdAt: Date.now()
+          },
+          {
+            id: 'estrela-dalva',
+            titre: 'Estrela Dalva',
+            statutSaison: 'saison',
+            bpm: 120,
+            audioUrl: 'https://firebasestorage.googleapis.com/v0/b/ogirador-audio/o/demo%2Fdalva.mp3',
+            tracks: [
+              { name: 'Alfaia Marcante', steps: ['X', '-', 'X', '-', '-', '-', 'X', '-', 'X', '-', 'X', '-', '-', '-', 'X', '-'] },
+              { name: 'Caixa', steps: ['X', '-', 'X', 'X', 'X', '-', 'X', 'X', 'X', '-', 'X', 'X', 'X', '-', 'X', 'X'] },
+              { name: 'Gonguê', steps: ['X', '-', '-', 'X', '-', '-', 'X', '-', '-', 'X', '-', '-', 'X', '-', '-', '-'] }
+            ],
+            histoire: "Hommage poétique à l'étoile du matin et à la reine de la nation.",
+            createdAt: Date.now()
+          },
+          {
+            id: 'toada-da-madrugada',
+            titre: 'Toada da Madrugada',
+            statutSaison: 'repertoire',
+            bpm: 108,
+            tracks: [
+              { name: 'Alfaia Marcante', steps: ['X', '-', '-', 'X', '-', '-', 'X', '-', '-', 'X', '-', '-', 'X', '-', '-', '-'] },
+              { name: 'Gonguê', steps: ['X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-', 'X', '-'] }
+            ],
+            histoire: "Chant poétique d'ouverture du baque au lever du jour.",
+            createdAt: Date.now()
+          }
+        ];
+
+        for (const piece of pieces) {
+          try {
+            await setDoc(doc(db, 'associations', finalSlugId, 'repertoire', piece.id), piece);
+          } catch (e) {
+            console.warn("Erreur injection morceau starter :", e);
+          }
+        }
+
+        const starterInventory = [
+          { id: `inv_${finalSlugId}_alf01`, groupId: finalSlugId, nom: 'Alfaia Marcante #01', type: 'Alfaia', etat: 'Bon', proprietaire: 'Association', localisationPhysique: 'Local associatif', status: 'En stock', createdAt: Date.now() },
+          { id: `inv_${finalSlugId}_cax01`, groupId: finalSlugId, nom: 'Caixa de Guerra #01', type: 'Caixa', etat: 'Bon', proprietaire: 'Association', localisationPhysique: 'Local associatif', status: 'En stock', createdAt: Date.now() },
+          { id: `inv_${finalSlugId}_gon01`, groupId: finalSlugId, nom: 'Gonguê Double #01', type: 'Gonguê', etat: 'Neuf', proprietaire: 'Association', localisationPhysique: 'Local associatif', status: 'En stock', createdAt: Date.now() },
+          { id: `inv_${finalSlugId}_agb01`, groupId: finalSlugId, nom: 'Agbê Perlé #01', type: 'Agbê', etat: 'Bon', proprietaire: 'Association', localisationPhysique: 'Local associatif', status: 'En stock', createdAt: Date.now() }
+        ];
+
+        for (const item of starterInventory) {
+          try {
+            await setDoc(doc(db, 'inventory', item.id), item);
+          } catch (e) {
+            console.warn("Erreur injection inventaire starter :", e);
+          }
+        }
+      }
     } catch (err) {
       console.warn("Firestore setDoc fallback in AssociationModal:", err);
     }
 
-    if (onSave) {
-      await onSave(finalData);
+    if (isBrandNewGroup) {
+      setCreatedGroupSummary({
+        groupId: finalSlugId,
+        name: formData.name || finalSlugId
+      });
+    } else {
+      if (onSave) await onSave(finalData);
+      onClose();
     }
   };
 
@@ -261,7 +384,89 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 pt-4">
+        {createdGroupSummary ? (
+          <div className="flex flex-col items-center justify-center p-6 sm:p-8 space-y-6 text-center animate-fade-in overflow-y-auto">
+            <div className="w-16 h-16 bg-green-100 border-2 border-green-500 rounded-full flex items-center justify-center text-green-600 shadow-sm shrink-0">
+              <CheckCircle2 className="w-10 h-10" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black font-cordel text-[#4a2e1b]">
+                Structure Créée avec Succès !
+              </h3>
+              <p className="text-sm text-[#8b4513] mt-1 font-medium">
+                L'espace pour <strong>{createdGroupSummary.name}</strong> ({createdGroupSummary.groupId}) est opérationnel, débloqué en période d'essai 30 jours et pré-rempli.
+              </p>
+            </div>
+
+            <div className="w-full bg-white/90 border-2 border-[#8b4513]/20 rounded-xl p-4 flex flex-col gap-3 text-left shadow-sm">
+              <span className="text-[11px] uppercase font-bold text-gray-500 tracking-wider">
+                🚀 Accès immédiat aux applications pour la démonstration :
+              </span>
+
+              <a
+                href={isLocal ? `http://localhost:5175/?tenant=${encodeURIComponent(createdGroupSummary.groupId)}` : `https://organizador.o-girador.com/?tenant=${encodeURIComponent(createdGroupSummary.groupId)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between p-3.5 bg-[#fdf6e7] hover:bg-amber-100 border-2 border-[#8b4513]/30 rounded-lg font-bold text-sm text-[#4a2e1b] shadow-xs transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">📋</span>
+                  <div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Organizad'Or</div>
+                    <div className="text-[11px] font-normal text-gray-600">ERP, Répertoire (3 morceaux prêts), Pupitres & Inventaire</div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-[#8b4513] group-hover:translate-x-0.5 transition-transform" />
+              </a>
+
+              <a
+                href={isLocal ? `http://localhost:5174` : `https://sequenciador.o-girador.com`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between p-3.5 bg-[#fdf6e7] hover:bg-amber-100 border-2 border-[#8b4513]/30 rounded-lg font-bold text-sm text-[#4a2e1b] shadow-xs transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🥁</span>
+                  <div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Séquenciad'Or</div>
+                    <div className="text-[11px] font-normal text-gray-600">Séquenceur circulaire, Speed Trainer & Balanço</div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-[#8b4513] group-hover:translate-x-0.5 transition-transform" />
+              </a>
+
+              <a
+                href={isLocal ? `http://localhost:5170/?app=mostrador&tenant=${encodeURIComponent(createdGroupSummary.groupId)}` : `https://mostrador.o-girador.com/${encodeURIComponent(createdGroupSummary.groupId)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-between p-3.5 bg-[#fdf6e7] hover:bg-amber-100 border-2 border-[#8b4513]/30 rounded-lg font-bold text-sm text-[#4a2e1b] shadow-xs transition-all group"
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xl">🌐</span>
+                  <div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Mostrad'Or</div>
+                    <div className="text-[11px] font-normal text-gray-600">Site vitrine public responsive généré automatiquement</div>
+                  </div>
+                </div>
+                <ExternalLink className="w-4 h-4 text-[#8b4513] group-hover:translate-x-0.5 transition-transform" />
+              </a>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const data = { ...formData, id: createdGroupSummary.groupId, groupId: createdGroupSummary.groupId };
+                setCreatedGroupSummary(null);
+                if (onSave) onSave(data);
+                onClose();
+              }}
+              className="px-8 py-3 bg-[#8b4513] hover:bg-[#6e370f] text-white font-bold text-sm rounded-lg shadow-md transition-all cursor-pointer"
+            >
+              Terminer et Fermer
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0 pt-4">
           <div className="flex-1 overflow-y-auto pr-2 space-y-6">
           
           {/* General info */}
@@ -731,6 +936,24 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
             </div>
             <p className="text-[10px] text-gray-500 italic">Laissez vide pour aucun quota (illimité ou géré ailleurs).</p>
           </div>
+          {/* Option Modèle de Démarrage (Uniquement pour une nouvelle création) */}
+          {!initialData && (
+            <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-lg flex items-center justify-between gap-3 shrink-0 my-3">
+              <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={prefillStarterKit}
+                  onChange={(e) => setPrefillStarterKit(e.target.checked)}
+                  className="w-4 h-4 text-[#8b4513] rounded border-gray-300 focus:ring-[#8b4513] cursor-pointer"
+                />
+                <span className="text-xs font-bold text-[#4a2e1b] flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  Pré-remplir avec un modèle de démarrage (pupitres types, 3 morceaux exemples, inventaire de base)
+                </span>
+              </label>
+            </div>
+          )}
+
           </div>
 
           {/* Form Actions */}
@@ -752,6 +975,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
           </div>
 
         </form>
+        )}
 
       </div>
     </div>
