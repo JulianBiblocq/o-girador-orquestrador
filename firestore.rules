@@ -725,22 +725,26 @@ service cloud.firestore {
         isSystemAdmin() ||
         (
           (
-            (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
-            (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
+            request.resource.data.get('authorId', '') == request.auth.uid ||
+            request.resource.data.get('auteurId', '') == request.auth.uid ||
+            request.resource.data.get('senderId', '') == request.auth.uid ||
+            request.resource.data.get('userId', '') == request.auth.uid
           ) &&
           isDocSameGroup()
         )
       );
 
-      // Mise à jour (Réponse, validation, vote sondage)
+      // Mise à jour (Réponse, validation, vote sondage, édition de fil)
       allow update: if isAuthenticated() && (
         isSystemAdmin() ||
         isAdminOrMestre() ||
         isModerator() ||
         // L'auteur peut modifier son propre sujet
         (
-          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
-          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+          resource.data.get('authorId', '') == request.auth.uid ||
+          resource.data.get('auteurId', '') == request.auth.uid ||
+          resource.data.get('senderId', '') == request.auth.uid ||
+          resource.data.get('userId', '') == request.auth.uid
         ) ||
         // N'importe quel membre autorisé peut répondre ou participer au fil
         (
@@ -757,71 +761,183 @@ service cloud.firestore {
             'poll', 
             'validationData', 
             'unreadBy',
-            'reactions'
+            'reactions',
+            'lectures'
           ])
         )
       );
 
-      // Suppression réservée à l'auteur ou aux admins
+      // Suppression réservée à l'auteur ou aux admins/modérateurs
       allow delete: if isAuthenticated() && (
         isSystemAdmin() ||
         isAdminOrMestre() ||
-        (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
-        (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+        isModerator() ||
+        resource.data.get('authorId', '') == request.auth.uid ||
+        resource.data.get('auteurId', '') == request.auth.uid ||
+        resource.data.get('senderId', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid
       );
 
       // Sous-collections éventuelles pour les messages / réponses
       match /messages/{messageId} {
         allow read: if isAuthenticated() && (
           isSystemAdmin() ||
+          isAdminOrMestre() ||
+          isModerator() ||
           get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
         );
         allow create: if isAuthenticated() && (
           isSystemAdmin() ||
           (
             (
-              (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
-              (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
+              request.resource.data.get('authorId', '') == request.auth.uid ||
+              request.resource.data.get('auteurId', '') == request.auth.uid ||
+              request.resource.data.get('senderId', '') == request.auth.uid ||
+              request.resource.data.get('userId', '') == request.auth.uid
             ) &&
             get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
           )
         );
-        allow update, delete: if isAuthenticated() && (
+        allow update: if isAuthenticated() && (
           isSystemAdmin() ||
           isAdminOrMestre() ||
-          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
-          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+          isModerator() ||
+          // L'auteur peut modifier son message
+          (
+            (
+              resource.data.get('authorId', '') == request.auth.uid ||
+              resource.data.get('auteurId', '') == request.auth.uid ||
+              resource.data.get('senderId', '') == request.auth.uid ||
+              resource.data.get('userId', '') == request.auth.uid
+            ) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'content', 'text', 'message', 'isEdited', 'editedAt', 'updatedAt', 'reactions', 'readBy', 'lectures'
+            ])
+          ) ||
+          // Les participants peuvent interagir (réactions, lectures, sondages)
+          (
+            get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'lectures', 'poll'])
+          )
+        );
+        allow delete: if isAuthenticated() && (
+          isSystemAdmin() ||
+          isAdminOrMestre() ||
+          isModerator() ||
+          resource.data.get('authorId', '') == request.auth.uid ||
+          resource.data.get('auteurId', '') == request.auth.uid ||
+          resource.data.get('senderId', '') == request.auth.uid ||
+          resource.data.get('userId', '') == request.auth.uid
         );
       }
 
       match /reponses/{reponseId} {
         allow read: if isAuthenticated() && (
           isSystemAdmin() ||
+          isAdminOrMestre() ||
+          isModerator() ||
           get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
         );
         allow create: if isAuthenticated() && (
           isSystemAdmin() ||
           (
             (
-              (request.resource.data.keys().hasAny(['authorId']) && request.resource.data.authorId == request.auth.uid) ||
-              (request.resource.data.keys().hasAny(['auteurId']) && request.resource.data.auteurId == request.auth.uid)
+              request.resource.data.get('authorId', '') == request.auth.uid ||
+              request.resource.data.get('auteurId', '') == request.auth.uid ||
+              request.resource.data.get('senderId', '') == request.auth.uid ||
+              request.resource.data.get('userId', '') == request.auth.uid
             ) &&
             get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower()
           )
         );
-        allow update, delete: if isAuthenticated() && (
+        allow update: if isAuthenticated() && (
           isSystemAdmin() ||
           isAdminOrMestre() ||
-          (resource.data.keys().hasAny(['authorId']) && resource.data.authorId == request.auth.uid) ||
-          (resource.data.keys().hasAny(['auteurId']) && resource.data.auteurId == request.auth.uid)
+          isModerator() ||
+          // L'auteur peut modifier sa réponse
+          (
+            (
+              resource.data.get('authorId', '') == request.auth.uid ||
+              resource.data.get('auteurId', '') == request.auth.uid ||
+              resource.data.get('senderId', '') == request.auth.uid ||
+              resource.data.get('userId', '') == request.auth.uid
+            ) &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'content', 'text', 'message', 'isEdited', 'editedAt', 'updatedAt', 'reactions', 'readBy', 'lectures'
+            ])
+          ) ||
+          // Les participants peuvent interagir (réactions, lectures, sondages)
+          (
+            get(/databases/$(database)/documents/forum/$(threadId)).data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'readBy', 'lectures', 'poll'])
+          )
+        );
+        allow delete: if isAuthenticated() && (
+          isSystemAdmin() ||
+          isAdminOrMestre() ||
+          isModerator() ||
+          resource.data.get('authorId', '') == request.auth.uid ||
+          resource.data.get('auteurId', '') == request.auth.uid ||
+          resource.data.get('senderId', '') == request.auth.uid ||
+          resource.data.get('userId', '') == request.auth.uid
         );
       }
     }
 
+    match /forum_messages/{messageId} {
+      allow read: if isAuthenticated() && isDocSameGroup();
+      allow create: if isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          (
+            request.resource.data.get('authorId', '') == request.auth.uid ||
+            request.resource.data.get('auteurId', '') == request.auth.uid ||
+            request.resource.data.get('senderId', '') == request.auth.uid ||
+            request.resource.data.get('userId', '') == request.auth.uid
+          ) &&
+          isDocSameGroup()
+        )
+      );
+      allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        isModerator() ||
+        // 1. L'auteur peut modifier son message
+        (
+          (
+            resource.data.get('authorId', '') == request.auth.uid ||
+            resource.data.get('auteurId', '') == request.auth.uid ||
+            resource.data.get('senderId', '') == request.auth.uid ||
+            resource.data.get('userId', '') == request.auth.uid
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'content', 'text', 'message', 'isEdited', 'editedAt', 'updatedAt', 'reactions', 'readBy', 'lectures'
+          ])
+        ) ||
+        // 2. Interactions de groupe
+        (
+          isDocSameGroup() &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'reactions', 'readBy', 'lectures', 'poll'
+          ])
+        )
+      );
+      allow delete: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        isModerator() ||
+        resource.data.get('authorId', '') == request.auth.uid ||
+        resource.data.get('auteurId', '') == request.auth.uid ||
+        resource.data.get('senderId', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid
+      );
+    }
+
     match /conversations/{conversationId} {
       allow read: if isAuthenticated() && (
-        (resource != null && request.auth.uid in resource.data.participantIds) || 
-        isAdminOrMestre()
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        (resource != null && request.auth.uid in resource.data.participantIds)
       );
       allow create: if isAuthenticated() && 
         request.auth.uid in request.resource.data.participantIds &&
@@ -831,50 +947,116 @@ service cloud.firestore {
           isSystemAdmin()
         );
       allow update: if isAuthenticated() && (
-        (resource != null && request.auth.uid in resource.data.participantIds) ||
-        isAdminOrMestre()
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        (resource != null && request.auth.uid in resource.data.participantIds)
       );
-      allow delete: if isAdminOrMestre();
+      allow delete: if isAdminOrMestre() || isSystemAdmin();
     }
 
     match /conversation_messages/{messageId} {
       allow read: if isAuthenticated() && (
-        (resource != null && request.auth.uid in resource.data.participantIds) || 
-        isAdminOrMestre()
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        (resource != null && request.auth.uid in resource.data.participantIds)
       );
-      allow create: if isAuthenticated() && 
-        request.resource.data.senderId == request.auth.uid &&
-        request.auth.uid in request.resource.data.participantIds;
-      allow update: if isAuthenticated() && 
-        request.auth.uid in resource.data.participantIds &&
+      allow create: if isAuthenticated() && (
+        request.resource.data.get('senderId', '') == request.auth.uid ||
+        request.resource.data.get('authorId', '') == request.auth.uid ||
+        request.resource.data.get('userId', '') == request.auth.uid ||
+        request.resource.data.get('auteurId', '') == request.auth.uid
+      ) && request.auth.uid in request.resource.data.participantIds;
+      allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        // 1. L'auteur du message peut modifier son propre message (contenu et métadonnées d'édition)
         (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy']) ||
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
-        );
+          (
+            resource.data.get('authorId', '') == request.auth.uid ||
+            resource.data.get('senderId', '') == request.auth.uid ||
+            resource.data.get('userId', '') == request.auth.uid ||
+            resource.data.get('auteurId', '') == request.auth.uid
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'content', 'text', 'message', 'isEdited', 'editedAt', 'updatedAt', 'reactions', 'readBy', 'lectures'
+          ])
+        ) ||
+        // 2. Tous les participants de la conversation peuvent mettre à jour les interactions non-textuelles
+        (
+          resource != null &&
+          resource.data.keys().hasAny(['participantIds']) &&
+          request.auth.uid in resource.data.participantIds &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'readBy', 'reactions', 'lectures'
+          ])
+        )
+      );
       allow delete: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        isAdminOrMestre()
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        resource.data.get('authorId', '') == request.auth.uid ||
+        resource.data.get('senderId', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid ||
+        resource.data.get('auteurId', '') == request.auth.uid
       );
     }
 
     match /private_messages/{messageId} {
       allow read: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        resource.data.recipientId == request.auth.uid
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        resource.data.get('senderId', '') == request.auth.uid || 
+        resource.data.get('recipientId', '') == request.auth.uid ||
+        resource.data.get('authorId', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid ||
+        resource.data.get('auteurId', '') == request.auth.uid
       );
       allow create: if isAuthenticated() && (
-        request.resource.data.senderId == request.auth.uid
+        request.resource.data.get('senderId', '') == request.auth.uid ||
+        request.resource.data.get('authorId', '') == request.auth.uid ||
+        request.resource.data.get('userId', '') == request.auth.uid ||
+        request.resource.data.get('auteurId', '') == request.auth.uid
       );
       allow update: if isAuthenticated() && (
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        // 1. L'auteur du message peut modifier son contenu et les métadonnées d'édition
         (
-          resource.data.recipientId == request.auth.uid &&
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']))
+          (
+            resource.data.get('authorId', '') == request.auth.uid ||
+            resource.data.get('senderId', '') == request.auth.uid ||
+            resource.data.get('userId', '') == request.auth.uid ||
+            resource.data.get('auteurId', '') == request.auth.uid
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'content', 'text', 'message', 'isEdited', 'editedAt', 'updatedAt', 'reactions'
+          ])
         ) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])
+        // 2. Le destinataire peut marquer comme lu
+        (
+          (
+            resource.data.get('recipientId', '') == request.auth.uid ||
+            resource.data.get('targetUserId', '') == request.auth.uid
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readBy', 'lectures'])
+        ) ||
+        // 3. Interactions et réactions pour les participants
+        (
+          (
+            resource.data.get('senderId', '') == request.auth.uid ||
+            resource.data.get('recipientId', '') == request.auth.uid ||
+            resource.data.get('authorId', '') == request.auth.uid
+          ) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions', 'read', 'readBy', 'lectures'])
+        )
       );
       allow delete: if isAuthenticated() && (
-        resource.data.senderId == request.auth.uid || 
-        isAdminOrMestre()
+        isSystemAdmin() ||
+        isAdminOrMestre() ||
+        resource.data.get('authorId', '') == request.auth.uid ||
+        resource.data.get('senderId', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid ||
+        resource.data.get('auteurId', '') == request.auth.uid
       );
     }
 

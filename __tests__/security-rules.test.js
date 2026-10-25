@@ -429,5 +429,95 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
       }));
     });
   });
+
+  describe('Sécurité Porte-Voix — Édition de messages (Groupes, MP, Forum)', () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        // Utilisateurs de test
+        await db.doc('users/member_sender').set({ groupId: 'samambaia', role: 'membre' });
+        await db.doc('users/member_reader').set({ groupId: 'samambaia', role: 'membre' });
+        await db.doc('users/member_intruder').set({ groupId: 'cordao', role: 'membre' });
+
+        // Message de groupe (conversation_messages)
+        await db.doc('conversation_messages/msg_group_1').set({
+          conversationId: 'conv_123',
+          groupId: 'samambaia',
+          senderId: 'member_sender',
+          participantIds: ['member_sender', 'member_reader'],
+          content: 'Message original groupe',
+          timestamp: new Date().toISOString()
+        });
+
+        // Message privé legacy (private_messages)
+        await db.doc('private_messages/msg_pm_1').set({
+          senderId: 'member_sender',
+          recipientId: 'member_reader',
+          content: 'Message original PM',
+          timestamp: new Date().toISOString()
+        });
+
+        // Fil de discussion de salon (forum)
+        await db.doc('forum/thread_1').set({
+          groupId: 'samambaia',
+          authorId: 'member_sender',
+          titre: 'Discussion générale',
+          reponses: [
+            { auteurId: 'member_sender', message: 'Première réponse', date: new Date().toISOString() }
+          ]
+        });
+      });
+    });
+
+    it('Autorise l\'auteur à modifier son message de groupe (conversation_messages)', async () => {
+      const senderDb = testEnv.authenticatedContext('member_sender').firestore();
+      await assertSucceeds(senderDb.doc('conversation_messages/msg_group_1').update({
+        content: 'Message modifié avec succès',
+        isEdited: true,
+        editedAt: new Date().toISOString()
+      }));
+    });
+
+    it('Interdit à un participant non-auteur de modifier le texte d\'un message de groupe', async () => {
+      const readerDb = testEnv.authenticatedContext('member_reader').firestore();
+      await assertFails(readerDb.doc('conversation_messages/msg_group_1').update({
+        content: 'Piratage de texte',
+        isEdited: true
+      }));
+    });
+
+    it('Autorise un autre participant à interagir (réactions, readBy) sur un message de groupe', async () => {
+      const readerDb = testEnv.authenticatedContext('member_reader').firestore();
+      await assertSucceeds(readerDb.doc('conversation_messages/msg_group_1').update({
+        reactions: { '👍': ['member_reader'] }
+      }));
+    });
+
+    it('Autorise l\'auteur à modifier son message privé (private_messages)', async () => {
+      const senderDb = testEnv.authenticatedContext('member_sender').firestore();
+      await assertSucceeds(senderDb.doc('private_messages/msg_pm_1').update({
+        content: 'PM modifié avec succès',
+        isEdited: true,
+        editedAt: new Date().toISOString()
+      }));
+    });
+
+    it('Interdit au destinataire de modifier le contenu du message privé de l\'expéditeur', async () => {
+      const readerDb = testEnv.authenticatedContext('member_reader').firestore();
+      await assertFails(readerDb.doc('private_messages/msg_pm_1').update({
+        content: 'Faux message édité par le lecteur'
+      }));
+    });
+
+    it('Autorise la mise à jour des réponses d\'une discussion forum par les membres du même groupe', async () => {
+      const senderDb = testEnv.authenticatedContext('member_sender').firestore();
+      await assertSucceeds(senderDb.doc('forum/thread_1').update({
+        reponses: [
+          { auteurId: 'member_sender', message: 'Réponse éditée', isEdited: true, editedAt: new Date().toISOString() }
+        ],
+        derniereModification: new Date().toISOString()
+      }));
+    });
+  });
 });
 
