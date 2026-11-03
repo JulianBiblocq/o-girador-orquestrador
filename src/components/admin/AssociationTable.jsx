@@ -3,6 +3,8 @@ import { Search, Edit3, Trash2, HardDrive, Crown } from 'lucide-react';
 import { calculateSubscriptionStatus, getAccessRights } from '../../utils/subscriptionRights';
 import { db } from '../../services/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
+import TenantUsageSummaryBadge from '../usage/TenantUsageSummaryBadge';
+import TenantUsageDetailModal from '../usage/TenantUsageDetailModal';
 
 const formatBytes = (bytes) => {
   if (bytes == null) return '0 Go';
@@ -43,6 +45,9 @@ export default function AssociationTable({
   onDelete,
   onCreateMestre
 }) {
+  const [inspectingAssoc, setInspectingAssoc] = useState(null);
+  const [syncedStatsByGroup, setSyncedStatsByGroup] = useState({});
+
   return (
     <div className="bg-white/90 xilo-border rounded-xl p-6 space-y-6 shadow-xl">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -72,6 +77,7 @@ export default function AssociationTable({
               <th className="p-3">Expiration</th>
               <th className="p-3">Statut Soft Lock</th>
               <th className="p-3">Stockage</th>
+              <th className="p-3">Santé & Usage</th>
               <th className="p-3 text-center">Accès Apps</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
@@ -156,6 +162,16 @@ export default function AssociationTable({
                     })()}
                   </td>
 
+                  <td className="p-3">
+                    <TenantUsageSummaryBadge
+                      association={{
+                        ...assoc,
+                        usageStats: syncedStatsByGroup[assoc.groupId || assoc.id] || assoc.usageStats
+                      }}
+                      onOpenDetail={(targetAssoc) => setInspectingAssoc(targetAssoc)}
+                    />
+                  </td>
+
                   <td className="p-3 text-center">
                     <div className="flex items-center justify-center gap-1 text-[10px] font-bold">
                       <span className={`px-1.5 py-0.5 rounded ${assoc.appAccess?.sequenceur ? 'bg-amber-700 text-white' : 'bg-gray-200 text-gray-400'}`}>SEQ {assoc.quotas?.sequenciador != null ? `(${assoc.quotas.sequenciador})` : ''}</span>
@@ -189,6 +205,15 @@ export default function AssociationTable({
           </tbody>
         </table>
       </div>
+
+      <TenantUsageDetailModal
+        association={inspectingAssoc}
+        isOpen={Boolean(inspectingAssoc)}
+        onClose={() => setInspectingAssoc(null)}
+        onStatsSynced={(gId, stats) =>
+          setSyncedStatsByGroup((prev) => ({ ...prev, [gId]: stats }))
+        }
+      />
     </div>
   );
 }
