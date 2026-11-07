@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ArrowLeft, Plus, ExternalLink, Calendar, Edit3 } from 'lucide-react';
 import { db } from '../../../services/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import EventsAnalysisModal from '../modals/EventsAnalysisModal';
@@ -12,7 +13,7 @@ export default function OrganizadorView({ userData, onBack }) {
 
   const handleOpenOrganizador = (path = '') => {
     const url = getEcosystemUrl('organizador', path);
-    launchCrossApp(url, { appKey: 'organizador', appLabel: "Organizad'Or" });
+    launchCrossApp(url, { appKey: 'organizador', appLabel: 'Organizador' });
   };
 
   useEffect(() => {

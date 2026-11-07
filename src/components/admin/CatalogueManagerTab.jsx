@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2, Trash2, Plus, Save, X, UploadCloud, FileJson, Image as ImageIcon } from 'lucide-react';
+import { Edit2, Trash2, Plus, Save, X, UploadCloud, FileJson, Image as ImageIcon, CheckCircle2 } from 'lucide-react';
 import { fetchPacks, savePack, deletePack } from '../../services/packsService';
 
 const APP_TARGETS = [
