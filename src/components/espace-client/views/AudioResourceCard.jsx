@@ -1,7 +1,7 @@
 /**
  * Carte Ressource Cordel (AudioResourceCard.jsx).
  * Affiche un document Firestore (preset, section, pattern) avec pré-écoute instantanée,
- * édition en ligne du titre, sélecteur de visibilité et ouverture SSO vers Séquenciad'Or.
+ * édition en ligne du titre, sélecteur de visibilité et ouverture SSO vers Sequenciador.
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -100,7 +100,7 @@ export default function AudioResourceCard({
     if (type === 'patterns') queryParam = `?editPatternId=${item.id}`;
 
     const targetUrl = getEcosystemUrl('sequenciador', queryParam);
-    launchCrossApp(targetUrl, { appLabel: "Séquenciad'Or", appKey: 'sequenciador' });
+    launchCrossApp(targetUrl, { appLabel: 'Sequenciador', appKey: 'sequenciador' });
   };
 
   const currentVisibility = (item.visibility === 'public' || item.isPublic)
@@ -225,7 +225,7 @@ export default function AudioResourceCard({
           type="button"
           onClick={handleOpenInSequencer}
           className="flex items-center gap-1.5 px-3 py-1 text-xs font-bold text-amber-200 bg-amber-950/40 hover:bg-amber-900/60 border border-amber-800/50 hover:border-amber-600 rounded-lg transition-all shadow-sm"
-          title="Ouvrir dans Séquenciad'Or"
+          title="Ouvrir dans Sequenciador"
         >
           <span>🎛️</span>
           <span>Ouvrir</span>

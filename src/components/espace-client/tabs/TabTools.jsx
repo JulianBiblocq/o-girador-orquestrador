@@ -60,12 +60,12 @@ export default function TabTools({ associationData, userData }) {
 
   // Liste globale des avantages (du meilleur forfait) pour la comparaison
   const globalFeatures = [
-    { label: "Séquenceur & Créateur de Toadas", minLevel: 'decouverte' },
+    { label: "Sequenciador & Créateur de Toadas", minLevel: 'decouverte' },
     { label: "Sauvegarde Cloud & Export HD", minLevel: 'createur' },
-    { label: "O Girador Manager (Gestion asso)", minLevel: 'gestion' },
-    { label: "Site Vitrine Public", minLevel: 'gestion' },
+    { label: "O Girador Organizador (Gestion asso)", minLevel: 'gestion' },
+    { label: "Site Vitrine Public (Mostrador)", minLevel: 'gestion' },
     { label: "Gestion Agenda, Présences, Trésorerie", minLevel: 'gestion' },
-    { label: "Multi-univers culturels (Samba, Capoeira...)", minLevel: 'integrale' },
+    { label: "Multi-univers culturels (Batucada, Samba-Reggae, Samba, Capoeira...)", minLevel: 'integrale' },
     { label: "Statistiques avancées & Domaine personnalisé", minLevel: 'integrale' }
   ];
 
@@ -99,49 +99,20 @@ export default function TabTools({ associationData, userData }) {
   };
 
   const appsRights = [
-    {
-      id: 'sequenceur',
-      label: 'Sequenciador',
-      icon: <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: hasPack('sequenceur')
-    },
-    {
-      id: 'manager',
-      label: 'Organizador',
-      icon: <img src="/logos/organizador.png" alt="Organizador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: hasPack('manager')
-    },
-    {
-      id: 'vitrine',
-      label: 'Mostrador',
-      icon: <img src="/logos/mostrador.png" alt="Mostrador" className="w-6 h-6 object-contain rounded-full drop-shadow-sm" />,
-      isOwned: hasPack('vitrine')
-    },
-    {
-      id: 'dancador',
-      label: 'Dançador',
-      icon: <img src="/logos/dancador.png" alt="Dançador" className="w-6 h-6 object-contain drop-shadow-sm" />,
-      isOwned: hasPack('dancador')
-    }
-  ];
+    { id: 'sequenceur', label: 'Sequenciador', icon: <img src="/logos/sequenciador.png" alt="Sequenciador" className="w-6 h-6 object-contain drop-shadow-sm" />, isOwned: hasPack('sequenceur'), enabled: true },
+    { id: 'manager', label: 'Organizador', icon: <img src="/logos/organizador.png" alt="Organizador" className="w-6 h-6 object-contain drop-shadow-sm" />, isOwned: hasPack('manager'), enabled: true },
+    { id: 'vitrine', label: 'Mostrador', icon: <img src="/logos/mostrador.png" alt="Mostrador" className="w-6 h-6 object-contain rounded-full drop-shadow-sm" />, isOwned: hasPack('vitrine'), enabled: true },
+    { id: 'dancador', label: 'Dançador', icon: <img src="/logos/dancador.png" alt="Dançador" className="w-6 h-6 object-contain drop-shadow-sm" />, isOwned: hasPack('dancador'), enabled: true },
+    { id: 'afinador', label: 'Afinador', icon: null, isOwned: false, enabled: false, comingSoon: true }
+  ].filter(app => app.enabled !== false);
 
-  // --- DROITS UNIVERS CULTURELS ---
+  // --- DROITS UNIVERS CULTURELS (5 univers canoniques) ---
   const cultureRights = [
-    {
-      id: 'maracatu',
-      label: 'Maracatu de Baque Virado',
-      isOwned: associationData?.universeAccess?.maracatu !== false // Par défaut actif
-    },
-    {
-      id: 'capoeira',
-      label: 'Capoeira Regional & Angola',
-      isOwned: associationData?.universeAccess?.capoeira === true
-    },
-    {
-      id: 'samba',
-      label: 'Samba de Enredo & Batucada',
-      isOwned: associationData?.universeAccess?.samba === true
-    }
+    { id: 'maracatu', label: 'Maracatu de Baque Virado', isOwned: associationData?.universeAccess?.maracatu !== false },
+    { id: 'batucada', label: 'Batucada Festive', isOwned: associationData?.universeAccess?.batucada === true },
+    { id: 'sambareggae', label: 'Samba-Reggae & Blocos Afro', isOwned: associationData?.universeAccess?.sambareggae === true || associationData?.universeAccess?.samba_reggae === true },
+    { id: 'samba', label: 'Samba & Escola de Samba', isOwned: associationData?.universeAccess?.samba === true },
+    { id: 'capoeira', label: 'Capoeira Regional & Angola', isOwned: associationData?.universeAccess?.capoeira === true }
   ];
 
   // --- EXTENSIONS ---

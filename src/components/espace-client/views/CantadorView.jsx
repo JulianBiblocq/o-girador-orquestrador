@@ -69,7 +69,7 @@ export default function CantadorView({ onBack, groupId }) {
             <span>Packs de Chants</span>
           </div>
           <p className="text-xs text-[#4a2e1b] leading-relaxed">
-            Exportez vos packs de toadas vers Séquenciad'Or et partagez vos compositions avec vos pupitres.
+            Exportez vos packs de toadas vers Sequenciador et partagez vos compositions avec vos pupitres.
           </p>
         </div>
       </div>

@@ -83,14 +83,14 @@
       "feat3": "Formulário de Contato & Inscrição: Cadastro direto de novos batuqueiros.",
       "feat4": "Galeria de Mídia & Toadas: Audição de faixas e vídeos de apresentações.",
       "demoButton": "Ver exemplo ao vivo (Samambaia) ↗",
-      "note": "Integração direta com o Manager"
+      "note": "Integração direta com o Organizador"
     },
     "dancador": {
       "badge": "Novo",
-      "title": "O Girador-Dançador",
+      "title": "O Girador Dançador",
       "description": "Ferramenta pedagógica e sequenciador de passos de dança para construir suas coreografias, gerenciar os posicionamentos e preparar seus eventos.",
       "feat1": "Sequenciador de Passos: Construa e aprenda uma coreografia completa passo a passo.",
-      "feat2": "Formações Modulares: Crie os deslocamentos (em linha, em roda) com a bateria e os mestres.",
+      "feat2": "Formações Modulares: Crie os deslocamentos (em linha, em roda) com o batuque e os mestres.",
       "feat3": "Vídeos Pedagógicos: Os mestres compartilham seus passos sincronizados aos ritmos do Sequenciador.",
       "feat4": "Programas & Eventos: Prepare o roteiro de um ensaio ou de uma apresentação (integrado ao Organizador)."
     }

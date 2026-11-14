@@ -11,7 +11,7 @@ import { awardAxePoints } from '../../../services/gamificationService';
 import presetsDump from '../../../presets_dump.json';
 import { launchCrossApp } from '../../../utils/crossAppAuth';
 import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
-
+import { isLegacySamambaiaGroup, buildGroupQueryVariants } from '../../../utils/tenantGroupHelpers';
 export default function GlobalHealthStats({ userData, associationData }) {
   const [rhythmToDelete, setRhythmToDelete] = useState(null);
   const [isDeletingRhythm, setIsDeletingRhythm] = useState(false);
@@ -423,14 +423,9 @@ export default function GlobalHealthStats({ userData, associationData }) {
     }
 
     const canonicalGroupId = rawGroupId ? String(rawGroupId).trim().toLowerCase() : '';
-    const isSamambaia = canonicalGroupId === 'samambaia' || canonicalGroupId.includes('sammbia') || userData?.mestreId === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1';
+    const isSamambaia = isLegacySamambaiaGroup(canonicalGroupId);
     const effectiveMestreId = userData?.mestreId || (isSamambaia ? 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' : null);
-
-    const groupVariants = Array.from(new Set([
-      rawGroupId,
-      canonicalGroupId,
-      ...(isSamambaia ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
-    ])).filter(Boolean);
+    const groupVariants = buildGroupQueryVariants(rawGroupId);
 
     const unsubs = [];
 

@@ -1,21 +1,22 @@
-# Directives d'Agent & Règles Cursor — Orchestrad'Or
+# Directives d'Agent & Règles Cursor — Orquestrador
+
+## 0. RÈGLE STRICTE DE NOMMAGE DES APPLICATIONS O GIRADOR
+Orthographe brésilienne pure obligatoire (zéro apostrophe, zéro majuscule interne avant `-or`, zéro `ch`, cédille obligatoire sur **Dançador**) :
+**O Girador** | **Orquestrador** | **Organizador** | **Sequenciador** | **Cantador** | **Dançador** | **Mostrador** | **Afinador** *(en conception, `enabled: false`)*
 
 ## RÈGLE STRICTE DES PORTS LOCAUX (ÉCOSYSTÈME O GIRADOR)
 - Cet agent doit respecter la cartographie des ports :
-  * Orquestrad'Or : 5170
-  * Séquenciad'Or : 5174
-  * Organizad'Or : 5175
-  * Dançad'Or : 5176
-- Interdiction de modifier le port local sans instruction explicite.
-- `strictPort: true` est obligatoire : si le port est occupé, tuer les processus résiduels au lieu de changer de port.
-- Les tests E2E et les liens de navigation locale doivent pointer rigoureusement vers ces ports dédiés.
+  * **Orquestrador** : `5170`
+  * **Sequenciador** : `5174`
+  * **Organizador** / **Mostrador** : `5175`
+  * **Dançador** : `5176`
+  * **Cantador** : `5177`
+  * **Afinador** *(réservé, inactif)* : `5178`
+- Interdiction de modifier le port local sans instruction explicite (`strictPort: true` obligatoire).
 
 ---
-### 🏛️ Gouvernance Centralisée des Règles Firebase & Sécurité (Source Unique de Vérité — SSOT)
-- Ce projet (**Orchestrad'Or**) est l'**unique source de vérité (SSOT)** pour l'ensemble de l'écosystème O Girador.
-- Fichiers maîtres sous gouvernance : `firestore.rules` et `storage.rules`.
-- Déploiement autorisé uniquement ici :
-  ```bash
-  firebase deploy --only firestore:rules
-  firebase deploy --only storage
-  ```
+### 🏛️ Gouvernance Centralisée des Règles Firebase & Modularité
+- **Orquestrador** est l'**unique source de vérité (SSOT)** pour `firestore.rules` et `storage.rules`.
+- Cloud Functions isolées sous `"codebase": "orquestrador"` (`firebase deploy --only functions:orquestrador`).
+- **Plafond `< 145 lignes` dans `src/`** (Mode Cliquet `newLines <= oldLines` sur les fichiers legacy `>= 145` lignes, hors `src/locales/*`).
+- Interdiction de `Bateria` en contexte Maracatu (`Batuque` / `Baque`) et de `IA` dans l'UI.

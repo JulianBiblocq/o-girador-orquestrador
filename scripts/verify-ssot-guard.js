@@ -1,4 +1,4 @@
-// scripts/verify-ssot-guard.js
+// scripts/verify-ssot-guard.js — Audit SSOT Firebase exécuté depuis Orquestrador & CI
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -6,17 +6,29 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const SATELLITES = [
-  { name: 'o-girador-sequenciador', relPath: 'o-girador-sequenciador/firebase.json' },
-  { name: 'o-girador-organizador', relPath: 'o-girador-organizador/firebase.json' },
-  { name: 'o-girador-organizador (backend)', relPath: 'o-girador-organizador/ogirador-backend/firebase.json' },
-  { name: 'o-girador-dancador', relPath: 'o-girador-dancador/firebase.json' }
+const SATELLITE_REPOS = [
+  'o-girador-sequenciador',
+  'o-girador-organizador',
+  'o-girador-vocal-lab',
+  'o-girador-dancador'
 ];
 
-let hasErrors = false;
-console.log('🔍 Audit des fichiers de configuration satellites...\n');
+const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.firebase', 'coverage']);
+const RULES_FILE_RE = /^[^/]*(?:firestore|storage)[^/]*\.rules(?:\..+)?$/i;
 
-// Résolution de la racine contenant les satellites
+function walkSatelliteFiles(dir, onFile) {
+  if (!fs.existsSync(dir)) return;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (IGNORE_DIRS.has(entry.name)) continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkSatelliteFiles(full, onFile);
+    else onFile(full, entry.name);
+  }
+}
+
+let hasErrors = false;
+console.log('🔍 Audit SSOT des applications satellites (firebase.json & scan récursif *.rules*)...\n');
+
 const candidateRoots = [
   process.env.SATELLITES_ROOT,
   path.resolve(process.cwd(), '..'),
@@ -24,61 +36,62 @@ const candidateRoots = [
   process.cwd()
 ].filter(Boolean);
 
-const rootDir = candidateRoots.find(root => 
-  SATELLITES.some(s => fs.existsSync(path.resolve(root, s.relPath)))
-) || path.resolve(__dirname, '..', '..');
+const rootDir =
+  candidateRoots.find((root) => SATELLITE_REPOS.some((repo) => fs.existsSync(path.resolve(root, repo)))) ||
+  path.resolve(__dirname, '..', '..');
 
-// 1. Audit des sections interdites dans les firebase.json satellites
-SATELLITES.forEach(({ name, relPath }) => {
-  const firebaseJsonPath = path.resolve(rootDir, relPath);
+// 0. Vérification de l'autorité SSOT locale d'Orquestrador
+const ssotDir = path.resolve(__dirname, '..');
+for (const masterRule of ['firestore.rules', 'storage.rules', 'firebase.json']) {
+  const masterPath = path.join(ssotDir, masterRule);
+  if (!fs.existsSync(masterPath)) {
+    console.error(`❌ [ERREUR SSOT] Fichier maître manquant dans Orquestrador : ${masterRule}`);
+    hasErrors = true;
+  }
+}
 
-  if (!fs.existsSync(firebaseJsonPath)) {
-    console.warn(`⚠️ [SKIP] Introuvable : ${relPath}`);
-    return;
+// 1. Audit récursif de chaque dépôt satellite présent
+for (const repo of SATELLITE_REPOS) {
+  const repoDir = path.resolve(rootDir, repo);
+  if (!fs.existsSync(repoDir)) {
+    console.warn(`⚠️ [SKIP] Dépôt non extrait dans l'espace courant : ${repo}`);
+    continue;
   }
 
-  try {
-    const raw = fs.readFileSync(firebaseJsonPath, 'utf-8');
-    const config = JSON.parse(raw);
-    const forbiddenKeys = ['firestore', 'storage'].filter((k) => k in config);
+  let rulesFound = 0;
+  walkSatelliteFiles(repoDir, (fullPath, fileName) => {
+    const relPath = path.relative(rootDir, fullPath).replace(/\\/g, '/');
 
-    if (forbiddenKeys.length > 0) {
-      console.error(`❌ [VIOLATION SSOT] ${relPath} contient des sections interdites : ${forbiddenKeys.join(', ')}`);
+    if (fileName.toLowerCase() === 'firebase.json') {
+      try {
+        const config = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+        const forbiddenKeys = ['firestore', 'storage'].filter((k) => k in config);
+        if (forbiddenKeys.length > 0) {
+          console.error(`❌ [VIOLATION SSOT] ${relPath} contient des sections interdites : ${forbiddenKeys.join(', ')}`);
+          hasErrors = true;
+        } else {
+          console.log(`✅ [OK] ${relPath} désarmé (sections actives : ${Object.keys(config).join(', ') || 'aucune'})`);
+        }
+      } catch (err) {
+        console.error(`❌ [ERREUR] Impossible d'analyser ${relPath} :`, err.message);
+        hasErrors = true;
+      }
+    }
+
+    if (RULES_FILE_RE.test(fileName)) {
+      rulesFound++;
+      console.error(`❌ [VIOLATION SSOT] Fichier de règle fantôme ou déprécié détecté : ${relPath}`);
       hasErrors = true;
-    } else {
-      console.log(`✅ [OK] ${name} est correctement désarmé (sections actives : ${Object.keys(config).join(', ') || 'aucune'})`);
     }
-  } catch (err) {
-    console.error(`❌ [ERREUR] Impossible d'analyser ${relPath} :`, err.message);
-    hasErrors = true;
-  }
-});
+  });
 
-// 2. Audit anti-règles fantômes (vérifier qu'aucun fichier physique actif n'a été réintroduit)
-console.log('\n🔍 Audit anti-règles fantômes actives dans les satellites...');
-const ghostRules = [
-  'o-girador-sequenciador/firestore.rules',
-  'o-girador-sequenciador/storage.rules',
-  'o-girador-organizador/storage.rules',
-  'o-girador-organizador/ogirador-backend/firestore.rules'
-];
-
-ghostRules.forEach((ruleRelPath) => {
-  const fullPath = path.resolve(rootDir, ruleRelPath);
-  if (fs.existsSync(fullPath)) {
-    console.error(`❌ [VIOLATION SSOT] Fichier de règle actif résiduel : ${ruleRelPath}`);
-    console.error(`   Ce fichier doit être renommé en ${ruleRelPath}.DEPRECATED pour éviter tout ciblage IDE/IA.`);
-    hasErrors = true;
-  } else {
-    const deprecatedPath = `${fullPath}.DEPRECATED`;
-    if (fs.existsSync(deprecatedPath)) {
-      console.log(`✅ [ARCHIVÉ] ${ruleRelPath} est bien archivé sous .DEPRECATED`);
-    }
+  if (rulesFound === 0) {
+    console.log(`✅ [CLEAN] ${repo} : aucun fichier *.rules* résiduel.`);
   }
-});
+}
 
 if (hasErrors) {
-  console.error('\n🚨 Échec : Une application satellite risque d\'écraser les règles distantes.');
+  console.error('\n🚨 Échec : Une application satellite risque d\'écraser ou concurrencer les règles SSOT.');
   process.exit(1);
 } else {
   console.log('\n✨ Contrôle validé : Orquestrador demeure l\'unique SSOT.');

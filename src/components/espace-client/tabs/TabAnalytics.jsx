@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 import { Users, Globe, Calendar, Sparkles, AlertCircle } from 'lucide-react';
+import { buildGroupQueryVariants } from '../../../utils/tenantGroupHelpers';
 
 export default function TabAnalytics({ associationData, userData }) {
   const [memberCount, setMemberCount] = useState(0);
@@ -21,12 +22,7 @@ export default function TabAnalytics({ associationData, userData }) {
         return;
       }
       
-      const rawGid = userData.groupId;
-      const groupVariants = Array.from(new Set([
-        rawGid,
-        rawGid ? String(rawGid).trim().toLowerCase() : '',
-        ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
-      ])).filter(Boolean);
+      const groupVariants = buildGroupQueryVariants(userData.groupId);
 
       try {
         // 1. Récupération de tous les membres pour les effectifs et pupitres

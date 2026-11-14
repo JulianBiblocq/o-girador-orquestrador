@@ -7,8 +7,8 @@ import WorldMapNetwork from '../../ui/WorldMapNetwork';
 import TerreiroSharedBank from './TerreiroSharedBank';
 
 export default function TerreiroView({ associationData, userData, onBack }) {
-  const [baterias, setBaterias] = useState([]);
-  const [loadingBaterias, setLoadingBaterias] = useState(true);
+  const [networkGroups, setNetworkGroups] = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(true);
   const [artisans, setArtisans] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   
@@ -20,8 +20,8 @@ export default function TerreiroView({ associationData, userData, onBack }) {
   const userUniverse = associationData?.universeId || 'maracatu';
 
   useEffect(() => {
-    // 1. Fetch ALL Baterias (tous les univers)
-    const fetchBaterias = async () => {
+    // 1. Fetch ALL Groups (tous les univers)
+    const fetchNetworkGroups = async () => {
       try {
         const ref = collection(db, 'associations');
         const snap = await getDocs(ref);
@@ -35,15 +35,15 @@ export default function TerreiroView({ associationData, userData, onBack }) {
           }
         });
         
-        setBaterias(docs);
+        setNetworkGroups(docs);
       } catch (error) {
-        console.error("Erreur fetch baterias:", error);
+        console.error("Erreur fetch groupes:", error);
       } finally {
-        setLoadingBaterias(false);
+        setLoadingGroups(false);
       }
     };
     
-    fetchBaterias();
+    fetchNetworkGroups();
     
     // 2. Load Artisans from JSON (filtered)
     const filteredArtisans = artisansData.artisans.filter(
@@ -161,7 +161,7 @@ export default function TerreiroView({ associationData, userData, onBack }) {
         </div>
       </div>
 
-      {/* Section 1 : Annuaire des Baterias */}
+      {/* Section 1 : Annuaire des Groupes */}
       <section className="bg-white rounded-xl border border-[#e6d5c3] shadow-sm p-6 relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-bold text-xl text-[#4a2e1b] flex items-center gap-2">
@@ -173,37 +173,37 @@ export default function TerreiroView({ associationData, userData, onBack }) {
           </span>
         </div>
 
-        {!loadingBaterias && (
+        {!loadingGroups && (
           <div className="mb-8">
-            <WorldMapNetwork associations={baterias} />
+            <WorldMapNetwork associations={networkGroups} />
           </div>
         )}
 
-        {loadingBaterias ? (
+        {loadingGroups ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="h-32 bg-amber-50/50 rounded-xl border border-amber-100 animate-pulse"></div>
             ))}
           </div>
-        ) : baterias.length > 0 ? (
+        ) : networkGroups.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {baterias.map(bateria => (
-              <div key={bateria.id} className="bg-[#fdf6e7] border border-[#d4b895] rounded-xl p-5 flex flex-col justify-between hover:shadow-md transition-all group">
+            {networkGroups.map(groupItem => (
+              <div key={groupItem.id} className="bg-[#fdf6e7] border border-[#d4b895] rounded-xl p-5 flex flex-col justify-between hover:shadow-md transition-all group">
                 <div>
-                  <h4 className="font-bold text-[#4a2e1b] text-lg leading-tight mb-1">{bateria.name || bateria.nom || 'Association'}</h4>
-                  {bateria.city && (
+                  <h4 className="font-bold text-[#4a2e1b] text-lg leading-tight mb-1">{groupItem.name || groupItem.nom || 'Association'}</h4>
+                  {groupItem.city && (
                     <p className="text-sm text-[#8b4513] flex items-center gap-1">
                       <MapPin className="w-3.5 h-3.5" />
-                      {bateria.city}
+                      {groupItem.city}
                     </p>
                   )}
                 </div>
                 <a 
                   href={
-                    (bateria.customDomains && bateria.customDomains.length > 0) ? (bateria.customDomains[0].startsWith('http') ? bateria.customDomains[0] : `https://${bateria.customDomains[0]}`) :
-                    bateria.customDomain ? (bateria.customDomain.startsWith('http') ? bateria.customDomain : `https://${bateria.customDomain}`) :
-                    bateria.website ? (bateria.website.startsWith('http') ? bateria.website : `https://${bateria.website}`) :
-                    `https://mostrador.o-girador.com/?tenant=${encodeURIComponent(bateria.id)}`
+                    (groupItem.customDomains && groupItem.customDomains.length > 0) ? (groupItem.customDomains[0].startsWith('http') ? groupItem.customDomains[0] : `https://${groupItem.customDomains[0]}`) :
+                    groupItem.customDomain ? (groupItem.customDomain.startsWith('http') ? groupItem.customDomain : `https://${groupItem.customDomain}`) :
+                    groupItem.website ? (groupItem.website.startsWith('http') ? groupItem.website : `https://${groupItem.website}`) :
+                    `https://mostrador.o-girador.com/?tenant=${encodeURIComponent(groupItem.id)}`
                   }
                   target="_blank"
                   rel="noreferrer"

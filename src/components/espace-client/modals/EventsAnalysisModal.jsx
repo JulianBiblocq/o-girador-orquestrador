@@ -4,6 +4,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../../services/firebase';
 import { launchCrossApp } from '../../../utils/crossAppAuth';
 import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
+import { buildGroupQueryVariants } from '../../../utils/tenantGroupHelpers';
 
 const getTypeColor = (type) => {
   const t = type?.toLowerCase() || '';
@@ -27,12 +28,7 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
     }
     setLoading(true);
 
-    const rawGid = groupId;
-    const groupVariants = Array.from(new Set([
-      rawGid,
-      rawGid ? String(rawGid).trim().toLowerCase() : '',
-      ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
-    ])).filter(Boolean);
+    const groupVariants = buildGroupQueryVariants(groupId);
 
     const qEvents = query(collection(db, 'events'), where('groupId', 'in', groupVariants));
     const unsub = onSnapshot(qEvents, (snapshot) => {
@@ -166,7 +162,7 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
                           href={getEcosystemUrl('organizador')} 
                           onClick={(e) => {
                             e.preventDefault();
-                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: 'Organizador' });
                           }}
                           target="_blank" 
                           rel="noreferrer"
@@ -216,7 +212,7 @@ export default function EventsAnalysisModal({ groupId, onClose }) {
                           href={getEcosystemUrl('organizador')}
                           onClick={(e) => {
                             e.preventDefault();
-                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+                            launchCrossApp(getEcosystemUrl('organizador'), { appKey: 'organizador', appLabel: 'Organizador' });
                           }}
                           target="_blank"
                           rel="noreferrer"

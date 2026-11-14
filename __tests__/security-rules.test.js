@@ -13,7 +13,7 @@ let testEnv;
 
 beforeAll(async () => {
   testEnv = await initializeTestEnvironment({
-    projectId: 'o-girador-7828c-test',
+    projectId: 'o-girador-7828c',
     firestore: {
       rules: fs.readFileSync(path.resolve(rootDir, 'firestore.rules'), 'utf8'),
       host: '127.0.0.1',
@@ -517,6 +517,127 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
         ],
         derniereModification: new Date().toISOString()
       }));
+    });
+  });
+
+  describe('Phase B2 — Durcissement Multi-Tenant (/users, /documents, /toada_packs & Storage)', () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('associations/samambaia').set({ nom: 'Samambaia', groupId: 'samambaia' });
+        await db.doc('associations/cordao').set({ nom: 'Cordão', groupId: 'cordao' });
+
+        await db.doc('users/mestre_sam').set({ groupId: 'samambaia', role: 'mestre' });
+        await db.doc('users/membre_sam').set({ groupId: 'samambaia', role: 'membre' });
+        await db.doc('users/mestre_cordao').set({ groupId: 'cordao', role: 'mestre' });
+        await db.doc('users/membre_cordao').set({ groupId: 'cordao', role: 'membre' });
+
+        await db.doc('documents/doc_private_sam').set({
+          groupId: 'samambaia',
+          titre: 'CR CA Interne',
+          isPublic: false
+        });
+        await db.doc('documents/doc_vitrine_sam').set({
+          groupId: 'samambaia',
+          titre: 'Dossier Presse Vitrine',
+          showInVitrine: true
+        });
+        await db.doc('toada_packs/pack_sam').set({
+          title: 'Baque Luanda',
+          groupId: 'samambaia'
+        });
+
+        const st = context.storage();
+        await st.ref('associations/samambaia/expenses/note_1.pdf').putString('pdf');
+        await st.ref('documents/samambaia/varal_interne.pdf').putString('pdf');
+        await st.ref('transactions/samambaia/releve.pdf').putString('pdf');
+        await st.ref('orders/samambaia/bon_commande.pdf').putString('pdf');
+        await st.ref('vocalRecordings/pack_sam_voix1.wav').putString('wav');
+      });
+    });
+
+    it("Interdit l'auto-attribution active de 'samambaia' ou d'une asso existante sur create et update (/users)", async () => {
+      const spoofCreateDb = testEnv.authenticatedContext('spoof_user_1', { email: 'spoof1@example.com' }).firestore();
+      await assertFails(spoofCreateDb.doc('users/spoof_user_1').set({
+        role: 'membre',
+        groupId: 'samambaia',
+        statutActuel: 'active'
+      }));
+
+      const spoofCordaoDb = testEnv.authenticatedContext('spoof_user_2', { email: 'spoof2@example.com' }).firestore();
+      await assertFails(spoofCordaoDb.doc('users/spoof_user_2').set({
+        role: 'membre',
+        groupId: 'cordao',
+        statutActuel: 'active'
+      }));
+
+      const cordaoMemberDb = testEnv.authenticatedContext('membre_cordao').firestore();
+      await assertFails(cordaoMemberDb.doc('users/membre_cordao').update({
+        groupId: 'samambaia'
+      }));
+    });
+
+    it("Autorise le sas d'onboarding en attente (isNew=true, statutActuel='pending') sans accès prématuré aux données privées", async () => {
+      const applicantDb = testEnv.authenticatedContext('applicant_1', { email: 'newbie@example.com' }).firestore();
+      await assertSucceeds(applicantDb.doc('users/applicant_1').set({
+        role: 'membre',
+        groupId: 'samambaia',
+        onboardingCompleted: true,
+        isNew: true,
+        status: 'pending',
+        statutActuel: 'pending',
+        tags: []
+      }));
+      await assertFails(applicantDb.doc('documents/doc_private_sam').get());
+    });
+
+    it('Cloisonne /documents par groupId tout en préservant les documents vitrine publics (Mostrador)', async () => {
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      const cordaoDb = testEnv.authenticatedContext('membre_cordao').firestore();
+      const cordaoMestreDb = testEnv.authenticatedContext('mestre_cordao').firestore();
+      const samMemberDb = testEnv.authenticatedContext('membre_sam').firestore();
+      const samMestreDb = testEnv.authenticatedContext('mestre_sam').firestore();
+
+      await assertFails(unauthDb.doc('documents/doc_private_sam').get());
+      await assertFails(cordaoDb.doc('documents/doc_private_sam').get());
+      await assertFails(cordaoMestreDb.doc('documents/doc_private_sam').update({ titre: 'Sabotage' }));
+      await assertFails(cordaoMestreDb.doc('documents/doc_spoof').set({ groupId: 'samambaia', titre: 'Faux Doc' }));
+
+      await assertSucceeds(unauthDb.doc('documents/doc_vitrine_sam').get());
+      await assertSucceeds(samMemberDb.doc('documents/doc_private_sam').get());
+      await assertSucceeds(samMestreDb.doc('documents/doc_private_sam').update({ titre: 'CR CA Validé' }));
+    });
+
+    it('Cloisonne create/update/delete sur /toada_packs au même groupId tout en gardant la lecture publique', async () => {
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      const cordaoMestreDb = testEnv.authenticatedContext('mestre_cordao').firestore();
+      const samMestreDb = testEnv.authenticatedContext('mestre_sam').firestore();
+
+      await assertSucceeds(unauthDb.doc('toada_packs/pack_sam').get());
+      await assertFails(cordaoMestreDb.doc('toada_packs/pack_sam').update({ title: 'Piratage' }));
+      await assertFails(cordaoMestreDb.doc('toada_packs/pack_sam').delete());
+      await assertFails(cordaoMestreDb.doc('toada_packs/pack_forged').set({ title: 'Faux Pack', groupId: 'samambaia' }));
+
+      await assertSucceeds(samMestreDb.doc('toada_packs/pack_sam').update({ title: 'Baque Luanda v2' }));
+    });
+
+    it('Cloisonne Storage (/expenses, /documents, /transactions, /orders) par groupId et garde vocalRecordings public', async () => {
+      const unauthSt = testEnv.unauthenticatedContext().storage();
+      const cordaoSt = testEnv.authenticatedContext('membre_cordao').storage();
+      const samSt = testEnv.authenticatedContext('membre_sam').storage();
+
+      await assertSucceeds(unauthSt.ref('vocalRecordings/pack_sam_voix1.wav').getDownloadURL());
+
+      await assertFails(cordaoSt.ref('associations/samambaia/expenses/note_1.pdf').getDownloadURL());
+      await assertFails(cordaoSt.ref('documents/samambaia/varal_interne.pdf').getDownloadURL());
+      await assertFails(cordaoSt.ref('transactions/samambaia/releve.pdf').getDownloadURL());
+      await assertFails(cordaoSt.ref('orders/samambaia/bon_commande.pdf').getDownloadURL());
+      await assertFails(cordaoSt.ref('documents/samambaia/intrusion.pdf').putString('hack'));
+
+      await assertSucceeds(samSt.ref('associations/samambaia/expenses/note_1.pdf').getDownloadURL());
+      await assertSucceeds(samSt.ref('documents/samambaia/varal_interne.pdf').getDownloadURL());
+      await assertSucceeds(samSt.ref('transactions/samambaia/releve.pdf').getDownloadURL());
+      await assertSucceeds(samSt.ref('orders/samambaia/bon_commande.pdf').getDownloadURL());
     });
   });
 });

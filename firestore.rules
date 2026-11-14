@@ -22,14 +22,18 @@ service cloud.firestore {
       );
     }
 
-    // Vérifie l'isolation multi-tenant par groupe
+    // Vérifie l'isolation multi-tenant par groupe (hors sas d'attente onboarding non validé)
     function isUserSameGroup(u) {
       return resource == null || 
-        !resource.data.keys().hasAny(['groupId']) ||
-        resource.data.get('groupId', '').lower() == u.get('groupId', '').lower() ||
-        (
-          (u.get('groupId', '').lower() == 'samambaia' || u.get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
-          resource.data.get('groupId', '').lower() == 'samambaia'
+        !resource.data.keys().hasAny(['groupId']) || (
+          u.get('isNew', false) != true &&
+          u.get('statutActuel', 'active') != 'pending' && (
+            resource.data.get('groupId', '').lower() == u.get('groupId', '').lower() ||
+            (
+              (u.get('groupId', '').lower() == 'samambaia' || u.get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+              resource.data.get('groupId', '').lower() == 'samambaia'
+            )
+          )
         );
     }
 
@@ -58,16 +62,16 @@ service cloud.firestore {
 
     function isUserAdminOrMestre(u) {
       return (
-        u.get('role', '').lower() in ['mestre', 'super-admin', 'admin', 'bureau', 'ca', 'secretaire'] ||
+        u.get('role', '').lower() in ['mestre', 'super-admin', 'superadmin', 'admin', 'bureau', 'ca', 'secretaire'] ||
         u.get('roleOfficiel', '').lower() in ['president', 'président', 'presidente', 'présidente', 'tresorier', 'trésorier', 'tresoriere', 'trésorière', 'secretaire', 'secrétaire', 'bureau', 'ca'] ||
         u.get('isSystemAdmin', false) == true ||
         u.get('hasAccessLogistique', false) == true ||
         (u.get('tags', []) is list && u.get('tags', []).hasAny([
-          'Bureau', 'bureau', 'Président', 'président', 'President', 'president', 'Présidente', 'présidente', 'Presidente', 'presidente',
-          'Trésorier', 'trésorier', 'Tresorier', 'tresorier', 'Trésorière', 'trésorière', 'Tresoriere', 'tresoriere',
-          'Secrétaire', 'secrétaire', 'Secretaire', 'secretaire', 'Secrétariat', 'secrétariat', 'Secretariat', 'secretariat',
+          'Bureau', 'bureau', 'Président', 'président', 'President', 'president', 'Présidente', 'présidente', 'Presidente',
+          'Trésorier', 'trésorier', 'Tresorier', 'Trésorière', 'trésorière', 'Tresoriere',
+          'Secrétaire', 'secrétaire', 'Secretaire', 'Secrétariat', 'secrétariat', 'Secretariat',
           'Logistique', 'logistique', 'Logisticien', 'logisticien', 'Logisticienne', 'logisticienne',
-          'Matériel', 'matériel', 'Materiel', 'materiel', 'Inventaire', 'inventaire', 'Instruments', 'instruments',
+          'Matériel', 'matériel', 'Materiel', 'Inventaire', 'inventaire', 'Instruments', 'instruments',
           'CA', 'ca', 'C.A', 'c.a', 'C.A.', 'c.a.', 'Conseil d\'Administration', 'Conseil d\'administration', 'Direction', 'direction', 'Conseil', 'conseil',
           'Admin', 'admin', 'Administrateur', 'administrateur', 'Modérateur', 'modérateur', 'Moderateur', 'moderateur',
           'Mestre', 'mestre', 'Mestria', 'mestria'
@@ -123,6 +127,54 @@ service cloud.firestore {
           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
           isUserRequestSameGroup(getUserData(), targetGroupId)
         )
+      );
+    }
+
+    function isExistingAssociationGroup(targetGroupId) {
+      return targetGroupId != null && targetGroupId != '' && (
+        targetGroupId.lower() == 'samambaia' ||
+        exists(/databases/$(database)/documents/associations/$(targetGroupId)) ||
+        exists(/databases/$(database)/documents/associations/$(targetGroupId.lower()))
+      );
+    }
+
+    function canSelfAssignUserGroup(targetGroupId) {
+      return targetGroupId == null ||
+        targetGroupId == '' ||
+        targetGroupId.lower() in ['demo', 'demo_group', 'maracatu-na-chuva'] ||
+        !isExistingAssociationGroup(targetGroupId) ||
+        (
+          request.resource.data.get('onboardingCompleted', false) == true &&
+          request.resource.data.get('isNew', false) == true &&
+          request.resource.data.get('statutActuel', '') == 'pending' &&
+          request.resource.data.get('status', '') == 'pending'
+        ) ||
+        (
+          'email' in request.auth.token &&
+          request.auth.token.email != null && (
+            exists(/databases/$(database)/documents/pending_payments/$(request.auth.token.email.lower())) ||
+            (
+              request.resource.data.get('reconciledFromDocId', '') != '' &&
+              exists(/databases/$(database)/documents/users/$(request.resource.data.reconciledFromDocId)) &&
+              get(/databases/$(database)/documents/users/$(request.resource.data.reconciledFromDocId)).data.get('email', '').lower() == request.auth.token.email.lower() &&
+              get(/databases/$(database)/documents/users/$(request.resource.data.reconciledFromDocId)).data.get('groupId', '').lower() == targetGroupId.lower()
+            )
+          )
+        ) ||
+        (
+          exists(/databases/$(database)/documents/associations/$(targetGroupId)) &&
+          get(/databases/$(database)/documents/associations/$(targetGroupId)).data.get('ownerUid', '') == request.auth.uid
+        );
+    }
+
+    function isPublicShowcaseDocument() {
+      return resource != null && (
+        resource.data.get('isPublic', false) == true ||
+        resource.data.get('showInVitrine', false) == true ||
+        resource.data.get('publierSurVitrine', false) == true ||
+        resource.data.get('isShowcase', false) == true ||
+        resource.data.get('visibility', '') in ['public', 'admin_global'] ||
+        resource.data.get('groupId', '').lower() in ['demo', 'demo_group', 'maracatu-na-chuva']
       );
     }
 
@@ -214,15 +266,19 @@ service cloud.firestore {
     function canManageRepertoire() {
       return isAuthenticated() && (
         isAdminOrMestre() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-          getUserData().get('role', '') in ['mestre', 'Mestre', 'admin', 'Admin', 'super-admin', 'Super-admin'] ||
-          getUserData().get('isSystemAdmin', false) == true
-        )) ||
         (request.auth.token != null && (
           request.auth.token.get('admin', false) == true ||
           request.auth.token.get('role', '') in ['mestre', 'admin', 'super-admin']
         ))
       );
+    }
+
+    function canManageDocsOrRepertoire() {
+      return canManageDocs() ||
+        (request.auth.token != null && (
+          request.auth.token.get('admin', false) == true ||
+          request.auth.token.get('role', '') in ['mestre', 'admin', 'super-admin']
+        ));
     }
 
     function isModerator() {
@@ -319,8 +375,13 @@ service cloud.firestore {
         request.auth.uid == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1'
       );
       allow create: if isAuthenticated() && (
-        isAdminOrMestre() || (
-          request.auth.uid == userId && (
+        isSystemAdmin() ||
+        (
+          isAdminOrMestre() &&
+          (!request.resource.data.keys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', '')))
+        ) || (
+          request.auth.uid == userId &&
+          canSelfAssignUserGroup(request.resource.data.get('groupId', '')) && (
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
             (!request.resource.data.keys().hasAny(['paymentStatus']) || request.resource.data.paymentStatus in ['unpaid', 'paid']) &&
@@ -335,7 +396,8 @@ service cloud.firestore {
           )
         ) || (
           request.resource.data.get('isDependent', false) == true &&
-          request.resource.data.get('managedBy', '') == request.auth.uid && (
+          request.resource.data.get('managedBy', '') == request.auth.uid &&
+          (!request.resource.data.keys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', ''))) && (
             (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
             (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
             (!request.resource.data.keys().hasAny(['role']) || request.resource.data.role in ['membre', 'visiteur', 'eleve']) &&
@@ -345,17 +407,25 @@ service cloud.firestore {
         )
       );
       allow update: if isAuthenticated() && (
-        isAdminOrMestre() ||
-        // Super-Admin système ou UID Mestre Fondateur
         isSystemAdmin() ||
         request.auth.uid == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' ||
-        // Autoriser la migration si le compte était super-admin ou est déjà mestre/admin
+        (
+          isAdminOrMestre() &&
+          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', '')))
+        ) ||
+        // Autoriser la mise à jour par le mestre/admin sur son propre profil sans changement d'association non autorisé
         (request.auth.uid == userId && (
-          resource.data.get('role', '').lower() in ['mestre', 'admin', 'super-admin', 'superadmin'] ||
-          isAdminOrMestre()
+          resource.data.get('role', '').lower() in ['mestre', 'admin', 'super-admin', 'superadmin']
+        ) && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) ||
+          resource.data.get('groupId', '').lower() == request.resource.data.get('groupId', '').lower()
         )) ||
         // Finalisation d'onboarding par le membre (sur document partiel préexistant ou première inscription)
         (request.auth.uid == userId && resource.data.get('onboardingCompleted', false) == false && (
+          !request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) ||
+          resource.data.get('groupId', '').lower() == request.resource.data.get('groupId', '').lower() ||
+          canSelfAssignUserGroup(request.resource.data.get('groupId', ''))
+        ) && (
           (!request.resource.data.keys().hasAny(['isSystemAdmin']) || request.resource.data.isSystemAdmin == false) &&
           (!request.resource.data.keys().hasAny(['hasAccessLogistique']) || request.resource.data.hasAccessLogistique == false) &&
           (!request.resource.data.keys().hasAny(['canWriteSequenciador']) || request.resource.data.canWriteSequenciador == false) &&
@@ -374,7 +444,7 @@ service cloud.firestore {
             'paymentStatus', 'role', 'isSystemAdmin', 'hasAccessLogistique', 'canWriteSequenciador', 'canWriteDansador', 'canWriteOrchestrador'
           ]) && (
             !request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) ||
-            request.resource.data.get('groupId', '').lower() == 'samambaia'
+            resource.data.get('groupId', '').lower() == request.resource.data.get('groupId', '').lower()
           )
         )) || (
           // Membres dépendants
@@ -732,20 +802,33 @@ service cloud.firestore {
     }
 
     match /documents/{document} {
-      allow read: if isAuthenticated() || (resource != null && resource.data.get('isPublic', false) == true);
-      allow create: if canManageDocs() || (
-        isActiveMember() &&
-        request.resource.data.get('type', '') == 'report' &&
-        isRequestSameGroup(request.resource.data.get('groupId', ''))
+      allow read: if isPublicShowcaseDocument() || (
+        (resource == null && isAuthenticated()) ||
+        (resource != null && resource.data.keys().hasAny(['groupId']) && canReadGroupData()) ||
+        isSystemAdmin()
       );
-      allow update: if canManageDocs() || (
-        isActiveMember() &&
-        resource.data.get('type', '') == 'report' &&
-        request.resource.data.get('type', '') == 'report' &&
+      allow create: if isSystemAdmin() || (
+        isRequestSameGroup(request.resource.data.get('groupId', '')) && (
+          canManageDocsOrRepertoire() ||
+          (isActiveMember() && request.resource.data.get('type', '') == 'report')
+        )
+      );
+      allow update: if isSystemAdmin() || (
         isDocSameGroup() &&
-        isRequestSameGroup(request.resource.data.get('groupId', ''))
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', ''))) && (
+          canManageDocsOrRepertoire() ||
+          (
+            isActiveMember() &&
+            resource.data.get('type', '') == 'report' &&
+            request.resource.data.get('type', '') == 'report'
+          ) ||
+          (
+            isActiveMember() &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lectures', 'viewCount'])
+          )
+        )
       );
-      allow delete: if canManageDocs();
+      allow delete: if isSystemAdmin() || (isDocSameGroup() && canManageDocsOrRepertoire());
     }
 
     match /forum_channels/{channelId} {
@@ -1158,7 +1241,7 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // 9. DANÇAD'OR : CHORÉGRAPHIES & PAS DE DANSE
+    // 9. DANÇADOR : CHORÉGRAPHIES & PAS DE DANSE
     // =========================================================================
 
     match /choreographies/{document} {
@@ -1193,7 +1276,7 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // 10. SÉQUENCIAD'OR : MOTEUR AUDIO, PATTERNS, BALANÇOS & SIGNAUX
+    // 10. SEQUENCIADOR : MOTEUR AUDIO, PATTERNS, BALANÇOS & SIGNAUX
     // =========================================================================
 
     match /audio_masters/{document} {
@@ -1363,7 +1446,7 @@ service cloud.firestore {
                             && (request.auth.uid == resource.data.userId || request.auth.uid == resource.data.mestreId);
     }
 
-    // Programmes d'entraînement collectifs (créés par le Séquenceur, lus par Organizad'Or)
+    // Programmes d'entraînement collectifs (créés par Sequenciador, lus par Organizador)
     match /trainings/{trainingId} {
       // Lecture autorisée aux membres appartenant au même groupe
       allow read: if isAuthenticated() && (
@@ -1423,7 +1506,22 @@ service cloud.firestore {
     // Packs de Toadas & Chants (Cantador & Atelier Vocal)
     match /toada_packs/{packId} {
       allow read: if true;
-      allow write: if isAdminOrMestre() || isSystemAdmin();
+      allow create: if (
+        isAdminOrMestre() &&
+        isDocSameGroup() &&
+        (!request.resource.data.keys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', '')))
+      ) || isSystemAdmin();
+      allow update: if (
+        isAdminOrMestre() &&
+        isDocSameGroup() &&
+        (resource.data.keys().hasAny(['groupId']) || !resource.data.keys().hasAny(['ownerId']) || resource.data.get('ownerId', '') == request.auth.uid) &&
+        (!request.resource.data.keys().hasAny(['groupId']) || isRequestSameGroup(request.resource.data.get('groupId', '')))
+      ) || isSystemAdmin();
+      allow delete: if (
+        isAdminOrMestre() &&
+        isDocSameGroup() &&
+        (resource.data.keys().hasAny(['groupId']) || !resource.data.keys().hasAny(['ownerId']) || resource.data.get('ownerId', '') == request.auth.uid)
+      ) || isSystemAdmin();
     }
 
     // Varal racine (fiches pédagogiques et partitions de cordel)

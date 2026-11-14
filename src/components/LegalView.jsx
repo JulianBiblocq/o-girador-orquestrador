@@ -66,7 +66,7 @@ export default function LegalView({ onNavigateHome }) {
                   
                   <h3 className="text-xl font-bold text-gray-900 mb-3">1. Éditeur du site</h3>
                   <p>
-                    La plateforme <strong>O Girador</strong> (Hub Orquestrad'Or, Séquenciad'Or, Organizad'Or, Dançad'Or) est conçue, développée et éditée par <strong>Julian Biblocq</strong>.
+                    La plateforme <strong>O Girador</strong> (Orquestrador, Sequenciador, Organizador, Mostrador, Cantador, Dançador) est conçue, développée et éditée par <strong>Julian Biblocq</strong>.
                   </p>
                   <ul className="list-disc pl-5 mt-2 space-y-1">
                     <li><strong>Responsable de publication :</strong> Julian Biblocq</li>

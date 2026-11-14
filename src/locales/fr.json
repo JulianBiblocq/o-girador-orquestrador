@@ -56,7 +56,7 @@
     },
     "sequenceur": {
       "badge": "Studio de création",
-      "title": "O Girador Séquenciador",
+      "title": "O Girador Sequenciador",
       "description": "Le cœur musical de l'écosystème, conçu pour la composition, le micro-timing et l'authenticité des rythmes.",
       "feat1": "Moteur Audio Haute Fidélité : Séquenceur linéaire stable (Web Audio API & Tone.js) sans désynchronisation.",
       "feat2": "Algorithme de Balanço : Système mécanique exclusif reproduisant le \"gingado\" et le balanço traditionnel du Baque Virado.",
@@ -74,7 +74,7 @@
       "feat1": "Timeline Chorégraphique : Composition multi-pistes pour placer et synchroniser les pas de chaque rôle sur la musique.",
       "feat2": "Lecteur d'Apprentissage : Mode miroir, ralenti (jusqu'à 0.25x) et boucle A-B pour l'enseignement.",
       "feat3": "Captation Intelligente : Studio vidéo mobile avec recadrage automatique et mode \"fantôme\" pour superposer les mouvements.",
-      "feat4": "Beat Tracker : Pulsation visuelle calée automatiquement sur le tempo du Séquenciador.",
+      "feat4": "Beat Tracker : Pulsation visuelle calée automatiquement sur le tempo du Sequenciador.",
       "feat5": "Dictionnaire Personnalisé : Classement des pas par niveau pour constituer la bibliothèque officielle de l'association."
     },
     "manager": {

@@ -3,13 +3,10 @@ import { Lock, Flame, Settings, Store } from 'lucide-react';
 import { getEcosystemUrl } from '../../constants/ecosystemUrls';
 import MestreUpsellModal from './MestreUpsellModal';
 
-// Macaron neutre O Girador (repli par défaut en l'absence de logo d'association ou lien brisé)
+// Macaron neutre O Girador (repli par défaut)
 const NEUTRAL_BADGE = '/assets/badge-girador-neutre.png';
 
-/**
- * Barre de navigation supérieure du Hub (App Switcher)
- * Permet de basculer entre les applications de l'écosystème O Girador.
- */
+/** Barre de navigation supérieure du Hub (App Switcher) */
 export default function MestreTopBar({ associationData, activeTab, setActiveTab }) {
   const [lockedAppClicked, setLockedAppClicked] = useState(null);
 
@@ -102,11 +99,14 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       ...goldStyle
     },
     {
+      id: 'afinador', label: 'Afinador', desc: 'Accordeur Acoustique', iconUrl: NEUTRAL_BADGE, isOwned: false, enabled: false, comingSoon: true, ...goldStyle
+    },
+    {
       id: 'profile', label: 'Mon Espace', desc: 'Identité & Quotas', isIcon: true, isOwned: true,
       iconComponent: <Settings className="w-8 h-8 text-amber-200 group-hover:scale-110 transition-transform" />,
       ...goldStyle
     }
-  ];
+  ].filter(app => app.enabled !== false);
 
   return (
     <div className="bg-[#4a2e1b] rounded-xl shadow-lg p-4 mb-6 relative overflow-hidden">

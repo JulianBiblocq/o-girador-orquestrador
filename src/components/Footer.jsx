@@ -36,31 +36,18 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
               Écosystème
             </h4>
             <ul className="space-y-2 text-xs text-amber-100/80">
-              <li>
-                <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Sequenciador
-                </a>
-              </li>
-              <li>
-                <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Organizador
-                </a>
-              </li>
-              <li>
-                <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Mostrador
-                </a>
-              </li>
-              <li>
-                <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Dançador
-                </a>
-              </li>
-              <li>
-                <a href="#triptyque" className="hover:text-white transition-colors">
-                  O Girador Cantador
-                </a>
-              </li>
+              {[
+                { key: 'sequenciador', label: 'O Girador Sequenciador', enabled: true },
+                { key: 'organizador', label: 'O Girador Organizador', enabled: true },
+                { key: 'mostrador', label: 'O Girador Mostrador', enabled: true },
+                { key: 'dancador', label: 'O Girador Dançador', enabled: true },
+                { key: 'cantador', label: 'O Girador Cantador', enabled: true },
+                { key: 'afinador', label: 'O Girador Afinador', enabled: false },
+              ].filter((app) => app.enabled !== false).map((app) => (
+                <li key={app.key}>
+                  <a href="#triptyque" className="hover:text-white transition-colors">{app.label}</a>
+                </li>
+              ))}
             </ul>
           </div>
 

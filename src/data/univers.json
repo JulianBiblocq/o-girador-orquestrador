@@ -1,11 +1,11 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "universes": [
     {
       "id": "maracatu",
       "name": "Maracatu de Baque Virado",
       "subtitle": "Culture & Percussions du Pernambouc",
-      "tagline": "Restaurez la force du Baque Virado, de la transmission rythmique à la gestion globale du Bloco.",
+      "tagline": "Restaurez la force du Baque Virado, de la transmission rythmique à la gestion globale du groupe.",
       "status": "active",
       "badge": "Actif",
       "theme": {
@@ -27,37 +27,41 @@
       ],
       "applications": [
         {
-          "id": "sequenceur",
-          "name": "O Girador - Séquenceur",
+          "id": "sequenciador",
+          "name": "O Girador - Sequenciador",
           "description": "Séquenceur web interactif avec Roda circulaire concentrique, micro-timing, Toadas et mode Song.",
-          "repo": "https://github.com/julianbiblocq/o-girador",
           "badge": "Disponible",
-          "url": "https://sequenceur.ogirador.app"
+          "url": "https://sequenciador.o-girador.com"
         },
         {
-          "id": "manager",
-          "name": "O Girador - Manager & Vitrine",
-          "description": "Plateforme complète de gestion d'association Bloco, agenda, trésorerie, forum Varal et site vitrine public.",
-          "repo": "https://github.com/JulianBiblocq/O-Girador-manager",
+          "id": "organizador",
+          "name": "O Girador - Organizador & Mostrador",
+          "description": "Plateforme complète de gestion d'association, agenda, trésorerie, Varal et site vitrine public.",
           "badge": "Disponible",
-          "url": "https://manager.ogirador.app"
+          "url": "https://organizador.o-girador.com"
+        },
+        {
+          "id": "cantador",
+          "name": "O Girador - Cantador",
+          "description": "Laboratoire vocal, enregistrement de Toadas, découpage syllabique et diagnostic d'ambitus.",
+          "badge": "Disponible",
+          "url": "https://cantador.o-girador.com"
         },
         {
           "id": "dancador",
           "name": "O Girador - Dançador",
           "description": "Studio chorégraphique interactif pour concevoir, animer et partager vos formations de danse et défilés.",
-          "repo": "https://github.com/JulianBiblocq/o-girador-dancador",
           "badge": "Nouveau",
-          "url": "https://dancador.ogirador.app"
+          "url": "https://dancador.o-girador.com"
         }
       ]
     },
     {
       "id": "batucada",
-      "name": "Bateria & Batucada",
-      "subtitle": "Percussions de Rue & Bateria Festive Associative",
-      "tagline": "L'énergie festive et le partage des rythmes de rue et de bateria dans votre collectif.",
-      "description": "Percussions de rue, bateria festive associative",
+      "name": "Batucada Festive",
+      "subtitle": "Percussions de Rue & Batucada Associative",
+      "tagline": "L'énergie festive et le partage des rythmes de rue et de batucada dans votre collectif.",
+      "description": "Percussions de rue, batucada festive associative",
       "status": "active",
       "badge": "Actif",
       "theme": {
@@ -75,25 +79,25 @@
       ],
       "applications": [
         {
-          "id": "sequenceur",
-          "name": "O Girador - Séquenceur",
+          "id": "sequenciador",
+          "name": "O Girador - Sequenciador",
           "description": "Séquenceur web interactif pour composer et répéter vos rythmes de batucada.",
           "badge": "Disponible",
-          "url": "https://sequenceur.ogirador.app"
+          "url": "https://sequenciador.o-girador.com"
         },
         {
-          "id": "manager",
-          "name": "O Girador - Manager & Vitrine",
+          "id": "organizador",
+          "name": "O Girador - Organizador & Mostrador",
           "description": "Plateforme complète pour administrer votre groupe, planning de sorties et site vitrine public.",
           "badge": "Disponible",
-          "url": "https://manager.ogirador.app"
+          "url": "https://organizador.o-girador.com"
         },
         {
           "id": "dancador",
           "name": "O Girador - Dançador",
           "description": "Studio chorégraphique interactif pour les défilés et évolutions de rue.",
           "badge": "Nouveau",
-          "url": "https://dancador.ogirador.app"
+          "url": "https://dancador.o-girador.com"
         }
       ]
     },
@@ -103,18 +107,8 @@
       "subtitle": "Rythmes Bahianais, Salvador & Tambours Afro",
       "tagline": "La puissance tellurique et militante des Blocos Afro de Salvador de Bahia.",
       "description": "Rythmes bahianais, Salvador",
-      "status": "coming_soon",
-      "badge": "Bientôt",
-      "teaser": {
-        "title": "Bientôt dans l'Écosystème",
-        "description": "Entraînez et organisez votre Bloco Afro : surdos (Fundo, Dobra, Resposta), repiques à deux baguettes souples, timbais bahianais, et coordination des défilés afro.",
-        "plannedRelease": "Q4 2026",
-        "features": [
-          "Séquenceur Multi-Surdos & Breaks de Samba-Reggae",
-          "Gestion des pupitres et répétitions en extérieur",
-          "Conducteur de rue et déambulations"
-        ]
-      },
+      "status": "active",
+      "badge": "Actif",
       "theme": {
         "name": "Axé Panafricain",
         "primaryColor": "#b45309",
@@ -129,18 +123,69 @@
       ],
       "applications": [
         {
-          "id": "manager",
-          "name": "O Girador - Manager & Vitrine",
+          "id": "sequenciador",
+          "name": "O Girador - Sequenciador",
+          "description": "Séquenceur multi-surdos et breaks de Samba-Reggae.",
+          "badge": "Disponible",
+          "url": "https://sequenciador.o-girador.com"
+        },
+        {
+          "id": "organizador",
+          "name": "O Girador - Organizador & Mostrador",
           "description": "Plateforme complète pour administrer votre bloco afro et site vitrine.",
           "badge": "Disponible",
-          "url": "https://manager.ogirador.app"
+          "url": "https://organizador.o-girador.com"
         },
         {
           "id": "dancador",
           "name": "O Girador - Dançador",
           "description": "Studio chorégraphique interactif pour les chorégraphies et déambulations afro.",
           "badge": "Nouveau",
-          "url": "https://dancador.ogirador.app"
+          "url": "https://dancador.o-girador.com"
+        }
+      ]
+    },
+    {
+      "id": "samba",
+      "name": "Samba & Escola de Samba",
+      "subtitle": "Samba Enredo, Roda de Samba & Levadas Cariocas",
+      "tagline": "La précision des naipes cariocas, du Samba Enredo à la Roda de Samba.",
+      "description": "Samba Enredo, Escola de Samba & Roda",
+      "status": "active",
+      "badge": "Actif",
+      "theme": {
+        "name": "Passarela Carioca",
+        "primaryColor": "#15803d",
+        "secondaryColor": "#eab308",
+        "accentColor": "#16a34a",
+        "backgroundColor": "#f0fdf4",
+        "paperTexture": false
+      },
+      "instruments": [
+        "Surdo de Primeira", "Surdo de Segunda", "Surdo de Terceira",
+        "Repinique", "Caixa de Guerra", "Tarol", "Tamborim", "Chocalho", "Cuíca", "Agogô", "Cavaquinho & Chant"
+      ],
+      "applications": [
+        {
+          "id": "sequenciador",
+          "name": "O Girador - Sequenciador",
+          "description": "Séquenceur de levadas, bossas et convenções de Samba.",
+          "badge": "Disponible",
+          "url": "https://sequenciador.o-girador.com"
+        },
+        {
+          "id": "organizador",
+          "name": "O Girador - Organizador & Mostrador",
+          "description": "Gestion des naipes, répétitions, défilés et vitrine publique de l'Escola.",
+          "badge": "Disponible",
+          "url": "https://organizador.o-girador.com"
+        },
+        {
+          "id": "cantador",
+          "name": "O Girador - Cantador",
+          "description": "Atelier vocal pour Sambas-Enredo, Puxadores et chœurs.",
+          "badge": "Disponible",
+          "url": "https://cantador.o-girador.com"
         }
       ]
     },
@@ -171,11 +216,18 @@
       },
       "applications": [
         {
+          "id": "cantador",
+          "name": "O Girador - Cantador",
+          "description": "Carnet vocal interactif pour Ladainhas, Chulas et Corridos.",
+          "badge": "Disponible",
+          "url": "https://cantador.o-girador.com"
+        },
+        {
           "id": "dancador",
           "name": "O Girador - Dançador",
-          "description": "Studio chorégraphique interactif pour la roda et la maculelê.",
+          "description": "Studio chorégraphique interactif pour la roda et le maculelê.",
           "badge": "Nouveau",
-          "url": "https://dancador.ogirador.app"
+          "url": "https://dancador.o-girador.com"
         }
       ]
     }

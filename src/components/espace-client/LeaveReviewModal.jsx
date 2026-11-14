@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Star, Send, Loader2 } from 'lucide-react';
 import { submitReview } from '../../services/telemetryService';
 
-export default function LeaveReviewModal({ isOpen, onClose, userEmail, groupId, appSource = 'Orchestrador' }) {
+export default function LeaveReviewModal({ isOpen, onClose, userEmail, groupId, appSource = 'Orquestrador' }) {
   const [targetApp, setTargetApp] = useState('Plateforme Globale');
   const [featuresRating, setFeaturesRating] = useState(5);
   const [designRating, setDesignRating] = useState(5);

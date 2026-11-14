@@ -10,6 +10,7 @@ import { Bell, ArrowRight, CheckCircle2, MessageSquareText, Sparkles } from 'luc
 import ResourceEditorModal from '../modals/ResourceEditorModal.jsx';
 import { launchCrossApp } from '../../../utils/crossAppAuth';
 import { getEcosystemUrl } from '../../../constants/ecosystemUrls';
+import { buildGroupQueryVariants } from '../../../utils/tenantGroupHelpers';
 
 const REASON_BADGES = {
   incomplete_technical: 'Précisions techniques',
@@ -31,12 +32,7 @@ export default function NotificationCenter({ userData }) {
     }
 
     const unsubs = [];
-    const rawGid = userData.groupId;
-    const groupVariants = Array.from(new Set([
-      rawGid,
-      rawGid ? String(rawGid).trim().toLowerCase() : '',
-      ...(rawGid && String(rawGid).trim().toLowerCase().includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
-    ])).filter(Boolean);
+    const groupVariants = buildGroupQueryVariants(userData.groupId);
 
     // 1. Écoute des nouveaux membres
     try {
@@ -183,7 +179,7 @@ export default function NotificationCenter({ userData }) {
             href={getEcosystemUrl('organizador', '/membres')}
             onClick={(e) => {
               e.preventDefault();
-              launchCrossApp(getEcosystemUrl('organizador', '/membres'), { appKey: 'organizador', appLabel: "Organizad'Or" });
+              launchCrossApp(getEcosystemUrl('organizador', '/membres'), { appKey: 'organizador', appLabel: 'Organizador' });
             }}
             target="_blank"
             rel="noreferrer"

@@ -9,6 +9,7 @@ import { db, storage } from '../../../services/firebase';
 import { collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { ref, listAll } from 'firebase/storage';
 import LZString from 'lz-string';
+import { isLegacySamambaiaGroup, buildGroupQueryVariants } from '../../../utils/tenantGroupHelpers';
 
 export function useSequencerPresets(userData) {
   const [items, setItems] = useState([]);
@@ -16,29 +17,17 @@ export function useSequencerPresets(userData) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!userData?.uid) {
-      setLoading(false);
-      return;
-    }
+    if (!userData?.uid) { setLoading(false); return; }
 
     const unsubs = [];
     const presetsMap = new Map();
     let storageItems = [];
 
-    // Identification du groupe canonique et détection de Samambaia
     const rawGroupId = userData.groupId;
     const canonicalGroupId = rawGroupId ? String(rawGroupId).trim().toLowerCase() : '';
-    const isSamambaia = canonicalGroupId === 'samambaia' || canonicalGroupId.includes('sammbia') || userData.mestreId === 'iA0SweEHyOPzAPGIDVZdeKAV2mk1';
-
-    // Résolution du Mestre effectif (avec repli sur le Mestre historique pour Samambaia)
+    const isSamambaia = isLegacySamambaiaGroup(canonicalGroupId);
     const effectiveMestreId = userData.mestreId || (isSamambaia ? 'iA0SweEHyOPzAPGIDVZdeKAV2mk1' : null);
-
-    // Variantes de groupId tolérantes à la casse pour interroger Firestore
-    const groupVariants = Array.from(new Set([
-      rawGroupId,
-      canonicalGroupId,
-      ...(isSamambaia ? ['Samambaia', 'samambaia'] : [])
-    ])).filter(Boolean);
+    const groupVariants = buildGroupQueryVariants(rawGroupId);
 
     // Fonction de fusion, décompression et tri en mémoire des morceaux
     const rebuildItems = () => {

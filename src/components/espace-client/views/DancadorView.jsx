@@ -24,7 +24,7 @@ export default function DancadorView({ userData, associationData, onBack }) {
 
   const handleOpenDancador = (path = '') => {
     const url = getEcosystemUrl('dancador', path);
-    launchCrossApp(url, { appKey: 'dancador', appLabel: "Dançad'Or" });
+    launchCrossApp(url, { appKey: 'dancador', appLabel: 'Dançador' });
   };
 
   const handleShare = (id) => {

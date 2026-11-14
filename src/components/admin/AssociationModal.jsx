@@ -3,12 +3,12 @@ import { X, Save, Shield, Calendar, ToggleLeft, ToggleRight, Sparkles, Building2
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import { slugifyAssociationId } from '../../utils/slugUtils';
+import { sanitizePitchHz } from '../../utils/pitchHzContract';
 
 const formatBytes = (bytes) => {
   if (bytes == null) return '0 Go';
   if (bytes === 0) return '0 Octets';
-  const k = 1024;
-  const sizes = ['Octets', 'Ko', 'Mo', 'Go', 'To'];
+  const k = 1024, sizes = ['Octets', 'Ko', 'Mo', 'Go', 'To'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
@@ -29,17 +29,9 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
     endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     membersCount: 20,
     universeId: 'maracatu',
-    appAccess: {
-      sequenceur: true,
-      manager: true,
-      vitrine: true,
-      dancador: false
-    },
-    universeAccess: {
-      maracatu: true,
-      capoeira: false,
-      samba: false
-    },
+    referencePitchHz: 440,
+    appAccess: { sequenceur: true, manager: true, vitrine: true, dancador: false },
+    universeAccess: { maracatu: true, batucada: false, sambareggae: false, samba: false, capoeira: false },
     quotas: {
       sequenciador: null,
       dansador: null,
@@ -74,6 +66,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
         endDate: initialData.endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: initialData.membersCount ?? 20,
         universeId: initialData.universeId || 'maracatu',
+        referencePitchHz: sanitizePitchHz(initialData.referencePitchHz),
         appAccess: {
           sequenceur: Boolean(initialData.appAccess?.sequenceur ?? true),
           manager: Boolean(initialData.appAccess?.manager ?? true),
@@ -112,19 +105,9 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
         endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         membersCount: 20,
         universeId: 'maracatu',
-        appAccess: {
-          sequenceur: true,
-          manager: true,
-          vitrine: true,
-          dancador: true
-        },
-        universeAccess: {
-          maracatu: true,
-          batucada: false,
-          sambareggae: false,
-          samba: false,
-          capoeira: false
-        },
+        referencePitchHz: 440,
+        appAccess: { sequenceur: true, manager: true, vitrine: true, dancador: true },
+        universeAccess: { maracatu: true, batucada: false, sambareggae: false, samba: false, capoeira: false },
         quotas: {
           sequenciador: null,
           dansador: null,
@@ -412,7 +395,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">📋</span>
                   <div>
-                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Organizad'Or</div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Organizador</div>
                     <div className="text-[11px] font-normal text-gray-600">ERP, Répertoire (3 morceaux prêts), Pupitres & Inventaire</div>
                   </div>
                 </div>
@@ -428,7 +411,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">🥁</span>
                   <div>
-                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Séquenciad'Or</div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Sequenciador</div>
                     <div className="text-[11px] font-normal text-gray-600">Séquenceur circulaire, Speed Trainer & Balanço</div>
                   </div>
                 </div>
@@ -436,7 +419,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
               </a>
 
               <a
-                href={isLocal ? `http://localhost:5170/?app=mostrador&tenant=${encodeURIComponent(createdGroupSummary.groupId)}` : `https://mostrador.o-girador.com/${encodeURIComponent(createdGroupSummary.groupId)}`}
+                href={isLocal ? `http://localhost:5175/?app=mostrador&tenant=${encodeURIComponent(createdGroupSummary.groupId)}` : `https://mostrador.o-girador.com/${encodeURIComponent(createdGroupSummary.groupId)}`}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-between p-3.5 bg-[#fdf6e7] hover:bg-amber-100 border-2 border-[#8b4513]/30 rounded-lg font-bold text-sm text-[#4a2e1b] shadow-xs transition-all group"
@@ -444,7 +427,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
                 <div className="flex items-center gap-2.5">
                   <span className="text-xl">🌐</span>
                   <div>
-                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Mostrad'Or</div>
+                    <div className="font-extrabold text-[#4a2e1b]">Ouvrir Mostrador</div>
                     <div className="text-[11px] font-normal text-gray-600">Site vitrine public responsive généré automatiquement</div>
                   </div>
                 </div>
@@ -878,7 +861,7 @@ export default function AssociationModal({ isOpen, initialData, onClose, onSave,
 
               <div>
                 <label className="block text-[11px] font-semibold text-gray-700 mb-1">
-                  Mestre Orchestrador
+                  Mestre Orquestrador
                 </label>
                 <input
                   type="number"

@@ -5,7 +5,7 @@ service firebase.storage {
     // ==========================================
     // FONCTIONS UTILITAIRES DE SÉCURITÉ
     // ==========================================
-    
+
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -22,6 +22,47 @@ service firebase.storage {
       return request.resource.contentType.matches('video/.*');
     }
 
+    function isStorageSystemAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token != null && 'isSystemAdmin' in request.auth.token && request.auth.token.isSystemAdmin == true) ||
+        (request.auth.token != null && 'admin' in request.auth.token && request.auth.token.admin == true) ||
+        (
+          firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+          firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.get('isSystemAdmin', false) == true
+        )
+      );
+    }
+
+    function isStorageUserInGroup(u, groupId) {
+      return u.get('isNew', false) != true &&
+        u.get('statutActuel', 'active') != 'pending' &&
+        (
+          u.get('groupId', '').lower() == groupId.lower() ||
+          (groupId.lower() == 'samambaia' && u.get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1')
+        );
+    }
+
+    function isStorageSameGroup(groupId) {
+      return isAuthenticated() && groupId != null && groupId != '' && (
+        isStorageSystemAdmin() ||
+        groupId.lower() in ['demo', 'demo_group', 'maracatu-na-chuva'] ||
+        (request.auth.token != null && 'groupId' in request.auth.token && request.auth.token.groupId.lower() == groupId.lower()) ||
+        (
+          firestore.exists(/databases/(default)/documents/users/$(request.auth.uid)) &&
+          isStorageUserInGroup(firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data, groupId)
+        )
+      );
+    }
+
+    function canWriteAssociationPublicFolder(groupId) {
+      return isStorageSameGroup(groupId) || (
+        isAuthenticated() &&
+        groupId.lower() != 'samambaia' &&
+        !firestore.exists(/databases/(default)/documents/associations/$(groupId)) &&
+        !firestore.exists(/databases/(default)/documents/associations/$(groupId.lower()))
+      );
+    }
+
     // ==========================================
     // 1. UTILISATEURS & PROFILS
     // ==========================================
@@ -29,23 +70,23 @@ service firebase.storage {
     // Photos de profil / Avatars : lecture publique (trombinoscope/vitrine), écriture par le propriétaire ou un admin
     match /avatars/{userId}/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
-        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre')
+      allow create, update: if isAuthenticated()
+        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre' || isStorageSystemAdmin())
         && isImage()
         && request.resource.size < 5 * 1024 * 1024;
-      allow delete: if isAuthenticated() 
-        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre');
+      allow delete: if isAuthenticated()
+        && (request.auth.uid == userId || request.auth.token.role == 'admin' || request.auth.token.role == 'mestre' || isStorageSystemAdmin());
     }
 
     // ==========================================
-    // 2. SÉQUENCIAD'OR (Audio, Bounces & Signaux)
+    // 2. SEQUENCIADOR (Audio, Bounces & Signaux)
     // ==========================================
 
     // Signaux visuels du Mestre / Xilogravures Cordel (max 5 Mo)
     match /sinais/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
-        && isImage() 
+      allow create, update: if isAuthenticated()
+        && isImage()
         && request.resource.size < 5 * 1024 * 1024;
       allow delete: if isAuthenticated();
     }
@@ -53,100 +94,108 @@ service firebase.storage {
     // Bounces audio & extraits pour le catalogue et le Terreiro
     match /bounces/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
+      allow create, update: if isAuthenticated()
         && (isAudio() || request.resource.contentType.matches('video/webm'))
         && request.resource.size < 30 * 1024 * 1024;
       allow delete: if isAuthenticated();
     }
 
-    // Enregistrements vocaux / Toadas
+    // Enregistrements vocaux / Toadas (lecture publique pour lecteurs audio élèves)
     match /vocalRecordings/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
+      allow create, update: if isAuthenticated()
         && isAudio()
         && request.resource.size < 20 * 1024 * 1024;
       allow delete: if isAuthenticated();
     }
 
     // ==========================================
-    // 3. DANÇAD'OR (Chorégraphies & Vidéos)
+    // 3. DANÇADOR (Chorégraphies & Vidéos)
     // ==========================================
 
     // Extraits vidéo, audio et boucles chorégraphiques pour les prévisualisations
     match /exports_danse/{allPaths=**} {
       allow read: if true;
-      allow create, update: if isAuthenticated() 
+      allow create, update: if isAuthenticated()
         && (isVideo() || isAudio() || request.resource.contentType.matches('audio/.*'))
         && request.resource.size < 50 * 1024 * 1024;
       allow delete: if isAuthenticated();
     }
 
     // ==========================================
-    // 4. ORGANIZAD'OR & GESTION MULTI-TENANT
+    // 4. ORGANIZADOR & GESTION MULTI-TENANT
     // ==========================================
 
-    // Justificatifs de notes de frais des adhérents (CONFIDENTIEL - max 15 Mo)
+    // Justificatifs de notes de frais des adhérents sous /associations/{groupId}/expenses (CONFIDENTIEL - max 15 Mo)
     match /associations/{groupId}/expenses/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() 
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId)
         && request.resource.size < 15 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow delete: if isStorageSameGroup(groupId);
     }
 
-    // Fichiers vitrine directs (Logos, dossiers de presse, images hero)
+    // Justificatifs de notes de frais racine /expenses/{groupId} (CONFIDENTIEL - max 15 Mo)
+    match /expenses/{groupId}/{allPaths=**} {
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId)
+        && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isStorageSameGroup(groupId);
+    }
+
+    // Fichiers vitrine directs (Logos, dossiers de presse, images hero — Mostrador)
     match /associations/{groupId}/{fileName} {
       allow read: if true;
-      allow create, update: if isAuthenticated() && request.resource.size < 10 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow create, update: if canWriteAssociationPublicFolder(groupId) && request.resource.size < 10 * 1024 * 1024;
+      allow delete: if canWriteAssociationPublicFolder(groupId);
     }
 
     // Sous-dossiers vitrine & médias généraux (hors sous-dossier sensible "expenses")
     match /associations/{groupId}/{folder}/{allPaths=**} {
       allow read: if folder != 'expenses';
-      allow create, update: if isAuthenticated() && folder != 'expenses';
-      allow delete: if isAuthenticated() && folder != 'expenses';
+      allow create, update: if folder != 'expenses' && canWriteAssociationPublicFolder(groupId);
+      allow delete: if folder != 'expenses' && canWriteAssociationPublicFolder(groupId);
     }
 
-    // Documents internes (Varal, partitions, comptes-rendus)
+    // Documents internes (Varal, partitions, comptes-rendus — cloisonnement strict par groupId)
     match /documents/{groupId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.resource.size < 25 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId) && request.resource.size < 25 * 1024 * 1024;
+      allow delete: if isStorageSameGroup(groupId);
     }
 
     // Médias des ateliers / Workshops
     match /workshops_media/{groupId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.resource.size < 50 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if (isAuthenticated() && groupId == 'global') || isStorageSameGroup(groupId);
+      allow create, update: if ((isAuthenticated() && groupId == 'global') || isStorageSameGroup(groupId)) && request.resource.size < 50 * 1024 * 1024;
+      allow delete: if (isAuthenticated() && groupId == 'global') || isStorageSameGroup(groupId);
     }
 
     // Studio social & médias en attente de validation
     match /studio_validation/{groupId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.resource.size < 30 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId) && request.resource.size < 30 * 1024 * 1024;
+      allow delete: if isStorageSameGroup(groupId);
     }
 
-    // Justificatifs de commandes
+    // Justificatifs de commandes (cloisonnement strict par groupId)
     match /orders/{groupId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.resource.size < 15 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId) && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isStorageSameGroup(groupId);
     }
 
-    // Justificatifs de trésorerie (Opérations bancaires)
+    // Justificatifs de trésorerie / Opérations bancaires (cloisonnement strict par groupId)
     match /transactions/{groupId}/{allPaths=**} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && request.resource.size < 15 * 1024 * 1024;
-      allow delete: if isAuthenticated();
+      allow read: if isStorageSameGroup(groupId);
+      allow create, update: if isStorageSameGroup(groupId) && request.resource.size < 15 * 1024 * 1024;
+      allow delete: if isStorageSameGroup(groupId);
     }
 
     // Images partagées dans le Forum / Salons
     match /forum_images/{allPaths=**} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() 
-        && isImage() 
+      allow create, update: if isAuthenticated()
+        && isImage()
         && request.resource.size < 10 * 1024 * 1024;
       allow delete: if isAuthenticated();
     }

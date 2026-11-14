@@ -550,7 +550,7 @@ export default function Header({
         onClose={() => setShowReviewModal(false)}
         userEmail={currentUser?.email}
         groupId={userData?.groupId}
-        appSource="Orchestrador"
+        appSource="Orquestrador"
       />
     </>
   );

@@ -8,26 +8,14 @@ const { getStorage } = require('firebase-admin/storage');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 
 // Constantes de quotas par défaut (en octets)
-const QUOTA_1_GO = 1024 * 1024 * 1024;
-const QUOTA_5_GO = 5 * 1024 * 1024 * 1024;
-const QUOTA_25_GO = 25 * 1024 * 1024 * 1024;
+const QUOTA_1_GO = 1024 * 1024 * 1024, QUOTA_5_GO = 5 * QUOTA_1_GO, QUOTA_25_GO = 25 * QUOTA_1_GO;
+const isLegacySamambaiaGroup = (gid) => String(gid || '').trim().toLowerCase() === 'samambaia';
 
-/**
- * Déduit le quota de stockage initial d'après les forfaits débloqués.
- * @param {Array<string>} [unlockedPacks=[]] - Liste des packs souscrits.
- * @returns {number} Quota en octets.
- */
 function resolveDefaultQuota(unlockedPacks = []) {
-  if (!Array.isArray(unlockedPacks) || unlockedPacks.length === 0) {
-    return QUOTA_1_GO;
-  }
+  if (!Array.isArray(unlockedPacks) || unlockedPacks.length === 0) return QUOTA_1_GO;
   const packs = unlockedPacks.map(p => String(p).toLowerCase());
-  if (packs.some(p => p.includes('integrale'))) {
-    return QUOTA_25_GO;
-  }
-  if (packs.some(p => p.includes('gestion'))) {
-    return QUOTA_5_GO;
-  }
+  if (packs.some(p => p.includes('integrale'))) return QUOTA_25_GO;
+  if (packs.some(p => p.includes('gestion'))) return QUOTA_5_GO;
   return QUOTA_1_GO;
 }
 
@@ -70,7 +58,7 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
   const userGroupId = String(userData.groupId || authData.token?.groupId || '').trim().toLowerCase();
   const userRole = String(userData.role || authData.token?.role || '').toLowerCase();
   const isAuthorizedGroupAdmin = (
-    (userGroupId === groupId || (groupId.includes('sam') && userGroupId.includes('sam'))) &&
+    (userGroupId === groupId || (isLegacySamambaiaGroup(groupId) && isLegacySamambaiaGroup(userGroupId))) &&
     ['mestre', 'admin', 'bureau', 'ca', 'super-admin'].includes(userRole)
   );
 
@@ -95,7 +83,7 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
   const groupVariants = Array.from(new Set([
     groupId,
     rawGroupId.trim(),
-    ...(groupId.includes('sam') ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
+    ...(isLegacySamambaiaGroup(groupId) ? ['Samambaia', 'samambaia', 'SAMAMBAIA'] : [])
   ]));
 
   // 6 préfixes de stockage isolés surveillés par association :
@@ -168,7 +156,7 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
     quotaBytes: quotaBytes
   };
 
-  const targetDocs = Array.from(new Set([groupId, foundDocId, ...(groupId.includes('sam') ? ['Samambaia', 'samambaia'] : [])]));
+  const targetDocs = Array.from(new Set([groupId, foundDocId, ...(isLegacySamambaiaGroup(groupId) ? ['Samambaia', 'samambaia'] : [])]));
   for (const docId of targetDocs) {
     try {
       await db.collection('associations').doc(docId).set({ storage: storageUpdate }, { merge: true });
@@ -179,14 +167,7 @@ const calculateAssociationStorageUsage = onCall({ cors: true }, async (request) 
 
   console.log(`[StorageMetrics] Quota recalculé pour ${groupId} : ${totalBytes} / ${quotaBytes} octets.`);
 
-  return {
-    success: true,
-    usedBytes: totalBytes,
-    quotaBytes: quotaBytes
-  };
+  return { success: true, usedBytes: totalBytes, quotaBytes };
 });
 
-module.exports = {
-  calculateAssociationStorageUsage,
-  resolveDefaultQuota
-};
+module.exports = { calculateAssociationStorageUsage, resolveDefaultQuota, isLegacySamambaiaGroup };

@@ -92,21 +92,25 @@ export function calculateSubscriptionStatus(endDateStr, planType) {
 }
 
 import { calculateTrialStatus } from './trialRights';
+import { DEFAULT_ECOSYSTEM_ACCESS } from '../constants/ecosystemUrls';
 
-export { calculateTrialStatus };
+export { calculateTrialStatus, DEFAULT_ECOSYSTEM_ACCESS };
+
+export const CANONICAL_UNIVERSES = Object.freeze(['maracatu', 'batucada', 'sambareggae', 'samba', 'capoeira']);
+
+export function normalizeUniverseKey(rawUniverse) {
+  if (!rawUniverse || typeof rawUniverse !== 'string') return 'maracatu';
+  const clean = rawUniverse.trim().toLowerCase().replace(/[\s_-]+/g, '');
+  return CANONICAL_UNIVERSES.includes(clean) ? clean : 'maracatu';
+}
 
 export function getAccessRights(group, userData = null) {
   const trialInfo = calculateTrialStatus(userData);
-
   if (!group && !trialInfo) {
     return {
-      canCreateEvents: false,
-      canEditTreasury: false,
-      isProSequencer: false,
-      isReadOnlyManager: true,
-      hasSequenceurAccess: false,
-      hasManagerAccess: false,
-      hasVitrineAccess: false,
+      canCreateEvents: false, canEditTreasury: false, isProSequencer: false, isReadOnlyManager: true,
+      hasSequenceurAccess: false, hasManagerAccess: false, hasVitrineAccess: false, hasAfinadorAccess: false,
+      ecosystemAccess: { ...DEFAULT_ECOSYSTEM_ACCESS, vitrine: false, sequenciador: false, dancador: false, hub: false, cantador: false, afinador: false },
       softLockBanner: "Aucun groupe sélectionné.",
       statusInfo: calculateSubscriptionStatus(null, 'none'),
       trialInfo: null
@@ -159,17 +163,13 @@ export function getAccessRights(group, userData = null) {
 
   return {
     statusInfo: trialInfo ? { ...statusInfo, ...trialInfo } : statusInfo,
-    trialInfo,
-    isExpired,
-    isReadOnlyManager,
-    canCreateEvents,
-    canEditTreasury,
-    isProSequencer,
-    hasSequenceurAccess,
-    hasManagerAccess,
-    hasVitrineAccess,
-    hasDancadorAccess,
-    universeAccess: group?.universeAccess || { maracatu: true, capoeira: false, samba: false },
+    trialInfo, isExpired, isReadOnlyManager, canCreateEvents, canEditTreasury, isProSequencer,
+    hasSequenceurAccess, hasManagerAccess, hasVitrineAccess, hasDancadorAccess, hasAfinadorAccess: false,
+    ecosystemAccess: { ...DEFAULT_ECOSYSTEM_ACCESS, ...(group?.ecosystemAccess || {}), afinador: false },
+    universeAccess: {
+      maracatu: true, batucada: false, sambareggae: false, samba: false, capoeira: false,
+      ...(group?.universeAccess || {})
+    },
     unlockedPacks: group?.unlockedPacks || [],
     softLockBanner
   };

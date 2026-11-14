@@ -1,6 +1,14 @@
 import React from 'react';
 import { ToggleRight, ToggleLeft } from 'lucide-react';
 
+const UNIVERSE_COLUMNS = [
+  { key: 'maracatu', label: 'Maracatu' },
+  { key: 'batucada', label: 'Batucada' },
+  { key: 'sambareggae', label: 'Samba-Reggae' },
+  { key: 'samba', label: 'Samba' },
+  { key: 'capoeira', label: 'Capoeira' },
+];
+
 export default function AccessMatrixTable({ associations, onToggleApp, onToggleUniverse }) {
   return (
     <div className="bg-white/90 xilo-border rounded-xl p-6 space-y-6 shadow-xl">
@@ -42,9 +50,9 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
                   <span>Dançador</span>
                 </div>
               </th>
-              <th className="p-3 text-center border-l-2 border-[#fdf6e7]">Maracatu</th>
-              <th className="p-3 text-center">Capoeira</th>
-              <th className="p-3 text-center">Samba</th>
+              {UNIVERSE_COLUMNS.map((u, idx) => (
+                <th key={u.key} className={`p-3 text-center ${idx === 0 ? 'border-l-2 border-[#fdf6e7]' : ''}`}>{u.label}</th>
+              ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -100,23 +108,13 @@ export default function AccessMatrixTable({ associations, onToggleApp, onToggleU
                   </div>
                 </td>
 
-                <td className="p-3 text-center border-l-2 border-gray-200">
-                  <button onClick={() => onToggleUniverse(assoc, 'maracatu')} className="cursor-pointer inline-block">
-                    {assoc.universeAccess?.maracatu ? <ToggleRight className="w-7 h-7 text-emerald-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
-                </td>
-
-                <td className="p-3 text-center">
-                  <button onClick={() => onToggleUniverse(assoc, 'capoeira')} className="cursor-pointer inline-block">
-                    {assoc.universeAccess?.capoeira ? <ToggleRight className="w-7 h-7 text-emerald-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
-                </td>
-
-                <td className="p-3 text-center">
-                  <button onClick={() => onToggleUniverse(assoc, 'samba')} className="cursor-pointer inline-block">
-                    {assoc.universeAccess?.samba ? <ToggleRight className="w-7 h-7 text-emerald-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
-                  </button>
-                </td>
+                {UNIVERSE_COLUMNS.map((u, idx) => (
+                  <td key={u.key} className={`p-3 text-center ${idx === 0 ? 'border-l-2 border-gray-200' : ''}`}>
+                    <button onClick={() => onToggleUniverse(assoc, u.key)} className="cursor-pointer inline-block">
+                      {assoc.universeAccess?.[u.key] ? <ToggleRight className="w-7 h-7 text-emerald-700" /> : <ToggleLeft className="w-7 h-7 text-gray-400" />}
+                    </button>
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>

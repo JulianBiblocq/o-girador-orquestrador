@@ -178,7 +178,7 @@ function SequencerViewContent({ userData, onBack }) {
             Aucun élément trouvé dans les {activeTab}.
           </h4>
           <p className="text-xs text-stone-400">
-            Modifiez vos filtres ou créez de nouveaux rythmes depuis Séquenciad'Or.
+            Modifiez vos filtres ou créez de nouveaux rythmes depuis Sequenciador.
           </p>
         </div>
       )}

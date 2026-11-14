@@ -48,6 +48,7 @@ jobs:
     env:
       CI: 'true'
       DANCADOR_TOKEN: ${{ secrets['DANCADOR_TOKEN'] }}
+      VOCAL_LAB_TOKEN: ${{ secrets['VOCAL_LAB_TOKEN'] }}
 
     steps:
       # 1. Extraction d'Orquestrador (Dépôt SSOT Maître)
@@ -56,30 +57,34 @@ jobs:
         with:
           path: o-girador-orquestrador
 
-      # 2. Extraction des applications satellites pour audit de leurs configurations
-      - name: 📥 Extraire Séquenciad'Or
+      # 2. Extraction stricte des applications satellites (zéro continue-on-error)
+      - name: 📥 Extraire Sequenciador
         uses: actions/checkout@v4
         with:
           repository: julianbiblocq/o-girador
           path: o-girador-sequenciador
-        continue-on-error: true
 
-      - name: 📥 Extraire Organizad'Or
+      - name: 📥 Extraire Organizador & Mostrador
         uses: actions/checkout@v4
         with:
           repository: JulianBiblocq/O-Girador-manager
           path: o-girador-organizador
-        continue-on-error: true
 
-      # Dançad'Or étant un dépôt privé, son extraction n'est tentée que si un secret DANCADOR_TOKEN est configuré
-      - name: 📥 Extraire Dançad'Or (si token présent)
+      - name: 📥 Extraire Cantador
+        uses: actions/checkout@v4
+        with:
+          repository: JulianBiblocq/o-girador-vocal-lab
+          token: ${{ env.VOCAL_LAB_TOKEN || env.DANCADOR_TOKEN || github.token }}
+          path: o-girador-vocal-lab
+
+      # Dançador étant un dépôt privé, son extraction utilise DANCADOR_TOKEN lorsqu'il est configuré
+      - name: 📥 Extraire Dançador (si token présent)
         if: env.DANCADOR_TOKEN != ''
         uses: actions/checkout@v4
         with:
           repository: JulianBiblocq/O-GIRADOR-DANCA
           token: ${{ env.DANCADOR_TOKEN }}
           path: o-girador-dancador
-        continue-on-error: true
 
       # 3. Configuration de l'environnement Java (Pré-requis Émulateurs Firebase)
       - name: ☕ Configurer Java 21 LTS (Headless Émulateurs)
@@ -101,10 +106,12 @@ jobs:
         working-directory: o-girador-orquestrador
         run: npm ci
 
-      # 6. Audit anti-régression des satellites (Vérifie l'absence de 'firestore'/'storage' et de règles fantômes)
-      - name: 🛡️ Audit du Garde-Fou SSOT (test:ssot)
+      # 6. Audit anti-régression des satellites & gouvernance locale
+      - name: 🛡️ Audit du Garde-Fou SSOT (test:ssot & check:governance)
         working-directory: o-girador-orquestrador
-        run: npm run test:ssot
+        run: |
+          npm run test:ssot
+          npm run check:governance
 
       # 7. Exécution de la suite de tests unitaires sous émulateurs Firebase
       - name: 🧪 Démarrage des Émulateurs & Tests de Sécurité (test:rules)

@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
         setLoading(true);
         signInWithCustomToken(auth, ssoToken)
           .catch((err) => {
-            console.warn("[Orchestrad'Or SSO] Erreur custom token :", err);
+            console.warn("[Orquestrador SSO] Erreur custom token :", err);
             setLoading(false);
           })
           .finally(() => {

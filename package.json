@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test": "node --test \"src/**/__tests__/**/*.test.js\"",
     "test:ssot": "node scripts/verify-ssot-guard.js",
+    "check:governance": "node .agents/hooks/check_governance.mjs",
     "test:rules": "node scripts/run-rules-test.js",
     "deploy:rules": "firebase deploy --only firestore:rules,storage",
     "deploy:hosting": "firebase deploy --only hosting",

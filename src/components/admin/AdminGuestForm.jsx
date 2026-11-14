@@ -57,7 +57,7 @@ export default function AdminGuestForm({
             }`}
           >
             <span className="font-bold text-xs flex items-center gap-1">👑 Mestre Bloco</span>
-            <span className="text-[10px] text-gray-500 block leading-tight mt-0.5">Responsable officiel (Organizad'Or)</span>
+            <span className="text-[10px] text-gray-500 block leading-tight mt-0.5">Responsable officiel (Organizador)</span>
           </button>
           <button
             type="button"
@@ -67,7 +67,7 @@ export default function AdminGuestForm({
             }`}
           >
             <span className="font-bold text-xs flex items-center gap-1">🎭 Invité Pro</span>
-            <span className="text-[10px] text-gray-500 block leading-tight mt-0.5">Testeur / Invité (Séquenciad'Or)</span>
+            <span className="text-[10px] text-gray-500 block leading-tight mt-0.5">Testeur / Invité (Sequenciador)</span>
           </button>
         </div>
       </div>
