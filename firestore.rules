@@ -23,6 +23,16 @@ service cloud.firestore {
     }
 
     // Vérifie l'isolation multi-tenant par groupe
+    function isUserSameGroup(u) {
+      return resource == null || 
+        !resource.data.keys().hasAny(['groupId']) ||
+        resource.data.get('groupId', '').lower() == u.get('groupId', '').lower() ||
+        (
+          (u.get('groupId', '').lower() == 'samambaia' || u.get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+          resource.data.get('groupId', '').lower() == 'samambaia'
+        );
+    }
+
     function isDocSameGroup() {
       return isAuthenticated() && (
         isSystemAdmin() || 
@@ -30,13 +40,7 @@ service cloud.firestore {
         !resource.data.keys().hasAny(['groupId']) ||
         (
           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          (
-            resource.data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() ||
-            (
-              (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
-              resource.data.get('groupId', '').lower() == 'samambaia'
-            )
-          )
+          isUserSameGroup(getUserData())
         )
       );
     }
@@ -47,35 +51,37 @@ service cloud.firestore {
         resource == null || 
         (
           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-          (
-            resource.data.get('groupId', '').lower() == getUserData().get('groupId', '').lower() ||
-            (
-              (getUserData().get('groupId', '').lower() == 'samambaia' || getUserData().get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
-              resource.data.get('groupId', '').lower() == 'samambaia'
-            )
-          )
+          isUserSameGroup(getUserData())
         )
       );
     }
 
+    function isUserAdminOrMestre(u) {
+      return (
+        u.get('role', '').lower() in ['mestre', 'super-admin', 'admin', 'bureau', 'ca', 'secretaire'] ||
+        u.get('roleOfficiel', '').lower() in ['president', 'président', 'presidente', 'présidente', 'tresorier', 'trésorier', 'tresoriere', 'trésorière', 'secretaire', 'secrétaire', 'bureau', 'ca'] ||
+        u.get('isSystemAdmin', false) == true ||
+        u.get('hasAccessLogistique', false) == true ||
+        (u.get('tags', []) is list && u.get('tags', []).hasAny([
+          'Bureau', 'bureau', 'Président', 'président', 'President', 'president', 'Présidente', 'présidente', 'Presidente', 'presidente',
+          'Trésorier', 'trésorier', 'Tresorier', 'tresorier', 'Trésorière', 'trésorière', 'Tresoriere', 'tresoriere',
+          'Secrétaire', 'secrétaire', 'Secretaire', 'secretaire', 'Secrétariat', 'secrétariat', 'Secretariat', 'secretariat',
+          'Logistique', 'logistique', 'Logisticien', 'logisticien', 'Logisticienne', 'logisticienne',
+          'Matériel', 'matériel', 'Materiel', 'materiel', 'Inventaire', 'inventaire', 'Instruments', 'instruments',
+          'CA', 'ca', 'C.A', 'c.a', 'C.A.', 'c.a.', 'Conseil d\'Administration', 'Conseil d\'administration', 'Direction', 'direction', 'Conseil', 'conseil',
+          'Admin', 'admin', 'Administrateur', 'administrateur', 'Modérateur', 'modérateur', 'Moderateur', 'moderateur',
+          'Mestre', 'mestre', 'Mestria', 'mestria'
+        ]))
+      ) && isUserSameGroup(u);
+    }
+
     function isAdminOrMestre() {
       return isAuthenticated() && (
-        isSystemAdmin() || (
-          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
-            getUserData().get('role', '').lower() in ['mestre', 'super-admin', 'admin', 'bureau', 'ca'] ||
-            getUserData().get('isSystemAdmin', false) == true ||
-            getUserData().get('hasAccessLogistique', false) == true ||
-            (getUserData().keys().hasAny(['tags']) && getUserData().tags.hasAny([
-              'Bureau', 'bureau', 'Président', 'président', 'President', 'president', 'Présidente', 'présidente', 'Presidente', 'presidente',
-              'Trésorier', 'trésorier', 'Tresorier', 'tresorier', 'Trésorière', 'trésorière', 'Tresoriere', 'tresoriere',
-              'Secrétaire', 'secrétaire', 'Secretaire', 'secretaire', 'Secrétariat', 'secrétariat', 'Secretariat', 'secretariat',
-              'Logistique', 'logistique', 'Logisticien', 'logisticien', 'Logisticienne', 'logisticienne',
-              'Matériel', 'matériel', 'Materiel', 'materiel', 'Inventaire', 'inventaire', 'Instruments', 'instruments',
-              'CA', 'ca', 'C.A', 'c.a', 'C.A.', 'Direction', 'direction', 'Conseil', 'conseil',
-              'Admin', 'admin', 'Administrateur', 'administrateur', 'Modérateur', 'modérateur', 'Moderateur', 'moderateur',
-              'Mestre', 'mestre', 'Mestria', 'mestria'
-            ]))
-          ) && isDocSameGroup()
+        (request.auth.token.keys().hasAny(['isSystemAdmin']) && request.auth.token.isSystemAdmin == true) ||
+        (request.auth.token.keys().hasAny(['admin']) && request.auth.token.admin == true) ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          isUserAdminOrMestre(getUserData())
         )
       );
     }
@@ -84,11 +90,47 @@ service cloud.firestore {
       return isSystemAdmin() || isAdminOrMestre();
     }
 
+    function isUserActive(u) {
+      return u.get('isArchived', false) != true &&
+        u.get('archived', false) != true &&
+        !(u.get('statutActuel', 'active') in ['archived', 'inactive', 'suspendu']) &&
+        !(u.get('statut', 'active') in ['archive', 'suspendu']) &&
+        !(u.get('status', 'active') in ['archived', 'inactive']);
+    }
+
+    function isActiveMember() {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        isUserActive(getUserData());
+    }
+
+    function isUserRequestSameGroup(u, targetGroupId) {
+      return targetGroupId != null &&
+        targetGroupId != '' &&
+        (
+          targetGroupId.lower() == u.get('groupId', '').lower() ||
+          (
+            (u.get('groupId', '').lower() == 'samambaia' || u.get('mestreId', '') == 'iA0SweEHyOPzAPGIDVZdeKAV2mk1') &&
+            targetGroupId.lower() == 'samambaia'
+          )
+        );
+    }
+
+    function isRequestSameGroup(targetGroupId) {
+      return isAuthenticated() && (
+        isSystemAdmin() ||
+        (
+          exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          isUserRequestSameGroup(getUserData(), targetGroupId)
+        )
+      );
+    }
+
     function hasAnyTag(tagList) {
       return isAuthenticated() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        getUserData().keys().hasAny(['tags']) &&
-        getUserData().tags.hasAny(tagList);
+        getUserData().get('tags', []) is list &&
+        getUserData().get('tags', []).hasAny(tagList);
     }
 
     // Vérifie si un Mestre à l'essai est encore dans sa période d'évaluation active
@@ -404,7 +446,7 @@ service cloud.firestore {
 
       // Sous-collection in_app_notifications (Centre de notifications internes du membre)
       match /in_app_notifications/{notifId} {
-        allow read, update: if request.auth != null && request.auth.uid == userId;
+        allow read, update, delete: if request.auth != null && request.auth.uid == userId;
         allow create: if request.auth != null;
       }
     }
@@ -505,15 +547,14 @@ service cloud.firestore {
         ) ||
         (
           isDocSameGroup() &&
-          isAdminOrMestre() &&
-          request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'statutPublication', 'publicationDateApprobation', 'publicationApprouvePar', 'publicationDerniereRetouche'
-          ])
-        ) ||
-        (
-          isDocSameGroup() &&
+          isActiveMember() &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'inscriptions', 'invitesExternes', 'covoiturage', 'demandesModificationInscription', 'sujetsProposes'
+            'inscriptions', 'invitesExternes', 'covoiturage', 'demandesModificationInscription', 'sujetsProposes', 'suggestionsOrdreDuJour',
+            'compteRenduApprovals', 'compteRenduStatus', 'compteRenduPublishedAt', 'compteRenduVaralId',
+            'compteRenduAutoValidated', 'compteRenduAutoValidatedAt', 'pointsOrdreDuJour', 'propositionsCR',
+            'targetGroup', 'reunionPrivacyMode', 'hideAgendaFromNonTarget', 'audience', 'portee',
+            'autoValidateAfter7Days', 'compteRenduSubmittedAt', 'compteRenduAutoValidateAt',
+            'compteRenduValidationMode', 'compteRenduValidationTags', 'compteRenduValidators'
           ])
         )
       );
@@ -692,7 +733,19 @@ service cloud.firestore {
 
     match /documents/{document} {
       allow read: if isAuthenticated() || (resource != null && resource.data.get('isPublic', false) == true);
-      allow write: if canManageDocs();
+      allow create: if canManageDocs() || (
+        isActiveMember() &&
+        request.resource.data.get('type', '') == 'report' &&
+        isRequestSameGroup(request.resource.data.get('groupId', ''))
+      );
+      allow update: if canManageDocs() || (
+        isActiveMember() &&
+        resource.data.get('type', '') == 'report' &&
+        request.resource.data.get('type', '') == 'report' &&
+        isDocSameGroup() &&
+        isRequestSameGroup(request.resource.data.get('groupId', ''))
+      );
+      allow delete: if canManageDocs();
     }
 
     match /forum_channels/{channelId} {
