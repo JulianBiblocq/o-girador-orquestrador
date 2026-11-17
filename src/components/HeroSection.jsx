@@ -133,7 +133,7 @@ export default function HeroSection({
             onClick={(e) => handleAppLaunch(e, getEcosystemUrl('cantador'), "cantador")}
             className={`p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer ${launchingApp === 'cantador' ? 'opacity-50 animate-pulse' : ''}`}
           >
-            <img src="/logo-cantador.jpg" alt="Cantador" className="w-14 h-14 mb-3 rounded-full object-cover drop-shadow-md border border-[#9a3412]/20" />
+            <img src="/logos/cantador.png" alt="Cantador" className="w-14 h-14 mb-3 rounded-full object-cover drop-shadow-md border border-[#9a3412]/20" />
             <div className="text-xl font-black text-[#9a3412] font-cordel leading-tight">{getMetric('cantador', 'hero.metrics.cantador')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('cantadorSub', 'hero.metrics.cantadorSub')}</div>
           </a>

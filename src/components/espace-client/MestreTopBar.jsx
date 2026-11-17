@@ -78,7 +78,7 @@ export default function MestreTopBar({ associationData, activeTab, setActiveTab 
       textActive: 'text-white', textHover: 'group-hover:text-white', descTextActive: 'text-red-100', descTextHover: 'group-hover:text-red-100'
     },
     {
-      id: 'cantador', label: 'Cantador', desc: 'Atelier Vocal', iconUrl: '/logo-cantador.jpg', isOwned: true, url: getEcosystemUrl('cantador'),
+      id: 'cantador', label: 'Cantador', desc: 'Atelier Vocal', iconUrl: '/logos/cantador.png', isOwned: true, url: getEcosystemUrl('cantador'),
       colorActive: 'bg-[#3730a3] border-indigo-400', colorHover: 'hover:bg-[#312e81] hover:border-indigo-300',
       textActive: 'text-indigo-200', textHover: 'group-hover:text-indigo-200', descTextActive: 'text-indigo-100', descTextHover: 'group-hover:text-indigo-100'
     },
