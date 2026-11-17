@@ -63,7 +63,7 @@ export default function Header({
           */}
           <div className="flex items-center gap-2.5 sm:gap-3 cursor-pointer shrink-0" onClick={() => onNavigate('home')}>
             <img 
-              src="/logo_rond.png" 
+              src="/logos/orquestrador.png" 
               alt="Logo O Girador" 
               className="w-10 h-10 sm:w-11 sm:h-11 rounded-full border-2 border-[#8b4513] shadow-sm transition-transform hover:scale-105 shrink-0 object-cover"
             />

@@ -147,7 +147,7 @@ export default function HeroSection({
             <div className="text-xs text-gray-700 mt-2">{getMetric('dancadorSub', 'hero.metrics.dancadorSub')}</div>
           </a>
           <a href={getEcosystemUrl('hub')} target="_blank" rel="noopener noreferrer" className="p-4 bg-white/70 rounded-lg xilo-border text-center flex flex-col items-center justify-start hover:bg-white transition-all hover:scale-105 cursor-pointer">
-            <img src="/logo_rond.png" alt="Orquestrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full border border-[#8b4513]/20" />
+            <img src="/logos/orquestrador.png" alt="Orquestrador" className="w-14 h-14 mb-3 object-contain drop-shadow-md rounded-full border border-[#8b4513]/20" />
             <div className="text-xl font-black text-[#8b4513] font-cordel leading-tight">{getMetric('terreiro', 'hero.metrics.terreiro')}</div>
             <div className="text-xs text-gray-700 mt-2">{getMetric('terreiroSub', 'hero.metrics.terreiroSub')}</div>
           </a>

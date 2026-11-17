@@ -20,7 +20,7 @@ export default function Footer({ onNavigate, onOpenAdminModal }) {
           {/* Brand col */}
           <div className="space-y-3 md:col-span-1">
             <div className="flex items-center gap-2">
-              <img src="/logo_rond.png" alt="Logo O Girador" className="w-9 h-9 rounded-full border border-amber-500 object-cover" />
+              <img src="/logos/orquestrador.png" alt="Logo O Girador" className="w-9 h-9 rounded-full border border-amber-500 object-cover" />
               <span className="font-extrabold text-lg text-white font-cordel">
                 O GIRADOR ORQUESTRADOR
               </span>
