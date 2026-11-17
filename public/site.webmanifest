@@ -1,19 +1,13 @@
 {
-  "name": "O Girador",
-  "short_name": "O Girador",
+  "name": "O Girador Orquestrador",
+  "short_name": "Orquestrador",
   "icons": [
-    {
-      "src": "/android-chrome-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/android-chrome-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "/icon-192-v2.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512-v2.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-192-maskable-v2.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon-512-maskable-v2.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "theme_color": "#2c1d11",
-  "background_color": "#fdf6e7",
+  "theme_color": "#8B2A1A",
+  "background_color": "#F4ECD8",
   "display": "standalone"
 }
