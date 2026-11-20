@@ -1299,21 +1299,18 @@ service cloud.firestore {
       allow read: if request.auth != null || (resource != null && resource.data.visibility == 'public');
       allow create: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Dispositions spatiales (Placement scène, cône acoustique, Toada)
@@ -1321,21 +1318,18 @@ service cloud.firestore {
       allow read: if request.auth != null || (resource != null && resource.data.visibility == 'public');
       allow create: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Grilles rythmiques et patterns
@@ -1344,23 +1338,20 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Sections du séquenceur
@@ -1369,23 +1360,20 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Presets complets de morceaux
@@ -1394,23 +1382,20 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Exercices pédagogiques
@@ -1419,23 +1404,20 @@ service cloud.firestore {
       allow create: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == request.resource.data.ownerId 
-                        || request.auth.uid == request.resource.data.get('mestreId', '')
-                        || isSameGroup(request.resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(request.resource.data.get('groupId', '')));
+                        || (request.auth.uid == request.resource.data.get('ownerId', '')
+                            && request.resource.data.get('ownerId', '') != ''
+                            && (isCoAuthorInSameGroup(request.resource.data.get('groupId', ''))
+                                || request.resource.data.get('visibility', 'private') == 'private')));
       allow update: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', ''))
-                        || isCoAuthorInSameGroup(resource.data.get('groupId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
       allow delete: if request.auth != null 
                     && isTrialActive()
                     && (isAdminOrMestre()
-                        || request.auth.uid == resource.data.ownerId 
                         || request.auth.uid == resource.data.get('mestreId', '')
-                        || isSameGroup(resource.data.get('mestreId', '')));
+                        || (request.auth.uid == resource.data.get('ownerId', '') && resource.data.get('ownerId', '') != ''));
     }
 
     // Progressions de pratique individuelle

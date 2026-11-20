@@ -640,5 +640,173 @@ describe('Sécurité Firestore — Isolation Multi-Tenant & Événements', () =>
       await assertSucceeds(samSt.ref('orders/samambaia/bon_commande.pdf').getDownloadURL());
     });
   });
+
+  describe('Sequenciador — Sanctuarisation des créations du Mestre face aux co-auteurs (canWriteSequenciador)', () => {
+    const SEQUENCIADOR_COLLECTIONS = ['presets', 'sections', 'patterns', 'exercises', 'balancos', 'dispositions'];
+
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        const db = context.firestore();
+        await db.doc('users/mestre_baque').set({
+          groupId: 'maracatu_sol',
+          role: 'mestre'
+        });
+        await db.doc('users/coauthor_1').set({
+          groupId: 'maracatu_sol',
+          mestreId: 'mestre_baque',
+          role: 'eleve',
+          canWriteSequenciador: true
+        });
+        await db.doc('users/coauthor_2').set({
+          groupId: 'maracatu_sol',
+          mestreId: 'mestre_baque',
+          role: 'eleve',
+          canWriteSequenciador: true
+        });
+        await db.doc('users/simple_eleve').set({
+          groupId: 'maracatu_sol',
+          mestreId: 'mestre_baque',
+          role: 'eleve',
+          canWriteSequenciador: false
+        });
+        await db.doc('users/other_mestre').set({
+          groupId: 'autre_troupe',
+          role: 'mestre'
+        });
+
+        for (const col of SEQUENCIADOR_COLLECTIONS) {
+          await db.doc(`${col}/doc_mestre`).set({
+            name: 'Baque Virado Officiel',
+            ownerId: 'mestre_baque',
+            mestreId: 'mestre_baque',
+            groupId: 'maracatu_sol',
+            visibility: 'group'
+          });
+          await db.doc(`${col}/doc_legacy_empty_owner`).set({
+            name: 'Baque Ancien Sans Owner',
+            ownerId: '',
+            mestreId: 'mestre_baque',
+            groupId: 'maracatu_sol',
+            visibility: 'public'
+          });
+          await db.doc(`${col}/doc_coauthor_1`).set({
+            name: 'Proposition Co-Auteur 1',
+            ownerId: 'coauthor_1',
+            mestreId: 'mestre_baque',
+            groupId: 'maracatu_sol',
+            visibility: 'group'
+          });
+        }
+      });
+    });
+
+    it('Conserve la lecture catalogue intacte sur les 6 collections du Sequenciador', async () => {
+      const unauthDb = testEnv.unauthenticatedContext().firestore();
+      const eleveDb = testEnv.authenticatedContext('simple_eleve').firestore();
+
+      for (const col of ['presets', 'sections', 'patterns', 'exercises']) {
+        await assertSucceeds(unauthDb.doc(`${col}/doc_mestre`).get());
+      }
+      await assertSucceeds(unauthDb.doc('balancos/doc_legacy_empty_owner').get());
+      await assertSucceeds(unauthDb.doc('dispositions/doc_legacy_empty_owner').get());
+      await assertFails(unauthDb.doc('balancos/doc_mestre').get());
+      await assertFails(unauthDb.doc('dispositions/doc_mestre').get());
+
+      for (const col of SEQUENCIADOR_COLLECTIONS) {
+        await assertSucceeds(eleveDb.doc(`${col}/doc_mestre`).get());
+      }
+    });
+
+    it('Création : autorise le co-auteur sur ses créations de groupe, et le simple élève uniquement en visibilité private', async () => {
+      const coauthorDb = testEnv.authenticatedContext('coauthor_1').firestore();
+      const eleveDb = testEnv.authenticatedContext('simple_eleve').firestore();
+
+      for (const col of SEQUENCIADOR_COLLECTIONS) {
+        // Co-auteur : autorisé avec son propre ownerId dans son groupe
+        await assertSucceeds(coauthorDb.doc(`${col}/new_coauthor`).set({
+          name: 'Création Co-Auteur',
+          ownerId: 'coauthor_1',
+          groupId: 'maracatu_sol',
+          visibility: 'group'
+        }));
+
+        // Co-auteur : refusé s'il usurpe l'ownerId du Mestre
+        await assertFails(coauthorDb.doc(`${col}/spoof_mestre`).set({
+          name: 'Usurpation Mestre',
+          ownerId: 'mestre_baque',
+          groupId: 'maracatu_sol',
+          visibility: 'group'
+        }));
+
+        // Co-auteur : refusé s'il tente de publier dans un autre groupe
+        await assertFails(coauthorDb.doc(`${col}/wrong_group`).set({
+          name: 'Autre Groupe',
+          ownerId: 'coauthor_1',
+          groupId: 'autre_troupe',
+          visibility: 'group'
+        }));
+
+        // Simple élève : refusé en visibilité de groupe, autorisé en visibilité private
+        await assertFails(eleveDb.doc(`${col}/eleve_group_forbid`).set({
+          name: 'Brouillon Public Interdit',
+          ownerId: 'simple_eleve',
+          groupId: 'maracatu_sol',
+          visibility: 'group'
+        }));
+        await assertSucceeds(eleveDb.doc(`${col}/eleve_private_ok`).set({
+          name: 'Brouillon Personnel',
+          ownerId: 'simple_eleve',
+          groupId: 'maracatu_sol',
+          visibility: 'private'
+        }));
+      }
+    });
+
+    it('Modification & Suppression : interdit à un co-auteur et à un membre d\'écraser ou supprimer un document du Mestre ou à ownerId vide', async () => {
+      const coauthor1Db = testEnv.authenticatedContext('coauthor_1').firestore();
+      const coauthor2Db = testEnv.authenticatedContext('coauthor_2').firestore();
+      const eleveDb = testEnv.authenticatedContext('simple_eleve').firestore();
+
+      for (const col of SEQUENCIADOR_COLLECTIONS) {
+        // Sanctuarisation du document du Mestre face au co-auteur et au simple membre
+        await assertFails(coauthor1Db.doc(`${col}/doc_mestre`).update({ name: 'Écrasement par Co-Auteur' }));
+        await assertFails(coauthor1Db.doc(`${col}/doc_mestre`).delete());
+        await assertFails(eleveDb.doc(`${col}/doc_mestre`).update({ name: 'Écrasement par Élève' }));
+        await assertFails(eleveDb.doc(`${col}/doc_mestre`).delete());
+
+        // Sanctuarisation des anciens documents à ownerId vide
+        await assertFails(coauthor1Db.doc(`${col}/doc_legacy_empty_owner`).update({ name: 'Écrasement Legacy' }));
+        await assertFails(coauthor1Db.doc(`${col}/doc_legacy_empty_owner`).delete());
+
+        // Isolation entre co-auteurs : coauthor_2 ne peut ni modifier ni supprimer la création de coauthor_1
+        await assertFails(coauthor2Db.doc(`${col}/doc_coauthor_1`).update({ name: 'Sabotage entre co-auteurs' }));
+        await assertFails(coauthor2Db.doc(`${col}/doc_coauthor_1`).delete());
+      }
+    });
+
+    it('Modification & Suppression : autorise le co-auteur sur ses propres créations et le Mestre sur tout son groupe', async () => {
+      const coauthor1Db = testEnv.authenticatedContext('coauthor_1').firestore();
+      const mestreDb = testEnv.authenticatedContext('mestre_baque').firestore();
+      const otherMestreDb = testEnv.authenticatedContext('other_mestre').firestore();
+
+      for (const col of SEQUENCIADOR_COLLECTIONS) {
+        // Le co-auteur modifie ses propres créations
+        await assertSucceeds(coauthor1Db.doc(`${col}/doc_coauthor_1`).update({ name: 'Proposition Co-Auteur v2' }));
+
+        // Le Mestre d'un autre groupe est bloqué
+        await assertFails(otherMestreDb.doc(`${col}/doc_mestre`).update({ name: 'Intrusion inter-groupe' }));
+        await assertFails(otherMestreDb.doc(`${col}/doc_mestre`).delete());
+
+        // Le Mestre du groupe garde le contrôle total (ses créations, les legacy à ownerId vide, et celles des co-auteurs)
+        await assertSucceeds(mestreDb.doc(`${col}/doc_mestre`).update({ name: 'Baque Virado v2' }));
+        await assertSucceeds(mestreDb.doc(`${col}/doc_legacy_empty_owner`).update({ visibility: 'group' }));
+        await assertSucceeds(mestreDb.doc(`${col}/doc_coauthor_1`).update({ visibility: 'public' }));
+
+        // Suppression autorisée au créateur sur son propre doc, et au Mestre sur les docs du groupe
+        await assertSucceeds(coauthor1Db.doc(`${col}/doc_coauthor_1`).delete());
+        await assertSucceeds(mestreDb.doc(`${col}/doc_legacy_empty_owner`).delete());
+      }
+    });
+  });
 });
 
